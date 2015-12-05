@@ -1,57 +1,106 @@
 # See LICENSE for licensing information.
 
-PROJECT = jesse
+REBAR ?= $(shell command -v rebar >/dev/null 2>&1 && echo "rebar" || echo "$(CURDIR)/rebar")
 
-DIALYZER = dialyzer
-REBAR = ./rebar
+DEPS_PLT := $(CURDIR)/.deps_plt
 
-all: app
+ERLANG_DIALYZER_APPS := erts \
+					    kernel \
+					    stdlib
 
-# Application.
+DIALYZER := dialyzer
 
-deps:
-	@$(REBAR) get-deps
+# Travis CI is slow at building dialyzer PLT
+ifeq ($(TRAVIS), true)
+	OTP_VSN := $(shell erl -noshell -eval 'io:format("~p", [erlang:system_info(otp_release)]), erlang:halt(0).' | perl -lne 'print for /R(\d+).*/g')
+	SLOW_DIALYZER := $(shell expr $(OTP_VSN) \<= 14 )
 
-app: deps
-	@$(REBAR) compile
+	ifeq ($(SLOW_DIALYZER), 1)
+		DIALYZER := : not running dialyzer on TRAVIS with R14
+	endif
+endif
 
+SRCS := $(wildcard src/* include/* rebar.config)
+
+.PHONY: all
+all: deps ebin/jesse.app
+
+# Clean
+
+.PHONY: clean
 clean:
-	@$(REBAR) clean
-	rm -f test/*.beam
-	rm -f erl_crash.dump
+	$(REBAR) clean
+	$(RM) -r .rebar
+	$(RM) -r bin
+	$(RM) doc/*.html
+	$(RM) doc/edoc-info
+	$(RM) doc/erlang.png
+	$(RM) doc/stylesheet.css
+	$(RM) -r ebin
+	$(RM) -r logs
 
-docs: clean-docs
-	@$(REBAR) doc skip_deps=true
+.PHONY: distclean
+distclean:
+	$(RM) $(DEPS_PLT)
+	$(RM) -r deps
+	$(MAKE) clean
 
-clean-docs:
-	rm -f doc/*.css
-	rm -f doc/*.html
-	rm -f doc/*.png
-	rm -f doc/edoc-info
+# Deps
+
+.PHONY: get-deps
+get-deps:
+	$(REBAR) get-deps
+
+.PHONY: update-deps
+update-deps:
+	$(REBAR) update-deps
+
+.PHONY: delete-deps
+delete-deps:
+	$(REBAR) delete-deps
+
+.PHONY: deps
+deps: get-deps
+
+# Docs
+
+.PHONY: docs
+docs:
+	$(REBAR) doc skip_deps=true
+
+# Compile
+
+ebin/jesse.app: compile
+
+.PHONY: compile
+compile: $(SRCS)
+	$(REBAR) compile
 
 # Tests.
 
-deps/jiffy:
-	@$(REBAR) -C rebar.tests.config get-deps
-	cd deps/jiffy && make
+.rebar/DEV_MODE:
+	mkdir -p .rebar
+	touch .rebar/DEV_MODE
 
+.PHONY: submodules
 submodules:
-	git submodule update --init
+	git submodule update --init --recursive
 
-test: clean deps/jiffy submodules app eunit ct
+.PHONY: test
+test: .rebar/DEV_MODE deps submodules eunit ct dialyzer
 
+.PHONY: eunit
 eunit:
-	@$(REBAR) -C rebar.tests.config eunit skip_deps=true
+	$(REBAR) eunit skip_deps=true
 
+.PHONY: ct
 ct:
-	@$(REBAR) -C rebar.tests.config ct skip_deps=true suites=jesse_tests_draft3
+	$(REBAR) ct skip_deps=true suites=jesse_tests_draft3
 
-# Dialyzer.
+$(DEPS_PLT):
+	$(DIALYZER) --build_plt --apps $(ERLANG_DIALYZER_APPS) -r deps --output_plt $(DEPS_PLT)
 
-build-plt:
-	@$(DIALYZER) --build_plt --output_plt .$(PROJECT).plt \
-		--apps kernel stdlib sasl
-
-dialyze:
-	@$(DIALYZER) --src src --plt .$(PROJECT).plt --no_native \
-		-Werror_handling -Wrace_conditions #-Wunmatched_returns -Wunderspecs
+.PHONY: dialyzer
+dialyzer: $(DEPS_PLT)
+	$(DIALYZER) --plt $(DEPS_PLT) --src src
+#	@$(DIALYZER) --plt .$(PROJECT).plt --src src --no_native -Werror_handling -Wrace_conditions #-Wunmatched_returns -Wunderspecs
