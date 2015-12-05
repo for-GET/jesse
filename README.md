@@ -1,6 +1,4 @@
-=====
-jesse [![Build Status](https://secure.travis-ci.org/klarna/jesse.png)](http://travis-ci.org/klarna/jesse)
-=====
+# jesse [![Build Status][2]][1]
 
 jesse (JSon Schema Erlang) is an implementation of a json schema validator
 for Erlang.
@@ -252,3 +250,7 @@ Contributing
 ------------
 
 If you see something missing or incorrect, a pull request is most welcome!
+
+
+  [1]: https://travis-ci.org/for-GET/jesse
+  [2]: https://travis-ci.org/for-GET/jesse.png
