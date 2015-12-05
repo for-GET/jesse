@@ -1,6 +1,6 @@
 # jesse [![Build Status][2]][1]
 
-jesse (JSon Schema Erlang) is an implementation of a json schema validator
+jesse (JSON Schema Erlang) is an implementation of a JSON Schema validator
 for Erlang.
 
 jesse implements [Draft 03] (http://tools.ietf.org/html/draft-zyp-json-schema-03) of
@@ -9,28 +9,26 @@ the specification. It supports almost all core schema definitions except:
 * format
 * $ref
 
-Quick start
------------
+## Quick start
 
 There are two ways of using jesse:
 
 * to use jesse internal in-memory storage to keep all your schema definitions
   In this case jesse will look up a schema definition in its own storage,
-  and then validate given json.
+  and then validate given a JSON instance.
 * it is also possible to provide jesse with schema definitions when jesse is called.
 
-Examples
---------
+## Examples
 
     NOTE: jesse doesn't have any parsing functionality. It currently works with three
-          formats: mochijson2, jiffy and jsx, so json needs to be parsed in advance,
-          or you can specify a callback which jesse will use to parse json.
+          formats: mochijson2, jiffy and jsx, so JSON needs to be parsed in advance,
+          or you can specify a callback which jesse will use to parse JSON.
 
           In examples below and in jesse test suite jiffy parser is used.
 
 * Use jesse's internal in-memory storage:
 
-(parse json in advance)
+(parse JSON in advance)
 
 ```erlang
 1> Schema = jiffy:decode(<<"{\"items\": {\"type\": \"integer\"}}">>).
@@ -74,7 +72,7 @@ ok
 
 * Call jesse with schema definition in place (do not use internal storage)
 
-(parse json in advance)
+(parse JSON in advance)
 
 ```erlang
 1> Schema = jiffy:decode(<<"{\"pattern\": \"^a*$\"}">>).
@@ -108,8 +106,8 @@ ok
                       [<<"foo">>]}]}
 ```
 
-* Since 0.4.0 it's possible to say jesse to collect errors, and not stop
-  immediately when it finds an error in the given json:
+* Since 0.4.0 it's possible to instruct jesse to collect errors, and not stop
+  immediately when it finds an error in the given JSON instance:
 
 ```erlang
 1> Schema = <<"{\"properties\": {\"a\": {\"type\": \"integer\"}, \"b\": {\"type\": \"string\"}, \"c\": {\"type\": \"boolean\"}}}">>.
@@ -143,7 +141,8 @@ works as expected, but let's change the value of the field "c" as well
 ```
 
 still works as expected, jesse stops validating as soon as finds an error.
-let's use the 'allowed_errors' option, and set it to 1
+
+Let's use the `allowed_errors` option, and set it to 1
 
 ```erlang
 5> jesse:validate_with_schema(Schema,
@@ -158,8 +157,9 @@ let's use the 'allowed_errors' option, and set it to 1
                       [<<"b">>]}]}
 ```
 
-now we got a list of two errors. let's now change the value of the field "a"
-to a boolean
+now we got a list of two errors.
+
+Let's now change the value of the field "a" to a boolean
 
 ```erlang
 6> jesse:validate_with_schema(Schema,
@@ -174,8 +174,9 @@ to a boolean
                       [<<"a">>]}]}
 ```
 
-we stil got only two errors. let's try using 'infinity' as the argument
-for the 'allowed_errors' option
+we stil got only two errors.
+
+Let's try using 'infinity' as the argument for the `allowed_errors` option
 
 ```erlang
 7> jesse:validate_with_schema(Schema,
@@ -193,10 +194,9 @@ for the 'allowed_errors' option
                       [<<"a">>]}]}
 ```
 
-Json Schema versions
---------------------
+## JSON Schema versions
 
-Currently there're two drafts of Json Schema: draft3 and draft4. Currently jesse
+Currently there are two drafts of JSON Schema: draft3 and draft4. jesse
 supports only draft3, but the architecture allows to extend jesse to support
 any schema formats. To decide which validator to use jesse tries to read $schema
 property from the given schema, and checks if it's a supported one, otherwise it
@@ -209,8 +209,7 @@ the given schema), one should use 'default_schema_ver' option when call
 a binary consisting a schema path,
  i.e. <<"http://json-schema.org/draft-03/schema#">>.
 
-Validation errors
------------------
+## Validation errors
 
 The validation functions `jesse:validate/2` and `jesse:validate_with_schema/2,3`
 return `{ok, Value}` on success and `{error, ListOfErrors}` on failure. An error
@@ -218,6 +217,7 @@ is either `data_invalid` or `schema_invalid`.
 
 A `data_invalid` error is a tuple on the form `{data_invalid, Schema, ErrorType,
 Value, Path}` where
+
 * Schema is the part of the schema where validation failed
 * ErrorType is the type of error, usually an atom such as `wrong_type`,
   `not_in_range` or `no_match`
@@ -234,8 +234,8 @@ ErrorType}` where
 * ErrorType is an atom such as `missing_id_field` or a tuple such as
   `{wrong_type_dependency, Dependency}`.
 
-Caveats
--------
+## Caveats
+
 * pattern and patternProperty attributes:
 
   jesse uses standard erlang module `re` for regexp matching, therefore there could be
@@ -246,8 +246,7 @@ Caveats
 
   But most of common cases should work fine.
 
-Contributing
-------------
+## Contributing
 
 If you see something missing or incorrect, a pull request is most welcome!
 
