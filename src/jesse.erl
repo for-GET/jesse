@@ -25,7 +25,8 @@
 -module(jesse).
 
 %% API
--export([ add_schema/2
+-export([ main/1
+        , add_schema/2
         , add_schema/3
         , del_schema/1
         , load_schemas/2
@@ -42,6 +43,12 @@
 -type json_term() :: term().
 
 %%% API
+
+%% @doc Run from CLI with arguments.
+-spec main([string()]) -> ok.
+main(Args) ->
+  jesse_cli:main(Args).
+
 %% @doc Adds a schema definition `Schema' to in-memory storage associated with
 %% a key `Key'. It will overwrite an existing schema with the same key if
 %% there is any.

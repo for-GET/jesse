@@ -23,7 +23,7 @@ endif
 SRCS := $(wildcard src/* include/* rebar.config)
 
 .PHONY: all
-all: deps ebin/jesse.app
+all: deps ebin/jesse.app bin/jesse
 
 # Clean
 
@@ -71,6 +71,10 @@ docs:
 # Compile
 
 ebin/jesse.app: compile
+
+bin/jesse: ebin/jesse.app
+	$(REBAR) escriptize
+	bin/jesse --help
 
 .PHONY: compile
 compile: $(SRCS)

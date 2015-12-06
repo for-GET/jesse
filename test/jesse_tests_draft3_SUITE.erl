@@ -232,7 +232,7 @@ load_test_specs(TestsDir) ->
   FileList = filelib:wildcard(TestsDir ++ "/*.json"),
   lists:map( fun(Filename) ->
                  {ok, Bin} = file:read_file(Filename),
-                 JsonTest  = jiffy:decode(Bin),
+                 JsonTest  = jsx:decode(Bin),
                  {filename_to_key(Filename), JsonTest}
              end
            , FileList

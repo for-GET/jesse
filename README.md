@@ -11,7 +11,19 @@ the specification. It supports almost all core schema definitions except:
 * format
 * $ref
 
-## Quick start
+## Quick start - CLI
+
+You can fire up `jesse` from the CLI, with
+```bash
+bin/jesse path_to_json_schema -- path_to_json_instance [path_to_json_instance]
+```
+
+You can also output the result in JSON format, with `--json`, and beautify it e.g. with python
+```bash
+bin/jesse path_to_json_schema -- path_to_json_instance [path_to_json_instance | python -m json.tool
+```
+
+## Quick start - Erlang
 
 There are two ways of using jesse:
 
