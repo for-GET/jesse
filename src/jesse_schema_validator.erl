@@ -54,7 +54,7 @@
 -define(DISALLOW,             <<"disallow">>).
 -define(EXTENDS,              <<"extends">>).
 -define(ID,                   <<"id">>).
--define(_REF,                 <<"$ref">>).                 % NOT IMPLEMENTED YET
+-define(REF,                  <<"$ref">>).                 % ONLY LOCAL
 
 %% Constant definitions for Json types
 -define(ANY,                  <<"any">>).
@@ -65,6 +65,7 @@
 -define(NUMBER,               <<"number">>).
 -define(OBJECT,               <<"object">>).
 -define(STRING,               <<"string">>).
+-define(SEPARATOR,            <<"/">>).
 
 %%
 -define(data_invalid,                'data_invalid').
@@ -73,6 +74,7 @@
 -define(missing_id_field,            'missing_id_field').
 -define(missing_required_property,   'missing_required_property').
 -define(missing_dependency,          'missing_dependency').
+-define(missing_ref_path,            'missing_ref_path').
 -define(no_match,                    'no_match').
 -define(no_extra_properties_allowed, 'no_extra_properties_allowed').
 -define(no_extra_items_allowed,      'no_extra_items_allowed').
@@ -165,6 +167,14 @@ check_value(Property, Value, Attrs, State) ->
 %% @doc Goes through attributes of the given schema `JsonSchema' and
 %% validates the value `Value' against them.
 %% @private
+check_value(Value, [{?REF, Ref} | Attrs], State) ->
+  State1 = check_value(Value, Attrs, State),
+  case resolve_ref(Ref, State1) of
+    {NewAttrs, NewState} -> check_value(Value, NewAttrs, NewState);
+    no_such_ref          -> handle_data_invalid(?missing_ref_path
+                                               , binary:bin_to_list(Ref)
+                                               , State)
+  end;
 check_value(Value, [{?TYPE, Type} | Attrs], State) ->
   NewState = check_type(Value, Type, State),
   check_value(Value, Attrs, NewState);
@@ -318,6 +328,56 @@ check_value(_Value, [], State) ->
   State;
 check_value(Value, [_Attr | Attrs], State) ->
   check_value(Value, Attrs, State).
+
+
+%% @doc Resolve local references, changing the state of the automata to the
+%% right path in the schema. It supports recursive definitions and references to
+%% array elements.
+%% @private
+resolve_ref(RefPath, State) ->
+  OriginalSchema = State#state.original_schema,
+  Tokens = binary:split(RefPath, ?SEPARATOR, [global]),
+  DecodedTokens = lists:map(fun(T) -> decode_path_element(T) end, Tokens),
+  resolve_ref(DecodedTokens, OriginalSchema, State).
+
+%% @private
+resolve_ref([<<"#">> | Rest], Schema, State) ->
+  resolve_ref(Rest, Schema, State);
+resolve_ref([CurrentItem | Rest], Schema, State) ->
+  CurrentAttrs = unwrap(Schema),
+  CurrentSchema = proplists:get_value(CurrentItem, CurrentAttrs),
+  case {CurrentItem, CurrentSchema} of
+    {_, undefined} -> no_such_ref;
+    {?ITEMS, _}    -> resolve_array_ref(Rest, CurrentSchema, State);
+    {_, _}         -> resolve_ref(Rest, CurrentSchema, State)
+  end;
+resolve_ref([], Schema, State) ->
+  {unwrap(Schema), set_current_schema(State, Schema)}.
+
+%% @private
+resolve_array_ref([Item | Rest], Attrs, State) ->
+  try
+    Index = binary_to_integer(Item),
+    CurrentSchema = lists:nth(Index + 1, Attrs),
+    resolve_ref(Rest, CurrentSchema, State)
+  catch
+    % maybe Item is not an integer
+    error:badarg          -> no_such_ref;
+    % maybe it happens to be an integer and there's not such index in the list
+    error:function_clause -> no_such_ref
+  end;
+resolve_array_ref([], Attrs, State) ->
+  resolve_ref([], Attrs, State).
+
+%% @doc Decodes a $ref URI token. Replacen the ~0 and ~1 according to RFC 6901,
+%% run URI decode, then go back to binary.
+%% @private
+decode_path_element(Token) ->
+  String = binary:bin_to_list(Token),
+  String1 = http_uri:decode(String),
+  String2 = re:replace(String1, "~0", "~", [global,{return,list}]),
+  String3 = re:replace(String2, "~1", "/", [global,{return,list}]),
+  binary:list_to_bin(String3).
 
 %% @doc 5.1.  type
 %%
