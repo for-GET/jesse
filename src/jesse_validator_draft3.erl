@@ -186,6 +186,9 @@ check_value(Value, [{?DISALLOW, Disallow} | Attrs], State) ->
 check_value(Value, [{?EXTENDS, Extends} | Attrs], State) ->
   NewState = check_extends(Value, Extends, State),
   check_value(Value, Attrs, NewState);
+check_value(Value, [{?REF, RefSchemaURI} | Attrs], State) ->
+  NewState = check_ref(Value, RefSchemaURI, State),
+  check_value(Value, Attrs, NewState);
 check_value(_Value, [], State) ->
   State;
 check_value(Value, [_Attr | Attrs], State) ->
@@ -201,6 +204,65 @@ check_value(Property, Value, Attrs, State) ->
   State2 = jesse_schema_validator:validate_with_state(Attrs, Value, State1),
   %% Reset path again
   jesse_state:remove_last_from_path(State2).
+
+
+%% @private
+check_ref(Value, <<"#", LocalPath/binary>> = RefSchemaURI, State) ->
+  Keys = binary:split(LocalPath, <<"/">>, ['global']),
+  DecodedKeys = lists:map(fun(T) -> decode_path_element(T) end, Keys),
+  OriginalSchema = jesse_state:get_original_schema(State),
+
+  case local_schema(OriginalSchema, DecodedKeys) of
+    ?not_found -> handle_schema_invalid({no_such_ref, RefSchemaURI}, State);
+    LocalSchema -> check_ref_schema(Value, LocalSchema, State)
+  end;
+check_ref(Value, RefSchemaURI, State) ->
+  case jesse_state:find_schema(State, RefSchemaURI) of
+    ?not_found -> handle_schema_invalid({no_such_schema, RefSchemaURI}, State);
+    RefSchema -> check_ref_schema(Value, RefSchema, State)
+  end.
+
+%% @private
+check_ref_schema(Value, RefSchema, State) ->
+  TmpState = check_value(Value
+                        , unwrap(RefSchema)
+                        , set_current_schema(State, RefSchema)),
+  set_current_schema(TmpState, get_current_schema(State)).
+
+local_schema(Schema, []) -> Schema;
+local_schema(Schema, [<<>> | Keys]) -> local_schema(Schema, Keys);
+local_schema(Schema, [Key | Keys]) ->
+  SubSchema = get_value(Key, Schema),
+  case {Key, jesse_lib:is_json_object(SubSchema)} of
+    {?ITEMS, _} -> local_schema_array(SubSchema, Keys);
+    {_, true}   -> local_schema(SubSchema, Keys);
+    {_, false}  -> ?not_found
+  end.
+
+local_schema_array(Schema, [Key | Keys]) ->
+  try
+    Index = binary_to_integer(Key),
+    SubSchema = lists:nth(Index + 1, Schema),
+    local_schema(SubSchema, Keys)
+  catch
+    % maybe Item is not an integer
+    error:badarg          -> ?not_found;
+    % maybe it happens to be an integer and there's not such index in the list
+    error:function_clause -> ?not_found
+  end;
+local_schema_array(Schema, []) ->
+  Schema.
+
+%% @doc Decodes a $ref URI token. Replacen the ~0 and ~1 according to RFC 6901,
+%% run URI decode, then go back to binary.
+%% @private
+decode_path_element(Token) ->
+  String = binary:bin_to_list(Token),
+  String1 = http_uri:decode(String),
+  String2 = re:replace(String1, "~0", "\~", [global,{return,list}]),
+  String3 = re:replace(String2, "~1", "/", [global,{return,list}]),
+  binary:list_to_bin(String3).
+
 
 %% @doc 5.1.  type
 %%

@@ -47,7 +47,7 @@
 -define(DISALLOW,             <<"disallow">>).
 -define(EXTENDS,              <<"extends">>).
 -define(ID,                   <<"id">>).
--define(_REF,                 <<"$ref">>).                 % NOT IMPLEMENTED YET
+-define(REF,                  <<"$ref">>).
 
 %% Constant definitions for Json types
 -define(ANY,                  <<"any">>).
@@ -58,6 +58,7 @@
 -define(NUMBER,               <<"number">>).
 -define(OBJECT,               <<"object">>).
 -define(STRING,               <<"string">>).
+-define(SEPARATOR,            <<"/">>).
 
 %% Supported $schema attributes
 -define(default_schema_ver, <<"http://json-schema.org/draft-03/schema#">>).
@@ -70,6 +71,7 @@
 -define(missing_id_field,            'missing_id_field').
 -define(missing_required_property,   'missing_required_property').
 -define(missing_dependency,          'missing_dependency').
+-define(missing_ref_path,            'missing_ref_path').
 -define(no_match,                    'no_match').
 -define(no_extra_properties_allowed, 'no_extra_properties_allowed').
 -define(no_extra_items_allowed,      'no_extra_items_allowed').
