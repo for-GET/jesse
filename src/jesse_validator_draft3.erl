@@ -234,9 +234,9 @@ local_schema(Schema, [<<>> | Keys]) -> local_schema(Schema, Keys);
 local_schema(Schema, [Key | Keys]) ->
   SubSchema = get_value(Key, Schema),
   case {Key, jesse_lib:is_json_object(SubSchema)} of
-    {?ITEMS, true} -> local_schema_array(Keys, SubSchema);
-    {_, true}      -> local_schema(SubSchema, Keys);
-    {_, false}     -> ?not_found
+    {?ITEMS, _} -> local_schema_array(SubSchema, Keys);
+    {_, true}   -> local_schema(SubSchema, Keys);
+    {_, false}  -> ?not_found
   end.
 
 local_schema_array(Schema, [Key | Keys]) ->
