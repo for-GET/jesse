@@ -375,8 +375,8 @@ resolve_array_ref([], Attrs, State) ->
 decode_path_element(Token) ->
   String = binary:bin_to_list(Token),
   String1 = http_uri:decode(String),
-  String2 = re:replace(String1, "~0", "~", [global,{return,list}]),
-  String3 = re:replace(String2, "~1", "/", [global,{return,list}]),
+  String2 = re:replace(String1, "\~0", "\~", [global,{return,list}]),
+  String3 = re:replace(String2, "\~1", "/", [global,{return,list}]),
   binary:list_to_bin(String3).
 
 %% @doc 5.1.  type

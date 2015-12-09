@@ -9,7 +9,7 @@ jesse implements [Draft 03] (http://tools.ietf.org/html/draft-zyp-json-schema-03
 the specification. It supports almost all core schema definitions except:
 
 * format
-* $ref
+* $ref (but local references are supported)
 
 Quick start
 -----------
