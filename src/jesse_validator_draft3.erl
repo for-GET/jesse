@@ -186,14 +186,9 @@ check_value(Value, [{?DISALLOW, Disallow} | Attrs], State) ->
 check_value(Value, [{?EXTENDS, Extends} | Attrs], State) ->
   NewState = check_extends(Value, Extends, State),
   check_value(Value, Attrs, NewState);
-check_value(Value, [{?REF, Ref} | Attrs], State) ->
-  State1 = check_value(Value, Attrs, State),
-  case resolve_ref(Ref, State1) of
-    {NewAttrs, NewState} -> check_value(Value, NewAttrs, NewState);
-    no_such_ref          -> handle_data_invalid(?missing_ref_path
-                                               , binary:bin_to_list(Ref)
-                                               , State)
-  end;
+check_value(Value, [{?REF, RefSchemaURI} | Attrs], State) ->
+  NewState = check_ref(Value, RefSchemaURI, State),
+  check_value(Value, Attrs, NewState);
 check_value(_Value, [], State) ->
   State;
 check_value(Value, [_Attr | Attrs], State) ->
@@ -211,45 +206,52 @@ check_value(Property, Value, Attrs, State) ->
   jesse_state:remove_last_from_path(State2).
 
 
-
-%% @doc Resolve local references, changing the state of the automata to the
-%% right path in the schema. It supports recursive definitions and references to
-%% array elements.
 %% @private
-resolve_ref(RefPath, State) ->
+check_ref(Value, <<"#", LocalPath/binary>> = RefSchemaURI, State) ->
+  Keys = binary:split(LocalPath, <<"/">>, ['global']),
+  DecodedKeys = lists:map(fun(T) -> decode_path_element(T) end, Keys),
   OriginalSchema = jesse_state:get_original_schema(State),
-  Tokens = binary:split(RefPath, ?SEPARATOR, [global]),
-  DecodedTokens = lists:map(fun(T) -> decode_path_element(T) end, Tokens),
-  resolve_ref(DecodedTokens, OriginalSchema, State).
 
-%% @private
-resolve_ref([<<"#">> | Rest], Schema, State) ->
-  resolve_ref(Rest, Schema, State);
-resolve_ref([CurrentItem | Rest], Schema, State) ->
-  CurrentAttrs = unwrap(Schema),
-  CurrentSchema = proplists:get_value(CurrentItem, CurrentAttrs),
-  case {CurrentItem, CurrentSchema} of
-    {_, undefined} -> no_such_ref;
-    {?ITEMS, _}    -> resolve_array_ref(Rest, CurrentSchema, State);
-    {_, _}         -> resolve_ref(Rest, CurrentSchema, State)
+  case local_schema(OriginalSchema, DecodedKeys) of
+    ?not_found -> handle_schema_invalid({no_such_ref, RefSchemaURI}, State);
+    LocalSchema -> check_ref_schema(Value, LocalSchema, State)
   end;
-resolve_ref([], Schema, State) ->
-  {unwrap(Schema), set_current_schema(State, Schema)}.
+check_ref(Value, RefSchemaURI, State) ->
+  case jesse_state:find_schema(State, RefSchemaURI) of
+    ?not_found -> handle_schema_invalid({no_such_schema, RefSchemaURI}, State);
+    RefSchema -> check_ref_schema(Value, RefSchema, State)
+  end.
 
 %% @private
-resolve_array_ref([Item | Rest], Attrs, State) ->
+check_ref_schema(Value, RefSchema, State) ->
+  TmpState = check_value(Value
+                        , unwrap(RefSchema)
+                        , set_current_schema(State, RefSchema)),
+  set_current_schema(TmpState, get_current_schema(State)).
+
+local_schema(Schema, []) -> Schema;
+local_schema(Schema, [<<>> | Keys]) -> local_schema(Schema, Keys);
+local_schema(Schema, [Key | Keys]) ->
+  SubSchema = get_value(Key, Schema),
+  case {Key, jesse_lib:is_json_object(SubSchema)} of
+    {?ITEMS, true} -> local_schema_array(Keys, SubSchema);
+    {_, true}      -> local_schema(SubSchema, Keys);
+    {_, false}     -> ?not_found
+  end.
+
+local_schema_array(Schema, [Key | Keys]) ->
   try
-    Index = binary_to_integer(Item),
-    CurrentSchema = lists:nth(Index + 1, Attrs),
-    resolve_ref(Rest, CurrentSchema, State)
+    Index = binary_to_integer(Key),
+    SubSchema = lists:nth(Index + 1, Schema),
+    local_schema(SubSchema, Keys)
   catch
     % maybe Item is not an integer
-    error:badarg          -> no_such_ref;
+    error:badarg          -> ?not_found;
     % maybe it happens to be an integer and there's not such index in the list
-    error:function_clause -> no_such_ref
+    error:function_clause -> ?not_found
   end;
-resolve_array_ref([], Attrs, State) ->
-  resolve_ref([], Attrs, State).
+local_schema_array(Schema, []) ->
+  Schema.
 
 %% @doc Decodes a $ref URI token. Replacen the ~0 and ~1 according to RFC 6901,
 %% run URI decode, then go back to binary.
@@ -921,35 +923,6 @@ check_extends_array(Value, Extends, State) ->
              , State
              , Extends
              ).
-
-%% @private
-% check_ref(Value, <<"#", LocalPath/binary>> = RefSchemaURI, State) ->
-%   Keys = binary:split(LocalPath, <<"/">>, ['global']),
-%   OriginalSchema = jesse_state:get_original_schema(State),
-
-%   case local_schema(OriginalSchema, Keys) of
-%     ?not_found -> handle_schema_invalid({'schema_unsupported', RefSchemaURI}, State);
-%     LocalSchema -> check_ref_schema(Value, LocalSchema, State)
-%   end;
-% check_ref(Value, RefSchemaURI, State) ->
-%   case jesse_state:find_schema(State, RefSchemaURI) of
-%     ?not_found -> handle_schema_invalid({'schema_unsupported', RefSchemaURI}, State);
-%     RefSchema -> check_ref_schema(Value, RefSchema, State)
-%   end.
-
-% %% @private
-% check_ref_schema(Value, RefSchema, State) ->
-%   TmpState = check_value(Value, unwrap(RefSchema), set_current_schema(State, RefSchema)),
-%   set_current_schema(TmpState, get_current_schema(State)).
-
-% local_schema(Schema, []) -> Schema;
-% local_schema(Schema, [<<>> | Keys]) -> local_schema(Schema, Keys);
-% local_schema(Schema, [Key | Keys]) ->
-%   SubSchema = get_value(Key, Schema),
-%   case jesse_lib:is_json_object(SubSchema) of
-%     true -> local_schema(SubSchema, Keys);
-%     false -> ?not_found
-%   end.
 
 %%=============================================================================
 %% @doc Returns `true' if given values (instance) are equal, otherwise `false'
