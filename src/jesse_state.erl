@@ -46,7 +46,7 @@
 %% Includes
 -include("jesse_schema_validator.hrl").
 
--define(schema_loader_fun, fun jesse_database:read/1).
+-define(SCHEMA_LOADER_FUN, fun jesse_database:read/1).
 
 %% Internal datastructures
 -record( state
@@ -57,7 +57,9 @@
          , error_list         :: list()
          , error_handler      :: fun((#state{}) -> list() | no_return())
          , default_schema_ver :: atom()
-         , schema_loader_fun  :: fun((binary()) -> {ok, jesse:json_term()} | jesse:json_term() | ?not_found)
+         , schema_loader_fun  :: fun((binary()) -> {ok, jesse:json_term()} |
+                                                   jesse:json_term() |
+                                                   ?not_found)
          }
        ).
 
@@ -126,7 +128,7 @@ new(JsonSchema, Options) ->
                                         ),
   LoaderFun = proplists:get_value( schema_loader_fun
                                  , Options
-                                 , ?schema_loader_fun
+                                 , ?SCHEMA_LOADER_FUN
                                  ),
   #state{ current_schema     = JsonSchema
         , current_path       = []
@@ -163,7 +165,8 @@ set_error_list(State, ErrorList) ->
   State#state{error_list = ErrorList}.
 
 %% @doc Find a schema based on URI
--spec find_schema(State :: state(), SchemaURI :: binary()) -> jesse:json_term() | ?not_found.
+-spec find_schema(State :: state(), SchemaURI :: binary()) ->
+  jesse:json_term() | ?not_found.
 find_schema(#state{schema_loader_fun=LoaderFun}, SchemaURI) ->
   try LoaderFun(SchemaURI) of
       {ok, Schema} -> Schema;
