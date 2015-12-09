@@ -58,8 +58,7 @@ validate_with_state(JsonSchema, Value, State) ->
   select_and_run_validator(SchemaVer, JsonSchema, Value, State).
 
 %%% Internal functions
-%% @doc Returns "$schema" property from `JsonSchema' if it is present,
-%% otherwise the default schema version from `State' is returned.
+
 %% @private
 get_schema_ver(JsonSchema, State) ->
   case jesse_json_path:value(?_SCHEMA, JsonSchema, ?not_found) of
