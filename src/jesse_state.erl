@@ -263,7 +263,3 @@ find_schema(#state{schema_loader_fun=LoaderFun}, SchemaURI) ->
   catch
     _:_ -> ?not_found
   end.
-
-%%% Local Variables:
-%%% erlang-indent-level: 2
-%%% End:

@@ -225,7 +225,3 @@ is_outdated(InFile, SecondaryKey) ->
 %% value.
 %% @private
 table_name() -> ?JESSE_ETS.
-
-%%% Local Variables:
-%%% erlang-indent-level: 2
-%%% End:

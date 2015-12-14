@@ -113,7 +113,3 @@
 
 %%
 -define(not_found, not_found).
-
-%%% Local Variables:
-%%% erlang-indent-level: 2
-%%% End:

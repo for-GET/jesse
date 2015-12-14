@@ -971,7 +971,3 @@ add_to_path(State, Property) ->
 %% @private
 remove_last_from_path(State) ->
   jesse_state:remove_last_from_path(State).
-
-%%% Local Variables:
-%%% erlang-indent-level: 2
-%%% End:

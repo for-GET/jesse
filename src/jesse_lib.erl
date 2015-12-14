@@ -77,7 +77,3 @@ is_json_object(_)                                   -> false.
 -spec is_null(Value :: any()) -> boolean().
 is_null(null)   -> true;
 is_null(_Value) -> false.
-
-%%% Local Variables:
-%%% erlang-indent-level: 2
-%%% End:

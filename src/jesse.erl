@@ -198,7 +198,3 @@ try_parse(Type, ParserFun, JsonBin) ->
         schema -> throw({schema_error, {parse_error, Error}})
       end
   end.
-
-%%% Local Variables:
-%%% erlang-indent-level: 2
-%%% End:

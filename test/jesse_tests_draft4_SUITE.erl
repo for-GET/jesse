@@ -215,7 +215,3 @@ load_schema(URI) ->
   {ok, Response} = httpc:request(get, {URI, []}, [], [{body_format, binary}]),
   {{_Line, 200, _}, _Headers, Body} = Response,
   jsx:decode(Body).
-
-%%% Local Variables:
-%%% erlang-indent-level: 2
-%%% End:

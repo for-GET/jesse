@@ -190,7 +190,3 @@ schema_unsupported_test() ->
                  {schema_unsupported, <<"http://json-schema.org/draft-05/schema#">>}}]
               , jesse_schema_validator:validate(UnsupportedSchema, Json, [])
               ).
-
-%%% Local Variables:
-%%% erlang-indent-level: 2
-%%% End:
