@@ -106,4 +106,4 @@ $(DEPS_PLT):
 
 .PHONY: dialyzer
 dialyzer: $(DEPS_PLT)
-	$(DIALYZER) --plt $(DEPS_PLT) --src src
+	$(DIALYZER) --plt $(DEPS_PLT) --src src -Wno_return
