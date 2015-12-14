@@ -11,4 +11,5 @@
 /ebin
 /erl_crash.dump
 /logs
+/test/*.beam
 .#*
