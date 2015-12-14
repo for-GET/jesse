@@ -29,6 +29,7 @@
         ]).
 
 -export_type([ error/0
+             , error_reason/0
              ]).
 
 -type error() :: {error, [error_reason()]}.
@@ -44,24 +45,9 @@
                         , Path   :: [binary()]
                         }.
 
--type error_type() :: {'missing_id_field', binary()}
-                    | {'missing_required_property', binary()}
-                    | {'missing_dependency', binary()}
-                    | 'no_match'
-                    | 'no_extra_properties_allowed'
-                    | 'no_extra_items_allowed'
-                    | 'not_enought_items'
-                    | 'not_allowed'
-                    | {'not_unique', jesse:json_term()}
-                    | 'not_in_range'
-                    | 'not_divisible'
-                    | 'wrong_type'
-                    | {'wrong_type_items', jesse:json_term()}
-                    | {'wrong_type_dependency', jesse:json_term()}
-                    | 'wrong_size'
-                    | 'wrong_length'
-                    | 'wrong_format'
-                    | {'schema_unsupported', binary()}.
+-type error_type() :: atom()
+                    | {atom(), jesse:json_term()}
+                    | {atom(), binary()}.
 
 %% Includes
 -include("jesse_schema_validator.hrl").
@@ -94,7 +80,7 @@ handle_data_invalid(Info, Value, State) ->
   handle_error(Error, State).
 
 %% @doc Generates a new schema error and returns the updated state.
--spec handle_schema_invalid( Info  :: error_type()
+-spec handle_schema_invalid( Info  :: schema_invalid | error_type()
                            , State :: jesse_state:state()
                            ) -> jesse_state:state().
 handle_schema_invalid(Info, State) ->

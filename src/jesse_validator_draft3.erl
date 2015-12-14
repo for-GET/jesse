@@ -848,7 +848,7 @@ check_disallow(Value, Disallow, State) ->
 check_extends(Value, Extends, State) ->
   case jesse_lib:is_json_object(Extends) of
     true  ->
-      check_value(extends, Value, Extends, set_current_schema(State, Extends));
+      check_value(Value, Extends, set_current_schema(State, Extends));
     false ->
       case is_list(Extends) of
         true  -> check_extends_array(Value, Extends, State);

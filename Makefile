@@ -6,7 +6,8 @@ DEPS_PLT := $(CURDIR)/.deps_plt
 
 ERLANG_DIALYZER_APPS := erts \
 					    kernel \
-					    stdlib
+						stdlib \
+						inets
 
 DIALYZER := dialyzer
 

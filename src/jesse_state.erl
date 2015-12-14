@@ -52,11 +52,14 @@
 -record( state
        , { root_schema        :: jesse:json_term()
          , current_schema     :: jesse:json_term()
-         , current_path       :: [binary()] %% current path in reversed order
+         , current_path       :: [binary() | non_neg_integer()] %% current path in reversed order
          , allowed_errors     :: non_neg_integer() | 'infinity'
          , error_list         :: list()
-         , error_handler      :: fun((#state{}) -> list() | no_return())
-         , default_schema_ver :: atom()
+         , error_handler      :: fun(( jesse_error:error_reason()
+                                     , [jesse_error:error_reason()]
+                                     , non_neg_integer()
+                                     ) -> list() | no_return())
+         , default_schema_ver :: binary()
          , schema_loader_fun  :: fun((binary()) -> {ok, jesse:json_term()} | jesse:json_term() | ?not_found)
          , id                 :: binary()
          }
@@ -66,7 +69,7 @@
 
 %%% API
 %% @doc Adds `Property' to the `current_path' in `State'.
--spec add_to_path(State :: state(), Property :: binary()) -> state().
+-spec add_to_path(State :: state(), Property :: binary() | non_neg_integer()) -> state().
 add_to_path(State, Property) ->
   CurrentPath = State#state.current_path,
   State#state{current_path = [Property | CurrentPath]}.
@@ -77,7 +80,7 @@ get_allowed_errors(#state{allowed_errors = AllowedErrors}) ->
   AllowedErrors.
 
 %% @doc Getter for `current_path'.
--spec get_current_path(State :: state()) -> [binary()].
+-spec get_current_path(State :: state()) -> [binary() | non_neg_integer()].
 get_current_path(#state{current_path = CurrentPath}) ->
   CurrentPath.
 
@@ -92,8 +95,10 @@ get_default_schema_ver(#state{default_schema_ver = SchemaVer}) ->
   SchemaVer.
 
 %% @doc Getter for `error_handler'.
--spec get_error_handler(State :: state()) ->
-                           fun((#state{}) -> list() | no_return()).
+-spec get_error_handler(State :: state()) -> fun(( jesse_error:error_reason()
+                                                 , [jesse_error:error_reason()]
+                                                 , non_neg_integer()
+                                                 ) -> list() | no_return()).
 get_error_handler(#state{error_handler = ErrorHandler}) ->
   ErrorHandler.
 
