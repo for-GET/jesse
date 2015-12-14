@@ -200,7 +200,7 @@ check_value(Value, [_Attr | Attrs], State) ->
 %% @private
 check_value(Property, Value, Attrs, State) ->
   %% Add Property to path
-  State1 = jesse_state:add_to_path(State, Property),
+  State1 = add_to_path(State, Property),
   State2 = jesse_schema_validator:validate_with_state(Attrs, Value, State1),
   %% Reset path again
   jesse_state:remove_last_from_path(State2).
