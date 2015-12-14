@@ -22,40 +22,23 @@
 
 -module(jesse_tests_draft3_SUITE).
 
--export([ all/0
-        , init_per_suite/1
-        , end_per_suite/1
-        ]).
+-compile([ export_all
+         ]).
 
--export([ additionalItems/1
-        , additionalProperties/1
-        , dependencies/1
-        , default/1
-        , disallow/1
-        , divisibleBy/1
-        , enum/1
-        , extends/1
-        , items/1
-        , maximum/1
-        , maxItems/1
-        , maxLength/1
-        , minimum/1
-        , minItems/1
-        , minLength/1
-        , pattern/1
-        , patternProperties/1
-        , properties/1
-        , ref/1
-        , refRemote/1
-        , required/1
-        , type/1
-        , uniqueItems/1
-        ]).
+-define(EXCLUDED_FUNS, [ module_info
+                       , all
+                       , init_per_suite
+                       , end_per_suite
+                       , do_test
+                       , run_tests
+                       , run_test_set
+                       , load_test_specs
+                       , filename_to_key
+                       , get_path
+                       , load_schema
+                       ]).
 
 -include_lib("common_test/include/ct.hrl").
-
--define(TESTS_DIR, "JSON-Schema-Test-Suite/tests/draft3").
--define(json_schema_draft3, <<"http://json-schema.org/draft-03/schema#">>).
 
 %% JSON-Schema-Test-Suite attributes definitions
 -define(DATA,        <<"data">>).
@@ -65,30 +48,8 @@
 -define(VALID,       <<"valid">>).
 
 all() ->
-  [ additionalItems
-  , additionalProperties
-  , default
-  , dependencies
-  , disallow
-  , divisibleBy
-  , enum
-  , extends
-  , items
-  , maximum
-  , maxItems
-  , maxLength
-  , minimum
-  , minItems
-  , minLength
-  , pattern
-  , patternProperties
-  , properties
-  , ref
-  , refRemote
-  , required
-  , type
-  , uniqueItems
-  ].
+  Exports = ?MODULE:module_info(exports),
+  [F || {F, _} <- Exports, not lists:member(F, ?EXCLUDED_FUNS)].
 
 init_per_suite(Config) ->
   inets:start(),
@@ -98,6 +59,7 @@ end_per_suite(_Config) ->
   inets:stop().
 
 %%% Testcases
+
 additionalItems(Config) ->
   do_test("additionalItems", Config).
 
@@ -173,6 +135,7 @@ uniqueItems(Config) ->
   do_test("uniqueItems", Config).
 
 %%% Internal functions
+
 do_test(Key, Config) ->
   run_tests(?config(Key, Config)).
 
@@ -181,7 +144,10 @@ run_tests(Specs) ->
                      Description = get_path(?DESCRIPTION, Spec),
                      Schema      = get_path(?SCHEMA, Spec),
                      TestSet     = get_path(?TESTS, Spec),
-                     ct:pal("** Test set: ~s~n", [Description]),
+                     ct:pal( "** Test set: ~s~n"
+                             "** Schema: ~p~n"
+                           , [Description, Schema]
+                           ),
                      run_test_set(Schema, TestSet)
                  end
                , Specs
@@ -192,24 +158,30 @@ run_test_set(Schema, TestSet) ->
                      Description = get_path(?DESCRIPTION, Test),
                      TestData    = get_path(?DATA, Test),
                      ct:pal("* Test case: ~s~n", [Description]),
-                     Opts = [{schema_loader_fun, fun load_schema/1}],
+                     Opts = [ { default_schema_ver
+                              , <<"http://json-schema.org/draft-03/schema#">>
+                              }
+                            , {schema_loader_fun, fun load_schema/1}
+                            ],
                      try jesse:validate_with_schema(Schema, TestData, Opts) of
                          Result ->
-                             ct:pal("Result: ~p~n", [Result]),
-                             case get_path(?VALID, Test) of
-                                 true  -> {ok, TestData} = Result;
-                                 false -> {error, _} = Result
-                             end
+                         ct:pal("Result: ~p~n", [Result]),
+                         case get_path(?VALID, Test) of
+                           true  -> {ok, TestData} = Result;
+                           false -> {error, _} = Result
+                         end
                      catch C:E ->
-                               ct:pal("Error: ~p:~p~nStacktrace: ~p~n",
-                                      [C, E, erlang:get_stacktrace()])
+                         ct:pal("Error: ~p:~p~nStacktrace: ~p~n",
+                                [C, E, erlang:get_stacktrace()])
                      end
                  end
                , TestSet
                ).
 
 load_test_specs() ->
-  TestsDir = filename:join(os:getenv("TEST_DIR"), ?TESTS_DIR),
+  TestsDir = filename:join( os:getenv("TEST_DIR")
+                          , "JSON-Schema-Test-Suite/tests/draft3"
+                          ),
   FileList = filelib:wildcard(TestsDir ++ "/*.json"),
   lists:map( fun(Filename) ->
                  {ok, Bin} = file:read_file(Filename),
@@ -228,7 +200,7 @@ get_path(Key, Schema) ->
 load_schema(URI) ->
   {ok, Response} = httpc:request(get, {URI, []}, [], [{body_format, binary}]),
   {{_Line, 200, _}, _Headers, Body} = Response,
-  jiffy:decode(Body).
+  jsx:decode(Body).
 
 %%% Local Variables:
 %%% erlang-indent-level: 2
