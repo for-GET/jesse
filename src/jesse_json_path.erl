@@ -6,12 +6,12 @@
 -module(jesse_json_path).
 -export([parse/1, path/2, path/3, value/3, to_proplist/1, unwrap_value/1]).
 
--ifdef(namespaced_dicts).
--type kvc_dict() :: dict:dict().
--type kvc_gb_tree() :: gb_trees:tree().
--else.
+-ifdef(erlang_deprecated_types).
 -type kvc_dict() :: dict().
 -type kvc_gb_tree() :: gb_tree().
+-else.
+-type kvc_dict() :: dict:dict().
+-type kvc_gb_tree() :: gb_trees:tree().
 -endif.
 
 -type elem_key_type() :: atom | binary | string | undefined.
