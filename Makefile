@@ -99,7 +99,7 @@ eunit:
 
 .PHONY: ct
 ct:
-	$(REBAR) ct skip_deps=true suites=jesse_tests_draft3
+	$(REBAR) ct skip_deps=true suites="jesse_tests_draft3,jesse_tests_draft4"
 
 $(DEPS_PLT):
 	$(DIALYZER) --build_plt --apps $(ERLANG_DIALYZER_APPS) -r deps --output_plt $(DEPS_PLT)
