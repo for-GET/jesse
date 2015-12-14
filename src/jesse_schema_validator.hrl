@@ -22,7 +22,7 @@
 %%%=============================================================================
 
 %% Constant definitions for Json schema keywords
--define(_SCHEMA,              <<"$schema">>).
+-define(SCHEMA,               <<"$schema">>).
 -define(TYPE,                 <<"type">>).
 -define(PROPERTIES,           <<"properties">>).
 -define(PATTERNPROPERTIES,    <<"patternProperties">>).
@@ -47,7 +47,7 @@
 -define(DISALLOW,             <<"disallow">>).
 -define(EXTENDS,              <<"extends">>).
 -define(ID,                   <<"id">>).
--define(_REF,                 <<"$ref">>).
+-define(REF,                  <<"$ref">>).
 -define(ALLOF,                <<"allOf">>).
 -define(ANYOF,                <<"anyOf">>).
 -define(ONEOF,                <<"oneOf">>).

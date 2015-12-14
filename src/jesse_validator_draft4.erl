@@ -205,7 +205,7 @@ check_value(Value, [{?ONEOF, Schemas} | Attrs], State) ->
 check_value(Value, [{?NOT, Schema} | Attrs], State) ->
     NewState = check_not(Value, Schema, State),
     check_value(Value, Attrs, NewState);
-check_value(Value, [{?_REF, Reference} | Attrs], State) ->
+check_value(Value, [{?REF, Reference} | Attrs], State) ->
     NewState = resolve_ref(Value, Reference, State),
     check_value(Value, Attrs, NewState);
 check_value(_Value, [], State) ->

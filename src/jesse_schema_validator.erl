@@ -62,7 +62,7 @@ validate_with_state(JsonSchema, Value, State) ->
 %% otherwise the default schema version from `State' is returned.
 %% @private
 get_schema_ver(JsonSchema, State) ->
-  case jesse_json_path:value(?_SCHEMA, JsonSchema, ?not_found) of
+  case jesse_json_path:value(?SCHEMA, JsonSchema, ?not_found) of
     ?not_found -> jesse_state:get_default_schema_ver(State);
     SchemaVer  -> SchemaVer
   end.

@@ -186,7 +186,7 @@ check_value(Value, [{?DISALLOW, Disallow} | Attrs], State) ->
 check_value(Value, [{?EXTENDS, Extends} | Attrs], State) ->
   NewState = check_extends(Value, Extends, State),
   check_value(Value, Attrs, NewState);
-check_value(Value, [{?_REF, RefSchemaURI} | Attrs], State) ->
+check_value(Value, [{?REF, RefSchemaURI} | Attrs], State) ->
   NewState = check_ref(Value, RefSchemaURI, State),
   check_value(Value, Attrs, NewState);
 check_value(_Value, [], State) ->
