@@ -107,4 +107,3 @@ $(DEPS_PLT):
 .PHONY: dialyzer
 dialyzer: $(DEPS_PLT)
 	$(DIALYZER) --plt $(DEPS_PLT) --src src
-#	@$(DIALYZER) --plt .$(PROJECT).plt --src src --no_native -Werror_handling -Wrace_conditions #-Wunmatched_returns -Wunderspecs
