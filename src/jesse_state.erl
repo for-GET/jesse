@@ -217,7 +217,8 @@ local_schema(Schema, [Key | Keys]) ->
     false ->
       case jesse_lib:is_array(Schema) of
         true ->
-          try binary_to_integer(Key) of
+          %% avoiding binary_to_integer to maintain R15 compatibility
+          try list_to_integer(binary_to_list(Key)) of
             Index ->
               SubSchema = lists:nth(Index + 1, Schema),
               local_schema(SubSchema, Keys)
