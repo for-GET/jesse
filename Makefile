@@ -2,6 +2,8 @@
 
 REBAR ?= $(shell command -v rebar >/dev/null 2>&1 && echo "rebar" || echo "$(CURDIR)/rebar")
 
+ELVIS ?= $(shell command -v elvis >/dev/null 2>&1 && echo "elvis" || echo "$(CURDIR)/elvis")
+
 DEPS_PLT := $(CURDIR)/.deps_plt
 
 ERLANG_DIALYZER_APPS := erts \
@@ -108,3 +110,7 @@ $(DEPS_PLT):
 .PHONY: dialyzer
 dialyzer: $(DEPS_PLT)
 	$(DIALYZER) --plt $(DEPS_PLT) --src src -Wno_return
+
+.PHONY: elvis
+elvis:
+	$(ELVIS) rock
