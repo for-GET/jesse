@@ -31,12 +31,14 @@
 %%       tilde escaped JSON Pointers.
 -spec parse(JSONPointer :: string() | binary()) -> [binary()].
 parse(JSONPointer) ->
-    lists:map(
-      fun (Segment) when is_list(Segment) -> unicode:characters_to_binary(Segment);
-          (Segment) when is_binary(Segment) -> Segment
-      end,
-      re:split(JSONPointer, <<"/">>, [{return, binary}, unicode])
-     ).
+  lists:map(
+    fun (Segment) when is_list(Segment) ->
+        unicode:characters_to_binary(Segment);
+        (Segment) when is_binary(Segment) ->
+        Segment
+    end,
+    re:split(JSONPointer, <<"/">>, [{return, binary}, unicode])
+   ).
 
 %% @doc Return the result of the query Path on P.
 -spec path(kvc_key() | [kvc_key()], kvc_obj()) -> term() | [].

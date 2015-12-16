@@ -54,9 +54,19 @@ data_invalid_test() ->
 
   %% Properties, 2 levels
   ?assertThrow(
-    [{data_invalid, IntegerSchema, wrong_type, <<"bar">>, [<<"foo">>, <<"subfoo">>]}],
-    jesse_schema_validator:validate(Schema, {[{<<"foo">>, {[{<<"subfoo">>, <<"bar">>}]}}]}, [])
-  ),
+    [{ data_invalid
+     , IntegerSchema
+     , wrong_type
+     , <<"bar">>
+     , [<<"foo">>, <<"subfoo">>]
+     }],
+     jesse_schema_validator:validate( Schema
+                                    , {[{ <<"foo">>
+                                        , {[{<<"subfoo">>, <<"bar">>}]}
+                                        }]}
+                                    , []
+                                    )
+    ),
 
   %% patternProperties, level 1
   ?assertThrow(
@@ -143,8 +153,16 @@ data_invalid_test() ->
     ]}}
   ]},
   ?assertThrow(
-    [{data_invalid, DependenciesSchema, {missing_dependency, <<"foo">>}, {[{<<"bar">>, 42}]}, []}],
-    jesse_schema_validator:validate(DependenciesSchema, {[{<<"bar">>, 42}]}, [])
+    [{ data_invalid
+     , DependenciesSchema
+     , {missing_dependency, <<"foo">>}
+     , {[{<<"bar">>, 42}]}
+     , []
+     }],
+     jesse_schema_validator:validate( DependenciesSchema
+                                    , {[{<<"bar">>, 42}]}
+                                    , []
+                                    )
   ),
 
   ok.
@@ -162,7 +180,12 @@ dots_used_in_keys_test() ->
   ?assertEqual( {ok, ValidJson}
               , jesse_schema_validator:validate(Schema, ValidJson, [])
               ),
-  ?assertThrow([{data_invalid,{[{<<"type">>,<<"string">>}]}, wrong_type, true, [<<"3.4.5.6.7">>]}]
+  ?assertThrow([{ data_invalid
+                , {[{<<"type">>, <<"string">>}]}
+                , wrong_type
+                , true
+                , [<<"3.4.5.6.7">>]
+                }]
               , jesse_schema_validator:validate(Schema, InvalidJson, [])
               ).
 
@@ -179,14 +202,21 @@ empty_list_as_valid_value_for_string_test() ->
     ).
 
 schema_unsupported_test() ->
-  SupportedSchema = {[{<<"$schema">>, <<"http://json-schema.org/draft-03/schema#">>}]},
-  UnsupportedSchema = {[{<<"$schema">>, <<"http://json-schema.org/draft-05/schema#">>}]},
+  SupportedSchema = {[{ <<"$schema">>
+                      , <<"http://json-schema.org/draft-03/schema#">>
+                      }]},
+  UnsupportedSchema = {[{ <<"$schema">>
+                        , <<"http://json-schema.org/draft-05/schema#">>
+                        }]},
 
   Json = {[{<<"Doesn't matter">>}]},
   ?assertEqual( {ok, Json}
               , jesse_schema_validator:validate(SupportedSchema, Json, [])
               ),
-  ?assertThrow([{schema_invalid, UnsupportedSchema,
-                 {schema_unsupported, <<"http://json-schema.org/draft-05/schema#">>}}]
+  ?assertThrow([{ schema_invalid
+                , UnsupportedSchema
+                , { schema_unsupported
+                  , <<"http://json-schema.org/draft-05/schema#">>
+                  }}]
               , jesse_schema_validator:validate(UnsupportedSchema, Json, [])
               ).

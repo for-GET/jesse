@@ -70,6 +70,7 @@
 -define(json_schema_draft3, <<"http://json-schema.org/draft-03/schema#">>).
 -define(json_schema_draft4, <<"http://json-schema.org/draft-04/schema#">>).
 -define(default_schema_ver, ?json_schema_draft3).
+-define(default_schema_loader_fun, fun jesse_database:read/1).
 
 %%
 -define(data_invalid,                'data_invalid').

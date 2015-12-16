@@ -1124,7 +1124,10 @@ validate_schema(Value, Schema, State0) ->
     case jesse_lib:is_json_object(Schema) of
       true ->
         State1 = set_current_schema(State0, Schema),
-        State2 = jesse_schema_validator:validate_with_state(Schema, Value, State1),
+        State2 = jesse_schema_validator:validate_with_state( Schema
+                                                           , Value
+                                                           , State1
+                                                           ),
         {true, State2};
       false ->
         handle_schema_invalid(?schema_invalid, State0)
