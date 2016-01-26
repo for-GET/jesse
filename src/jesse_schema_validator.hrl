@@ -114,3 +114,10 @@
 
 %%
 -define(not_found, not_found).
+
+%% Compile-time maps guard
+-ifdef(erlang_deprecated_types).
+-define(IS_MAP(_), false).
+-else.
+-define(IS_MAP(Map), erlang:is_map(Map)).
+-endif.

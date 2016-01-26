@@ -176,3 +176,16 @@ jsx_object_test() ->
     ?assertEqual(
        not_found,
        jesse_json_path:value(<<"foo">>, [{}], not_found)).
+
+-ifndef(erlang_deprecated_types).
+map_object_test_() ->
+    [?_assertEqual(
+        not_found,
+        jesse_json_path:path("foo.bar", #{<<"foo">> => #{<<"baz">> => val}}, not_found)),
+     ?_assertEqual(
+        val,
+        jesse_json_path:path("foo.bar", #{<<"foo">> => #{<<"bar">> => val}}, not_found)),
+     ?_assertEqual(
+        #{a => b},
+        jesse_json_path:path([foo, bar], #{foo => #{bar => #{a => b}}}, not_found))].
+-endif.
