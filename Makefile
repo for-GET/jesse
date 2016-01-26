@@ -108,8 +108,8 @@ $(DEPS_PLT):
 	$(DIALYZER) --build_plt --apps $(ERLANG_DIALYZER_APPS) -r deps --output_plt $(DEPS_PLT)
 
 .PHONY: dialyzer
-dialyzer: $(DEPS_PLT)
-	$(DIALYZER) --plt $(DEPS_PLT) --src src -Wno_return
+dialyzer: $(DEPS_PLT) ebin/jesse.app
+	$(DIALYZER) --plt $(DEPS_PLT) -Wno_return ebin
 
 .PHONY: elvis
 elvis:

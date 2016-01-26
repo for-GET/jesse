@@ -222,6 +222,7 @@ schema_unsupported_test() ->
               ).
 
 -ifndef(erlang_deprecated_types).
+-ifndef(COMMON_TEST).  % see Emakefile
 map_schema_test() ->
   [map_schema_test_draft(URI)
    || URI <- [<<"http://json-schema.org/draft-03/schema#">>,
@@ -305,4 +306,5 @@ map_data_test_draft(URI) ->
                jesse_schema_validator:validate(Schema, InvalidJson,
                                                [{allowed_errors, infinity}])).
 
+-endif.
 -endif.

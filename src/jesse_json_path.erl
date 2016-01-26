@@ -10,13 +10,13 @@
 -type kvc_obj_node() :: proplist() | {struct, proplist()} | [{}] | dict()
                       | gb_tree() | term().
 -type typed_proplist() :: {proplist() | {gb_tree, gb_tree()}, elem_type()}.
--define(IS_MAP(_), false).
+-define(IF_MAPS(_), ).
 -else.
 -type kvc_obj_node() :: proplist() | {struct, proplist()} | [{}] | dict:dict()
                       | gb_trees:tree() | map() | term().
 -type typed_proplist() :: {proplist() | {gb_tree, gb_trees:tree()}
                            | {map, map()}, elem_type()}.
--define(IS_MAP(Map), erlang:is_map(Map)).
+-define(IF_MAPS(Exp), Exp).
 -endif.
 
 -type elem_key_type() :: atom | binary | string | undefined.
@@ -79,13 +79,14 @@ value(K, P, Default) ->
         {value, V} ->
           V
       end;
-    {{map, Map}, Type} ->
+    ?IF_MAPS(                                   % for dialyzer on pre erl17
+       {{map, Map}, Type} ->
       case maps:find(normalize(K, Type), Map) of
         error ->
           Default;
         {ok, V} ->
           V
-      end;
+      end;)
     {Proplist, Type} ->
       case lists:keyfind(normalize(K, Type), 1, Proplist) of
         false ->
@@ -137,7 +138,7 @@ unwrap_value({L})         -> L;
 unwrap_value({})          -> [];
 unwrap_value([])          -> [];
 unwrap_value([{}])        -> [];
-unwrap_value(Map) when ?IS_MAP(Map) -> maps:to_list(Map);
+?IF_MAPS(unwrap_value(Map) when erlang:is_map(Map) -> maps:to_list(Map);)
 unwrap_value(L)           -> L.
 
 %% Internal API

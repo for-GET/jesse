@@ -115,9 +115,9 @@
 %%
 -define(not_found, not_found).
 
-%% Compile-time maps guard
+%% Maps conditional compilation
 -ifdef(erlang_deprecated_types).
--define(IS_MAP(_), false).
+-define(IF_MAPS(EXP), ).
 -else.
--define(IS_MAP(Map), erlang:is_map(Map)).
+-define(IF_MAPS(Exp), Exp).
 -endif.
