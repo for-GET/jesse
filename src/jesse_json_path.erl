@@ -7,12 +7,15 @@
 -export([parse/1, path/2, path/3, value/3, to_proplist/1, unwrap_value/1]).
 
 -ifdef(erlang_deprecated_types).
--type kvc_obj_node() :: proplist() | {struct, proplist()} | [{}] | dict() | gb_tree() | term().
+-type kvc_obj_node() :: proplist() | {struct, proplist()} | [{}] | dict()
+                      | gb_tree() | term().
 -type typed_proplist() :: {proplist() | {gb_tree, gb_tree()}, elem_type()}.
 -define(IS_MAP(_), false).
 -else.
--type kvc_obj_node() :: proplist() | {struct, proplist()} | [{}] | dict:dict() | gb_trees:tree() | map() | term().
--type typed_proplist() :: {proplist() | {gb_tree, gb_trees:tree()} | {map, map()}, elem_type()}.
+-type kvc_obj_node() :: proplist() | {struct, proplist()} | [{}] | dict:dict()
+                      | gb_trees:tree() | map() | term().
+-type typed_proplist() :: {proplist() | {gb_tree, gb_trees:tree()}
+                           | {map, map()}, elem_type()}.
 -define(IS_MAP(Map), erlang:is_map(Map)).
 -endif.
 

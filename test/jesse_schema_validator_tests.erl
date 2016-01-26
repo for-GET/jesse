@@ -223,8 +223,9 @@ schema_unsupported_test() ->
 
 -ifndef(erlang_deprecated_types).
 map_schema_test() ->
-  [map_schema_test_draft(URI) || URI <- [<<"http://json-schema.org/draft-03/schema#">>,
-                                  <<"http://json-schema.org/draft-04/schema#">>]].
+  [map_schema_test_draft(URI)
+   || URI <- [<<"http://json-schema.org/draft-03/schema#">>,
+              <<"http://json-schema.org/draft-04/schema#">>]].
 
 map_schema_test_draft(URI) ->
   Schema = #{<<"$schema">> => URI,
@@ -244,7 +245,8 @@ map_schema_test_draft(URI) ->
             {<<"bar">>, 42},
             {<<"baz">>, 42}
           ]},
-  ?assertEqual({ok, ValidJson} , jesse_schema_validator:validate(Schema, ValidJson, [])),
+  ?assertEqual({ok, ValidJson} ,
+               jesse_schema_validator:validate(Schema, ValidJson, [])),
 
   InvalidJson = {[ {<<"bar">>, <<"str expect int">>} ]},
   ?assertThrow([{data_invalid,
@@ -256,8 +258,9 @@ map_schema_test_draft(URI) ->
 
 
 map_data_test() ->
-  [map_data_test_draft(URI) || URI <- [<<"http://json-schema.org/draft-03/schema#">>,
-                                  <<"http://json-schema.org/draft-04/schema#">>]].
+  [map_data_test_draft(URI)
+   || URI <- [<<"http://json-schema.org/draft-03/schema#">>,
+              <<"http://json-schema.org/draft-04/schema#">>]].
 
 
 map_data_test_draft(URI) ->
@@ -281,7 +284,8 @@ map_data_test_draft(URI) ->
            <<"bar">> => 42,
            <<"baz">> => 42
           },
-  ?assertEqual({ok, ValidJson} , jesse_schema_validator:validate(Schema, ValidJson, [])),
+  ?assertEqual({ok, ValidJson} ,
+               jesse_schema_validator:validate(Schema, ValidJson, [])),
 
   InvalidJson = #{<<"foo">> => 42,
                   <<"baz">> => #{}},
@@ -298,6 +302,7 @@ map_data_test_draft(URI) ->
                  wrong_type, 42,
                  [<<"foo">>]}
                 ],
-               jesse_schema_validator:validate(Schema, InvalidJson, [{allowed_errors, infinity}])).
+               jesse_schema_validator:validate(Schema, InvalidJson,
+                                               [{allowed_errors, infinity}])).
 
 -endif.
