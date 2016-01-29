@@ -71,6 +71,7 @@ is_json_object([{}])                                -> true;
 is_json_object([{Key, _Value} | _])
   when is_binary(Key) orelse is_atom(Key)
        andalso Key =/= struct                       -> true;
+?IF_MAPS(is_json_object(Map) when erlang:is_map(Map) -> true;)
 is_json_object(_)                                   -> false.
 
 %% @doc Checks if the given value is json `null'.

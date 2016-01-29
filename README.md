@@ -34,9 +34,10 @@ There are two ways of using jesse:
 
 ## Examples
 
-    NOTE: jesse doesn't have any parsing functionality. It currently works with three
-          formats: mochijson2, jiffy and jsx, so JSON needs to be parsed in advance,
-          or you can specify a callback which jesse will use to parse JSON.
+    NOTE: jesse doesn't have any parsing functionality. It currently works with four
+          formats: mochijson2, jiffy, jsx and Erlang 17+ maps, so JSON needs to be
+          parsed in advance, or you can specify a callback which jesse will use to
+          parse JSON.
 
           In examples below and in jesse test suite jiffy parser is used.
 
@@ -206,6 +207,21 @@ Let's try using 'infinity' as the argument for the `allowed_errors` option
         {data_invalid,{[{<<"type">>,<<"integer">>}]},
                       wrong_type,true,
                       [<<"a">>]}]}
+```
+
+Maps example
+
+```erlang
+8> jesse:validate_with_schema(Schema,
+8>                            <<"{\"a\": 1, \"b\": 2, \"c\": true}">>,
+8>                            [{parser_fun, fun(Bin) -> jiffy:decode(Bin, [return_maps]) end}]).
+{error,[{data_invalid,#{<<"type">> => <<"string">>},
+                      wrong_type,2,
+                      [<<"b">>]}]}
+9> jesse:validate_with_schema(Schema,
+9>                            <<"{\"a\": 1, \"b\": \"val\", \"c\": true}">>,
+9>                            [{parser_fun, fun(Bin) -> jiffy:decode(Bin, [return_maps]) end}]).
+{ok, #{<<"a">> => 1, <<"b">> => <<"val">>, <<"c">> => true}}
 ```
 
 ## JSON Schema versions
