@@ -19,7 +19,7 @@ bin/jesse path_to_json_schema -- path_to_json_instance [path_to_json_instance]
 
 You can also output the result in JSON format, with `--json`, and beautify it e.g. with python
 ```bash
-bin/jesse path_to_json_schema --json -- path_to_json_instance [path_to_json_instance | python -m json.tool
+bin/jesse path_to_json_schema --json -- path_to_json_instance [path_to_json_instance] | python -m json.tool
 ```
 
 ## Quick start - Erlang
