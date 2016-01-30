@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## next
+
+* Added jesse_error:to_json
+
 ## 1.3.0
 
 * Support for maps
