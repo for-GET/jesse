@@ -117,10 +117,9 @@ get_error_list(#state{error_list = ErrorList}) ->
          , Options    :: [{Key :: atom(), Data :: any()}]
          ) -> state().
 new(JsonSchema, Options) ->
-  DefaultHandler   = fun jesse_error:default_error_handler/3,
   ErrorHandler     = proplists:get_value( error_handler
                                         , Options
-                                        , DefaultHandler
+                                        , ?default_error_handler_fun
                                         ),
   AllowedErrors    = proplists:get_value( allowed_errors
                                         , Options
