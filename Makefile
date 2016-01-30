@@ -7,7 +7,7 @@ ELVIS ?= $(shell command -v elvis >/dev/null 2>&1 && echo "elvis" || echo "$(CUR
 DEPS_PLT := $(CURDIR)/.deps_plt
 
 ERLANG_DIALYZER_APPS := erts \
-					    kernel \
+						kernel \
 						stdlib \
 						inets
 
