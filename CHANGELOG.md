@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 1.3.0
+
+* Support for maps
+
+## 1.2.0
+
+* Standalone jesse executable (with Erlang/JSON output)
+* Support for $ref
+* Support for JSON Schema draft 4
+
 ## 1.1.0
 
 * Big refactoring
