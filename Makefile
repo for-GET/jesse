@@ -28,7 +28,15 @@ SRCS := $(wildcard src/* include/* rebar.config)
 SRC_BEAMS := $(patsubst src/%.erl, ebin/%.beam, $(wildcard src/*.erl))
 
 .PHONY: all
-all: deps ebin/jesse.app bin/jesse
+all: maybe_dev deps ebin/jesse.app bin/jesse
+
+.PHONY: maybe_dev
+maybe_dev:
+ifdef CI
+	$(MAKE) --no-print-directory .rebar/DEV_MODE
+else
+	@:
+endif
 
 # Clean
 

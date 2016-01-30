@@ -18,6 +18,5 @@ otp_release:
   - R15B
 script:
   - "[[ ${TRAVIS_OTP_RELEASE} == 18.1 ]] && make elvis || true"
-  - make .rebar/DEV_MODE
   - make
   - make test
