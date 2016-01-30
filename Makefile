@@ -25,6 +25,8 @@ endif
 
 SRCS := $(wildcard src/* include/* rebar.config)
 
+SRC_BEAMS := $(patsubst src/%.erl, ebin/%.beam, $(wildcard src/*.erl))
+
 .PHONY: all
 all: deps ebin/jesse.app bin/jesse
 
@@ -75,7 +77,7 @@ docs:
 
 ebin/jesse.app: compile
 
-bin/jesse: ebin/jesse.app
+bin/jesse: ebin/jesse.app $(SRC_BEAMS)
 	$(REBAR) escriptize
 	bin/jesse --help
 
