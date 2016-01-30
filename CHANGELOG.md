@@ -1,44 +1,38 @@
-CHANGELOG
-=========
+# CHANGELOG
 
-1.1.0
------
-*   Big refactoring
-*   Start to respect $schema
-*   Add posibility of adding validators for different schemas
+## 1.1.0
 
-1.0.0
------
-*   Start using semantic versioning (http://semver.org/)
-*   Minor improvements
+* Big refactoring
+* Start to respect $schema
+* Add posibility of adding validators for different schemas
 
-0.5.0
------
+## 1.0.0
 
-*   Add path to errors (error format changed, so it's backward incompatible change)
+* Start using semantic versioning (http://semver.org/)
+* Minor improvements
 
-0.4.0
------
+## 0.5.0
 
-*   Change API
-*   Introduce 'state' in the validator
-*   Add possibility to collect errors
-*   Change errors format
+* Add path to errors (error format changed, so it's backward incompatible change)
 
-0.3.0
------
+## 0.4.0
 
-*   Add support for jsx format
+* Change API
+* Introduce 'state' in the validator
+* Add possibility to collect errors
+* Change errors format
 
-0.2.0
------
+## 0.3.0
 
-*   Big refactoring of jesse_schema_validator.erl
-*   Add additional API functions
-*   Add tests
-*   Add more documentation
+* Add support for jsx format
 
-0.1.0
------
+## 0.2.0
 
-*   Initial release.
+* Big refactoring of jesse_schema_validator.erl
+* Add additional API functions
+* Add tests
+* Add more documentation
+
+## 0.1.0
+
+* Initial release.
