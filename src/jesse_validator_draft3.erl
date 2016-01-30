@@ -30,6 +30,29 @@
 %% Includes
 -include("jesse_schema_validator.hrl").
 
+-type schema_error() :: ?wrong_type_dependency
+                      | ?wrong_type_items.
+
+-type schema_error_type() :: schema_error()
+                           | {schema_error(), jesse:json_term()}.
+
+-type data_error() :: ?missing_dependency
+                    | ?missing_required_property
+                    | ?no_extra_items_allowed
+                    | ?no_extra_properties_allowed
+                    | ?no_match
+                    | ?not_allowed
+                    | ?not_divisible
+                    | ?not_enought_items
+                    | ?not_found
+                    | ?not_in_range
+                    | ?wrong_length
+                    | ?wrong_size
+                    | ?wrong_type.
+
+-type data_error_type() :: data_error()
+                         | {data_error(), binary()}.
+
 %%% API
 %% @doc Goes through attributes of the given schema `JsonSchema' and
 %% validates the value `Value' against them.
@@ -945,10 +968,17 @@ unwrap(Value) ->
   jesse_json_path:unwrap_value(Value).
 
 %% @private
+-spec handle_data_invalid( Info :: data_error_type()
+                         , Value :: jesse:json_term()
+                         , State :: jesse_state:state()
+                         ) -> jesse_state:state().
 handle_data_invalid(Info, Value, State) ->
   jesse_error:handle_data_invalid(Info, Value, State).
 
 %% @private
+-spec handle_schema_invalid( Info :: schema_error_type()
+                           , State :: jesse_state:state()
+                           ) -> jesse_state:state().
 handle_schema_invalid(Info, State) ->
   jesse_error:handle_schema_invalid(Info, State).
 
