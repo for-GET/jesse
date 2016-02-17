@@ -35,6 +35,7 @@
                        , filename_to_key
                        , get_path
                        , load_schema
+                       , test_dir
                        ]).
 
 -include_lib("common_test/include/ct.hrl").
@@ -131,8 +132,16 @@ properties(Config) ->
 ref(Config) ->
   do_test("ref", Config).
 
+test_dir() ->
+  case os:getenv("TEST_DIR") of
+    false ->
+      "../../lib/jesse/test";
+    R ->
+      R
+  end.
+
 refRemote(Config) ->
-  TestDir = os:getenv("TEST_DIR"),
+  TestDir = test_dir(),
   DocumentRoot = filename:join(TestDir, "JSON-Schema-Test-Suite/remotes"),
   ServerOpts = [{port, 1234}, {server_name, "localhost"}, {server_root, "."},
                 {document_root, DocumentRoot}],
@@ -193,7 +202,7 @@ run_test_set(Schema, TestSet) ->
                ).
 
 load_test_specs() ->
-  TestsDir = filename:join( os:getenv("TEST_DIR")
+  TestsDir = filename:join( test_dir()
                           , "JSON-Schema-Test-Suite/tests/draft4"
                           ),
   FileList = filelib:wildcard(TestsDir ++ "/*.json"),

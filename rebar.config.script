@@ -22,36 +22,62 @@ MergeConfig = fun({Key, ToAdd}, C) ->
 %% If a file named `./.rebar/DEV_MODE' exists, we assume we are a
 %% top-level build (not being built as a dep of another project). We
 %% add the deps from dev_only_deps defined in rebar.config, add
-%% concrete as a dep, and define the compiler macro DEV_ONLY.
-
-%% This macro can be used to conditionally enable code (e.g. tests)
+%% concrete as a dep, and define the compiler macro DEV_ONLY.%% This macro can be used to conditionally enable code (e.g. tests)
 %% that depend on development only dependencies.
+
 ErlOpts = {erl_opts, [ {d, 'DEV_ONLY'}
                      , debug_info
                      ]},
 
+DevOnlyDeps = case lists:keyfind(dev_only_deps, 1, CONFIG) of
 %% Development only dependencies can be specified in the main
 %% rebar.config. This file should not need to be edited directly.
-DevOnlyDeps = case lists:keyfind(dev_only_deps, 1, CONFIG) of
-                  false ->
-                      [];
-                  {dev_only_deps, DOD} ->
-                      DOD
+
+                false ->
+                  [];
+                {dev_only_deps, DOD} ->
+                  DOD
               end,
 
 Deps = {deps, DevOnlyDeps},
 
+IsRebar3 = case application:get_key(rebar, vsn) of
+             {ok, VSN} ->
+               [VSN1 | _] = string:tokens(VSN, "-"),
+               [Maj, Min, Patch] = string:tokens(VSN1, "."),
+               (list_to_integer(Maj) >= 3);
+             undefined ->
+               false
+           end,
+
+Rebar2Deps = [
+              { jsx
+              , ".*"
+              , { git, "git://github.com/talentdeficit/jsx.git"
+                , {tag, "2.8.0"}
+                }}
+             ],
+
 ConfigPath = filename:dirname(SCRIPT),
 DevMarker = filename:join([ConfigPath, ".rebar", "DEV_MODE"]),
 _ = filelib:ensure_dir(DevMarker),
+
+CONFIG0 = case IsRebar3 of
+            true ->
+              CONFIG;
+            false ->
+              lists:keyreplace(deps, 1, CONFIG, {deps, Rebar2Deps})
+          end.
+
+
 case filelib:is_file(DevMarker) of
-    true ->
-        lists:foldl(fun(I, C) -> MergeConfig(I, C) end,
-                    CONFIG, [Deps, ErlOpts]);
-    false ->
-        %% If the ./.rebar/DEV_MODE marker is not present, this script simply
-        %% returns the config specified in rebar.config. This will be
-        %% the behavior when the project is built as a dependency of
-        %% another project.
-        CONFIG
+  true ->
+    lists:foldl(fun(I, C) -> MergeConfig(I, C) end,
+                CONFIG0, [Deps, ErlOpts]);
+  false ->
+    %% If the ./.rebar/DEV_MODE marker is not present, this script simply
+    %% returns the config specified in rebar.config. This will be
+    %% the behavior when the project is built as a dependency of
+    %% another project.
+    CONFIG0
 end.

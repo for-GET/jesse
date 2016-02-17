@@ -14,3 +14,4 @@
 /test/*.beam
 .#*
 _build
+TEST*
