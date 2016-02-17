@@ -13,3 +13,4 @@
 /logs
 /test/*.beam
 .#*
+_build
