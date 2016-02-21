@@ -43,7 +43,6 @@
                     | ?no_match
                     | ?not_allowed
                     | ?not_divisible
-                    | ?not_enought_items
                     | ?not_found
                     | ?not_in_range
                     | ?wrong_length
@@ -557,9 +556,7 @@ check_items_array(Value, Items, State) ->
           ExtraSchemas = lists:duplicate(NExtra, AdditionalItems),
           Tuples = lists:zip(Value, lists:append(Items, ExtraSchemas)),
           check_items_fun(Tuples, State)
-      end;
-    NExtra when NExtra < 0 ->
-      handle_data_invalid(?not_enought_items, Value, State)
+      end
   end.
 
 %% @private
