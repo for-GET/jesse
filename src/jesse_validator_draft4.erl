@@ -566,7 +566,10 @@ check_items_array(Value, Items, State) ->
           ExtraSchemas = lists:duplicate(NExtra, AdditionalItems),
           Tuples = lists:zip(Value, lists:append(Items, ExtraSchemas)),
           check_items_fun(Tuples, State)
-      end
+      end;
+    NExtra when NExtra < 0 ->
+      Items1 = lists:sublist(Items, length(Value)),
+      check_items_fun(lists:zip(Value, Items1), State)
   end.
 
 %% @private
