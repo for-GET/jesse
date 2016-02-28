@@ -45,7 +45,11 @@ init_per_suite(Config) ->
   inets:start(),
   get_tests( "JSON-Schema-Test-Suite/tests/draft3"
            , <<"http://json-schema.org/draft-03/schema#">>
-           ) ++ Config.
+           )
+    ++ get_tests( "JSON-Schema-Test-Suite-extra/draft3"
+                , <<"http://json-schema.org/draft-03/schema#">>
+                )
+    ++ Config.
 
 end_per_suite(_Config) ->
   inets:stop().
@@ -128,3 +132,8 @@ type(Config) ->
 
 uniqueItems(Config) ->
   do_test("uniqueItems", Config).
+
+%% Extra
+
+itemsExtra(Config) ->
+  do_test("itemsExtra", Config).
