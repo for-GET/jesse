@@ -43,7 +43,6 @@
                     | ?no_match
                     | ?not_allowed
                     | ?not_divisible
-                    | ?not_enought_items
                     | ?not_found
                     | ?not_in_range
                     | ?wrong_length
@@ -537,10 +536,9 @@ check_items(Value, Items, State) ->
 %% @private
 check_items_array(Value, Items, State) ->
   JsonSchema = get_current_schema(State),
-  case length(Value) - length(Items) of
-    0 ->
-      check_items_fun(lists:zip(Value, Items), State);
-    NExtra when NExtra > 0 ->
+  NExtra = length(Value) - length(Items),
+  case NExtra > 0 of
+    true ->
 %% @doc 5.6.  additionalItems
 %%
 %% This provides a definition for additional items in an array instance
@@ -558,8 +556,14 @@ check_items_array(Value, Items, State) ->
           Tuples = lists:zip(Value, lists:append(Items, ExtraSchemas)),
           check_items_fun(Tuples, State)
       end;
-    NExtra when NExtra < 0 ->
-      handle_data_invalid(?not_enought_items, Value, State)
+    false ->
+      RelevantItems = case NExtra of
+                        0 ->
+                          Items;
+                        _ ->
+                          lists:sublist(Items, length(Value))
+                      end,
+      check_items_fun(lists:zip(Value, RelevantItems), State)
   end.
 
 %% @private

@@ -96,7 +96,6 @@
 -define(no_match,                    'no_match').
 -define(no_extra_properties_allowed, 'no_extra_properties_allowed').
 -define(no_extra_items_allowed,      'no_extra_items_allowed').
--define(not_enought_items,           'not_enought_items').
 -define(not_allowed,                 'not_allowed').
 -define(not_unique,                  'not_unique').
 -define(not_in_range,                'not_in_range').
