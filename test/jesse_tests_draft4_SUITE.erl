@@ -28,23 +28,13 @@
                        , all
                        , init_per_suite
                        , end_per_suite
-                       , do_test
-                       , run_tests
-                       , run_test_set
-                       , load_test_specs
-                       , filename_to_key
-                       , get_path
-                       , load_schema
                        ]).
 
 -include_lib("common_test/include/ct.hrl").
 
-%% JSON-Schema-Test-Suite attributes definitions
--define(DATA,        <<"data">>).
--define(DESCRIPTION, <<"description">>).
--define(SCHEMA,      <<"schema">>).
--define(TESTS,       <<"tests">>).
--define(VALID,       <<"valid">>).
+-import(jesse_tests_util, [ get_tests/2
+                          , do_test/2
+                          ]).
 
 all() ->
   Exports = ?MODULE:module_info(exports),
@@ -52,7 +42,9 @@ all() ->
 
 init_per_suite(Config) ->
   inets:start(),
-  load_test_specs() ++ Config.
+  get_tests( "JSON-Schema-Test-Suite/tests/draft4"
+           , <<"http://json-schema.org/draft-04/schema#">>
+           ) ++ Config.
 
 end_per_suite(_Config) ->
   inets:stop().
@@ -150,71 +142,3 @@ type(Config) ->
 
 uniqueItems(Config) ->
   do_test("uniqueItems", Config).
-
-%%% Internal functions
-
-do_test(Key, Config) ->
-    run_tests(?config(Key, Config)).
-
-run_tests(Specs) ->
-  lists:foreach( fun(Spec) ->
-                     Description = get_path(?DESCRIPTION, Spec),
-                     Schema      = get_path(?SCHEMA, Spec),
-                     TestSet     = get_path(?TESTS, Spec),
-                     ct:pal( "** Test set: ~s~n"
-                             "** Schema: ~p~n"
-                           , [Description, Schema]
-                           ),
-                     run_test_set(Schema, TestSet)
-                 end
-               , Specs
-               ).
-
-run_test_set(Schema, TestSet) ->
-  lists:foreach( fun(Test) ->
-                     Description = get_path(?DESCRIPTION, Test),
-                     TestData    = get_path(?DATA, Test),
-                     ct:pal("* Test case: ~s~n", [Description]),
-                     Opts = [ { default_schema_ver
-                              , <<"http://json-schema.org/draft-04/schema#">>
-                              }
-                            , {schema_loader_fun, fun load_schema/1}
-                            ],
-                     try jesse:validate_with_schema(Schema, TestData, Opts) of
-                         Result ->
-                             ct:pal("Result: ~p~n", [Result]),
-                             case get_path(?VALID, Test) of
-                                 true  -> {ok, TestData} = Result;
-                                 false -> {error, _} = Result
-                             end
-                     catch C:E ->
-                               ct:pal("Error: ~p:~p~nStacktrace: ~p~n",
-                                      [C, E, erlang:get_stacktrace()])
-                     end
-                 end
-               , TestSet
-               ).
-
-load_test_specs() ->
-  TestsDir = filename:join( os:getenv("TEST_DIR")
-                          , "JSON-Schema-Test-Suite/tests/draft4"
-                          ),
-  FileList = filelib:wildcard(TestsDir ++ "/*.json"),
-  lists:map( fun(Filename) ->
-                 {ok, Bin} = file:read_file(Filename),
-                 JsonTest  = jsx:decode(Bin),
-                 {filename_to_key(Filename), JsonTest}
-             end
-           , FileList
-           ).
-
-filename_to_key(Filename) ->
-  filename:rootname(filename:basename(Filename)).
-
-get_path(Key, Schema) ->
-  jesse_json_path:path(Key, Schema).
-
-load_schema(URI) ->
-  {ok, Response} = httpc:request(get, {URI, []}, [], [{body_format, binary}]),
-  {{_Line, 200, _}, _Headers, Body} = Response,
-  jsx:decode(Body).
