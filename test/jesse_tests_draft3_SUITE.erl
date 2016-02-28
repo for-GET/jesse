@@ -120,8 +120,11 @@ ref(Config) ->
 refRemote(Config) ->
   TestDir = os:getenv("TEST_DIR"),
   DocumentRoot = filename:join(TestDir, "JSON-Schema-Test-Suite/remotes"),
-  ServerOpts = [{port, 1234}, {server_name, "localhost"}, {server_root, "."},
-                {document_root, DocumentRoot}],
+  ServerOpts = [ {port, 1234}
+               , {server_name, "localhost"}
+               , {server_root, "."}
+               , {document_root, DocumentRoot}
+               ],
   inets:start(httpd, ServerOpts),
   do_test("refRemote", Config).
 
