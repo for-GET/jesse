@@ -63,6 +63,7 @@ distclean:
 .PHONY: get-deps
 get-deps:
 	$(REBAR) get-deps
+	[ -f .rebar/DEV_MODE ] && git submodule update --init --recursive || true
 
 .PHONY: update-deps
 update-deps:
@@ -99,12 +100,8 @@ compile: $(SRCS)
 	mkdir -p .rebar
 	touch .rebar/DEV_MODE
 
-.PHONY: submodules
-submodules:
-	git submodule update --init --recursive
-
 .PHONY: test
-test: .rebar/DEV_MODE deps submodules eunit ct dialyzer
+test: .rebar/DEV_MODE deps eunit ct dialyzer
 
 .PHONY: eunit
 eunit:
