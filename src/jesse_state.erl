@@ -182,7 +182,10 @@ resolve_reference(State, Reference) ->
     %% Remote references
     RemoteURI ->
       %% Split the URI on the fragment if it exists
-      [BaseURI | MaybePointer] = re:split(RemoteURI, <<$#>>, [{return, list}]),
+      [BaseURI | MaybePointer] = re:split( RemoteURI
+                                         , <<$#>>
+                                         , [{return, binary}, unicode]
+                                         ),
       case jesse_state:find_schema(State, BaseURI) of
         ?not_found ->
           jesse_error:handle_schema_invalid(?schema_invalid, State);
@@ -260,8 +263,10 @@ combine_relative_id(Id, NewFile) ->
   BaseURI ++ [$/ | FileName].
 
 %% @doc Find a schema based on URI
--spec find_schema(State :: state(), SchemaURI :: binary()) ->
+-spec find_schema(State :: state(), SchemaURI :: string() | binary()) ->
     jesse:json_term() | ?not_found.
+find_schema(State, SchemaURI) when is_binary(SchemaURI) ->
+  find_schema(State, unicode:characters_to_list(SchemaURI));
 find_schema(#state{schema_loader_fun=LoaderFun}, SchemaURI) ->
   try LoaderFun(SchemaURI) of
       {ok, Schema} ->
