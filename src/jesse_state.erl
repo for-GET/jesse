@@ -257,6 +257,8 @@ combine_relative_id(undefined, Id) ->
 combine_relative_id(Id, [$# | Fragment]) ->
   [WithoutFragment | _] = re:split(Id, <<$#>>, [{return, list}]),
   WithoutFragment ++ [$# | Fragment];
+combine_relative_id(Id, NewFile) when is_binary(Id) ->
+  combine_relative_id(unicode:characters_to_list(Id), NewFile);
 combine_relative_id(Id, NewFile) ->
   BaseURI = filename:dirname(Id),
   FileName = unicode:characters_to_list(NewFile),
