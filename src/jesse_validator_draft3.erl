@@ -853,7 +853,11 @@ check_divisible_by(Value, DivisibleBy, State) ->
 %% is not valid.
 %% @private
 check_disallow(Value, Disallow, State) ->
-  try check_type(Value, Disallow, jesse_state:new(Disallow, [])) of
+  DefaultSchemaVer = jesse_state:get_default_schema_ver(State),
+  CheckTypeState = jesse_state:new(Disallow, [{ default_schema_ver
+                                              , DefaultSchemaVer
+                                              }]),
+  try check_type(Value, Disallow, CheckTypeState) of
     _ -> handle_data_invalid(?not_allowed, Value, State)
   catch
     %% FIXME: don't like to have these error related macros
