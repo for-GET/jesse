@@ -125,9 +125,13 @@ new(JsonSchema, Options) ->
                                         , Options
                                         , 0
                                         ),
+  MetaSchemaVer = jesse_json_path:value( ?SCHEMA
+                                       , JsonSchema
+                                       , ?default_schema_ver
+                                       ),
   DefaultSchemaVer = proplists:get_value( default_schema_ver
                                         , Options
-                                        , ?default_schema_ver
+                                        , MetaSchemaVer
                                         ),
   LoaderFun = proplists:get_value( schema_loader_fun
                                  , Options
