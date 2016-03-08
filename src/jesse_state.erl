@@ -198,8 +198,10 @@ resolve_reference(State, Reference) ->
           NewState = State#state{root_schema = RemoteSchema, id = BaseURI},
           %% Retrive the part we want
           Path = case MaybePointer of
-                   []        -> [];
-                   [Pointer] -> jesse_json_path:parse(Pointer)
+                   [] ->
+                     [];
+                   [Pointer] ->
+                     jesse_json_path:parse(Pointer)
                  end,
           case local_schema(RemoteSchema, Path) of
             ?not_found ->
@@ -212,6 +214,8 @@ resolve_reference(State, Reference) ->
 
 %% @doc Retrive a specific part of a schema
 %% @private
+-spec local_schema(Schema :: not_found | jesse:json_term(),
+                   Path :: [binary()]) -> not_found | jesse:json_term().
 local_schema(?not_found, _Path) ->
   ?not_found;
 local_schema(Schema, []) ->
@@ -219,7 +223,8 @@ local_schema(Schema, []) ->
     true  -> Schema;
     false -> ?not_found
   end;
-local_schema(Schema, [<<>> | Keys]) -> local_schema(Schema, Keys);
+local_schema(Schema, [<<>> | Keys]) ->
+  local_schema(Schema, Keys);
 local_schema(Schema, [Key | Keys]) ->
   case jesse_lib:is_json_object(Schema) of
     true  ->

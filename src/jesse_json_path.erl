@@ -31,7 +31,7 @@
 -spec parse(JSONPointer :: string() | binary()) -> [binary()].
 parse(JSONPointer) ->
   lists:map( fun parse_json_pointer_token/1
-           , re:split(JSONPointer, <<"/">>, [{return, binary}, unicode])
+           , re:split(JSONPointer, "/", [{return, list}])
            ).
 
 %% @doc Return the result of the query Path on P.
@@ -278,13 +278,14 @@ normalize(K, string) when is_atom(K) ->
 normalize(K, undefined) ->
   K.
 
--spec parse_json_pointer_token(list() | binary()) -> binary().
-parse_json_pointer_token(Token) when is_list(Token) ->
-  parse_json_pointer_token(unicode:characters_to_binary(Token));
+-spec parse_json_pointer_token(Token :: string()) -> binary().
 parse_json_pointer_token(Token) ->
+  DecodedToken = unicode:characters_to_binary(http_uri:decode(Token)),
   lists:foldl( fun({From, To}, T) ->
-                   re:replace(T, From, To)
+                   binary:replace(T, From, To)
                end
-             , http_uri:decode(Token)
-             , [{"~0", "~"}, {"~1", "/"}]
+             , DecodedToken
+             , [ {<<"~0">>, <<"~">>}
+               , {<<"~1">>, <<"/">>}
+               ]
              ).
