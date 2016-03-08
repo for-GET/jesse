@@ -28,18 +28,11 @@
 -export_type([proplist/0, kvc_key/0, kvc_obj/0]).
 
 %% @doc Parse a JSON Pointer
-%% TODO: Parse according to specification. This does not accurately parse
-%%       tilde escaped JSON Pointers.
 -spec parse(JSONPointer :: string() | binary()) -> [binary()].
 parse(JSONPointer) ->
-  lists:map(
-    fun (Segment) when is_list(Segment) ->
-        unicode:characters_to_binary(Segment);
-        (Segment) when is_binary(Segment) ->
-        Segment
-    end,
-    re:split(JSONPointer, <<"/">>, [{return, binary}, unicode])
-   ).
+  lists:map( fun parse_json_pointer_token/1
+           , re:split(JSONPointer, <<"/">>, [{return, binary}, unicode])
+           ).
 
 %% @doc Return the result of the query Path on P.
 -spec path(kvc_key() | [kvc_key()], kvc_obj()) -> term() | [].
@@ -284,3 +277,14 @@ normalize(K, string) when is_atom(K) ->
   atom_to_list(K);
 normalize(K, undefined) ->
   K.
+
+-spec parse_json_pointer_token(list() | binary()) -> binary().
+parse_json_pointer_token(Token) when is_list(Token) ->
+  parse_json_pointer_token(unicode:characters_to_binary(Token));
+parse_json_pointer_token(Token) ->
+  lists:foldl( fun({From, To}, T) ->
+                   re:replace(T, From, To)
+               end
+             , http_uri:decode(Token)
+             , [{"~0", "~"}, {"~1", "/"}]
+             ).
