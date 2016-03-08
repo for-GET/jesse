@@ -136,8 +136,13 @@ unwrap_value(L)           -> L.
 
 %% Internal API
 
+-ifdef(erlang_deprecated_types).
+to_proplist_map(_) ->
+  throw(erlang_deprecated_types).
+-else.
 to_proplist_map(Map) ->
   to_proplist_pl(maps:to_list(Map)).
+-endif.
 
 to_proplist_l(L) ->
   [to_proplist(V) || V <- L].
@@ -225,9 +230,14 @@ proplist_type_gb(D) ->
   {K, _V} = gb_trees:smallest(D),
   {{gb_tree, D}, typeof_elem(K)}.
 
+-ifdef(erlang_deprecated_types).
+proplist_type_map(_) ->
+  throw(erlang_deprecated_types).
+-else.
 proplist_type_map(D) ->
   [K | _] = maps:keys(D),
   {{map, D}, typeof_elem(K)}.
+-endif.
 
 proplist_type_undefined(_) ->
   {[], undefined}.
