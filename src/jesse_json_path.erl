@@ -243,8 +243,12 @@ proplist_type_undefined(_) ->
 
 
 first_of([F | Rest], V) ->
-  try F(V)
-  catch error:_ ->
+  try
+    F(V)
+  catch
+    throw:erlang_deprecated_types ->
+      first_of(Rest, V);
+    error:_ ->
       first_of(Rest, V)
   end.
 
