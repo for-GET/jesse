@@ -11,5 +11,8 @@
 /ebin
 /erl_crash.dump
 /logs
+/test/dialyzer_warnings
+/test/elvis
+/test/elvis_warnings
 /test/*.beam
 .#*

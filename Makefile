@@ -96,12 +96,12 @@ compile: $(SRCS)
 
 # Tests.
 
+.PHONY: test
+test: .rebar/DEV_MODE deps eunit ct xref dialyzer
+
 .rebar/DEV_MODE:
 	mkdir -p .rebar
 	touch .rebar/DEV_MODE
-
-.PHONY: test
-test: .rebar/DEV_MODE deps eunit ct dialyzer
 
 .PHONY: eunit
 eunit:
@@ -111,13 +111,20 @@ eunit:
 ct:
 	$(REBAR) ct skip_deps=true suites="jesse_tests_draft3,jesse_tests_draft4"
 
+.PHONY: xref
+xref:
+	$(REBAR) xref skip_deps=true
+
 $(DEPS_PLT):
 	$(DIALYZER) --build_plt --apps $(ERLANG_DIALYZER_APPS) -r deps --output_plt $(DEPS_PLT)
 
 .PHONY: dialyzer
 dialyzer: $(DEPS_PLT) ebin/jesse.app
-	$(DIALYZER) --plt $(DEPS_PLT) -Wno_return ebin
+	$(DIALYZER) -q --plt $(DEPS_PLT) -Wno_return ebin > test/dialyzer_warnings || true
+	diff -U0 test/known_dialyzer_warnings test/dialyzer_warnings
 
 .PHONY: elvis
 elvis:
-	$(ELVIS) rock
+	$(ELVIS) rock > test/elvis || true
+	grep "FAIL" test/elvis | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" > test/elvis_warnings
+	diff -U0 test/known_elvis_warnings test/elvis_warnings || cat test/elvis
