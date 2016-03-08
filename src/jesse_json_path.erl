@@ -72,14 +72,13 @@ value(K, P, Default) ->
         {value, V} ->
           V
       end;
-    ?IF_MAPS(                                   % for dialyzer on pre erl17
-       {{map, Map}, Type} ->
-      case maps:find(normalize(K, Type), Map) of
-        error ->
-          Default;
-        {ok, V} ->
-          V
-      end;)
+    ?IF_MAPS({{map, Map}, Type} ->
+                case maps:find(normalize(K, Type), Map) of
+                  error ->
+                    Default;
+                  {ok, V} ->
+                    V
+                end;)
     {Proplist, Type} ->
       case lists:keyfind(normalize(K, Type), 1, Proplist) of
         false ->
@@ -127,12 +126,12 @@ to_proplist(T) ->
 %% and also handle `jsx' empty objects)
 -spec unwrap_value(kvc_obj()) -> kvc_obj().
 unwrap_value({struct, L}) -> L;
-unwrap_value({L})         -> L;
-unwrap_value({})          -> [];
-unwrap_value([])          -> [];
-unwrap_value([{}])        -> [];
+unwrap_value({L}) -> L;
+unwrap_value({}) -> [];
+unwrap_value([]) -> [];
+unwrap_value([{}]) -> [];
 ?IF_MAPS(unwrap_value(Map) when erlang:is_map(Map) -> maps:to_list(Map);)
-unwrap_value(L)           -> L.
+unwrap_value(L) -> L.
 
 %% Internal API
 
