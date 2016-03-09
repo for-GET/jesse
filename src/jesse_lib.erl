@@ -29,6 +29,8 @@
         , is_array/1
         , is_json_object/1
         , is_null/1
+        , unwrap/1
+        , to_json_path/1
         ]).
 
 %% Includes
@@ -78,3 +80,35 @@ is_json_object(_)                                   -> false.
 -spec is_null(Value :: any()) -> boolean().
 is_null(null)   -> true;
 is_null(_Value) -> false.
+
+%% @doc Unwrap data (remove mochijson2 and jiffy specific constructions,
+%% and also handle `jsx' empty objects)
+-spec unwrap(jesse_json_path:kvc_obj()) -> jesse_json_path:kvc_obj().
+unwrap({struct, L}) -> L;
+unwrap({L}) -> L;
+unwrap({}) -> [];
+unwrap([]) -> [];
+unwrap([{}]) -> [];
+?IF_MAPS(unwrap(Map) when erlang:is_map(Map) -> maps:to_list(Map);)
+unwrap(L) -> L.
+
+%% @doc Parse a JSON Pointer
+-spec to_json_path(JSONPointer :: string() | binary()) -> [binary()].
+to_json_path(JSONPointer) ->
+  lists:map( fun parse_json_pointer_token/1
+           , re:split(JSONPointer, "/", [{return, list}])
+           ).
+
+%% Internal API
+
+-spec parse_json_pointer_token(Token :: string()) -> binary().
+parse_json_pointer_token(Token) ->
+    DecodedToken = unicode:characters_to_binary(http_uri:decode(Token)),
+    lists:foldl( fun({From, To}, T) ->
+                         binary:replace(T, From, To)
+                 end
+               , DecodedToken
+               , [ {<<"~0">>, <<"~">>}
+                 , {<<"~1">>, <<"/">>}
+                 ]
+               ).

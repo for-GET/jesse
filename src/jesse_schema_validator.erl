@@ -81,12 +81,12 @@ result(State) ->
 %% @private
 select_and_run_validator(?json_schema_draft3, JsonSchema, Value, State) ->
   jesse_validator_draft3:check_value( Value
-                                    , jesse_json_path:unwrap_value(JsonSchema)
+                                    , jesse_lib:unwrap(JsonSchema)
                                     , State
                                     );
 select_and_run_validator(?json_schema_draft4, JsonSchema, Value, State) ->
     jesse_validator_draft4:check_value( Value
-                                      , jesse_json_path:unwrap_value(JsonSchema)
+                                      , jesse_lib:unwrap(JsonSchema)
                                       , State
                                       );
 select_and_run_validator(SchemaURI, _JsonSchema, _Value, State) ->

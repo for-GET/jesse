@@ -973,7 +973,7 @@ get_value(Key, Schema) ->
 
 %% @private
 unwrap(Value) ->
-  jesse_json_path:unwrap_value(Value).
+  jesse_lib:unwrap(Value).
 
 %% @private
 -spec handle_data_invalid( Info :: data_error_type()
