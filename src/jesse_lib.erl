@@ -31,6 +31,9 @@
         , is_null/1
         , unwrap/1
         , to_json_path/1
+        , get_value/3
+        , get_path/2
+        , get_path/3
         ]).
 
 %% Includes
@@ -47,7 +50,7 @@ empty_if_not_found(Value)      -> Value.
 %% will be thrown.
 -spec get_schema_id(Schema :: jesse:json_term()) -> string().
 get_schema_id(Schema) ->
-  case jesse_json_path:value(?ID, Schema, ?not_found) of
+  case get_value(?ID, Schema, ?not_found) of
     ?not_found -> throw({schema_invalid, Schema, missing_id_field});
     Id         -> erlang:binary_to_list(Id)
   end.
@@ -83,7 +86,7 @@ is_null(_Value) -> false.
 
 %% @doc Unwrap data (remove mochijson2 and jiffy specific constructions,
 %% and also handle `jsx' empty objects)
--spec unwrap(jesse_json_path:kvc_obj()) -> jesse_json_path:kvc_obj().
+-spec unwrap(kvc:kvc_obj()) -> kvc:kvc_obj().
 unwrap({struct, L}) -> L;
 unwrap({L}) -> L;
 unwrap({}) -> [];
@@ -98,6 +101,18 @@ to_json_path(JSONPointer) ->
   lists:map( fun parse_json_pointer_token/1
            , re:split(JSONPointer, "/", [{return, list}])
            ).
+
+-spec get_value(kvc:kvc_key(), kvc:kvc_obj(), term()) -> term().
+get_value(Key, Schema, Default) ->
+  kvc:value(Key, Schema, Default).
+
+-spec get_path(kvc:kvc_key() | [kvc:kvc_key()], kvc:kvc_obj()) -> term() | [].
+get_path(Key, Schema) ->
+  get_path(Key, Schema, []).
+
+-spec get_path(kvc:kvc_key() | [kvc:kvc_key()], kvc:kvc_obj(), term()) -> term() | [].
+get_path(Key, Schema, Default) ->
+  kvc:path(Key, Schema, Default).
 
 %% Internal API
 

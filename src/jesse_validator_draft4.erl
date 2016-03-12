@@ -1256,7 +1256,7 @@ compare_properties(Value1, Value2) ->
 %% Wrappers
 %% @private
 get_value(Key, Schema) ->
-  jesse_json_path:value(Key, Schema, ?not_found).
+  jesse_lib:get_value(Key, Schema, ?not_found).
 
 %% @private
 unwrap(Value) ->

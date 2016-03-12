@@ -125,10 +125,10 @@ new(JsonSchema, Options) ->
                                         , Options
                                         , 0
                                         ),
-  MetaSchemaVer = jesse_json_path:value( ?SCHEMA
-                                       , JsonSchema
-                                       , ?default_schema_ver
-                                       ),
+  MetaSchemaVer = get_value( ?SCHEMA
+                           , JsonSchema
+                           , ?default_schema_ver
+                           ),
   DefaultSchemaVer = proplists:get_value( default_schema_ver
                                         , Options
                                         , MetaSchemaVer
@@ -164,7 +164,7 @@ set_allowed_errors(#state{} = State, AllowedErrors) ->
                         , NewSchema :: jesse:json_term()
                         ) -> state().
 set_current_schema(#state{id = Id} = State, NewSchema) ->
-  NewId = combine_id(Id, jesse_json_path:value(?ID, NewSchema, undefined)),
+  NewId = combine_id(Id, get_value(?ID, NewSchema, undefined)),
   State#state{current_schema = NewSchema, id = NewId}.
 
 %% @doc Setter for `error_list'.
@@ -178,7 +178,7 @@ resolve_reference(State, Reference) ->
   case combine_id(State#state.id, Reference) of
     %% Local references
     [$# | Pointer] ->
-      Path = jesse_json_path:parse(Pointer),
+      Path = jesse_lib:to_json_path(Pointer),
       case local_schema(State#state.root_schema, Path) of
         ?not_found -> jesse_error:handle_schema_invalid(?schema_invalid, State);
         Schema     -> set_current_schema(State, Schema)
@@ -201,7 +201,7 @@ resolve_reference(State, Reference) ->
                    [] ->
                      [];
                    [Pointer] ->
-                     jesse_json_path:parse(Pointer)
+                     jesse_lib:to_json_path(Pointer)
                  end,
           case local_schema(RemoteSchema, Path) of
             ?not_found ->
@@ -228,7 +228,7 @@ local_schema(Schema, [<<>> | Keys]) ->
 local_schema(Schema, [Key | Keys]) ->
   case jesse_lib:is_json_object(Schema) of
     true  ->
-      SubSchema = jesse_json_path:value(Key, Schema, ?not_found),
+      SubSchema = get_value(Key, Schema, ?not_found),
       local_schema(SubSchema, Keys);
     false ->
       case jesse_lib:is_array(Schema) of
@@ -290,3 +290,7 @@ find_schema(#state{schema_loader_fun=LoaderFun}, SchemaURI) ->
   catch
     _:_ -> ?not_found
   end.
+
+%% @private
+get_value(Key, Schema, Default) ->
+  jesse_lib:get_value(Key, Schema, Default).

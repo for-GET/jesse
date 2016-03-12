@@ -69,6 +69,9 @@ do_test(Key, Config) ->
 
 %%% Internal functions
 
+get_path(Key, Schema) ->
+  jesse_lib:get_path(Key, Schema).
+
 test_schema(DefaultSchema, Schema, SchemaTests) ->
   lists:foreach( fun(Test) ->
                      Description = get_path(?DESCRIPTION, Test),
@@ -98,9 +101,6 @@ test_schema(DefaultSchema, Schema, SchemaTests) ->
 
 testfile_to_key(TestFile) ->
   filename:rootname(filename:basename(TestFile)).
-
-get_path(Key, Schema) ->
-  jesse_json_path:path(Key, Schema).
 
 load_schema(URI) ->
   {ok, Response} = httpc:request(get, {URI, []}, [], [{body_format, binary}]),
