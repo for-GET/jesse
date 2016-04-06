@@ -126,7 +126,8 @@ load_schemas(Path, ParserFun, ValidationFun, MakeKeyFun) ->
 -spec validate( Schema :: any()
               , Data   :: json_term() | binary()
               ) -> {ok, json_term()}
-                 | jesse_error:error().
+                 | jesse_error:error()
+                 | jesse_database:error().
 validate(Schema, Data) ->
   validate(Schema, Data, []).
 
@@ -142,7 +143,8 @@ validate(Schema, Data) ->
               , Data     :: json_term() | binary()
               , Options  :: [{Key :: atom(), Data :: any()}]
               ) -> {ok, json_term()}
-                 | jesse_error:error().
+                 | jesse_error:error()
+                 | jesse_database:error().
 validate(Schema, Data, Options) ->
   try
     ParserFun  = proplists:get_value(parser_fun, Options, fun(X) -> X end),
