@@ -1,8 +1,10 @@
 # CHANGELOG
 
-## next
+## 1.4.0
 
 * Added jesse_error:to_json
+* Spec fixes
+* Test improvements
 
 ## 1.3.0
 
