@@ -137,3 +137,6 @@ uniqueItems(Config) ->
 
 itemsExtra(Config) ->
   do_test("itemsExtra", Config).
+
+remoteRefExtra(Config) ->
+  do_test("remoteRefExtra", Config).

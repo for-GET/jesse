@@ -209,8 +209,9 @@ check_value(Value, [{?EXTENDS, Extends} | Attrs], State) ->
   NewState = check_extends(Value, Extends, State),
   check_value(Value, Attrs, NewState);
 check_value(Value, [{?REF, RefSchemaURI} | Attrs], State) ->
-  NewState = check_ref(Value, RefSchemaURI, State),
-  check_value(Value, Attrs, NewState);
+  NewState = resolve_ref(Value, RefSchemaURI, State),
+  NewState2 = check_value(Value, Attrs, NewState),
+  undo_resolve_ref(NewState2, State);
 check_value(_Value, [], State) ->
   State;
 check_value(Value, [_Attr | Attrs], State) ->
@@ -897,10 +898,13 @@ check_extends_array(Value, Extends, State) ->
              ).
 
 %% @private
-check_ref(Value, Reference, State) ->
+resolve_ref(Value, Reference, State) ->
   NewState = jesse_state:resolve_reference(State, Reference),
   Schema = get_current_schema(NewState),
   jesse_schema_validator:validate_with_state(Schema, Value, NewState).
+
+undo_resolve_ref(State, OriginalState) ->
+  jesse_state:undo_resolve_reference(State, OriginalState).
 
 %%=============================================================================
 %% @doc Returns `true' if given values (instance) are equal, otherwise `false'

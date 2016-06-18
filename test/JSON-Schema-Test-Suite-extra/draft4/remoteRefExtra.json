@@ -1,0 +1,63 @@
+[
+    {
+        "description": "state corruption $ref in 'items'",
+        "schema": {
+            "properties": {
+                "0_list": {
+                    "items": {"$ref": "http://localhost:1234/subSchemas.json#/integer"}
+                },
+                "1_any": {"$ref": "http://localhost:1234/subSchemas.json#/integer"}
+            }
+        },
+        "tests": [
+            {
+                "description": "will trigger state corruption before this fix",
+                "data": {"0_list": 1,
+                         "1_any": 1},
+                "valid": true
+            }
+        ]
+    },
+    {
+        "description": "state corruption $ref in 'properties'",
+        "schema": {
+            "properties": {
+                "0_object": {
+                    "properties": {
+                        "0_prop": {"$ref": "http://localhost:1234/subSchemas.json#/integer"}
+                    }
+                },
+                "1_any": {"$ref": "http://localhost:1234/subSchemas.json#/integer"}
+            }
+        },
+        "tests": [
+            {
+                "description": "will trigger state corruption before this fix",
+                "data": {"0_obj": {"0_prop": 1},
+                         "1_any": 1},
+                "valid": true
+            }
+        ]
+    },
+    {
+        "description": "state corruption $ref in 'patternProperties'",
+        "schema": {
+            "properties": {
+                "0_object": {
+                    "patternProperties": {
+                        "0_prop": {"$ref": "http://localhost:1234/subSchemas.json#/integer"}
+                    }
+                },
+                "1_any": {"$ref": "http://localhost:1234/subSchemas.json#/integer"}
+            }
+        },
+        "tests": [
+            {
+                "description": "will trigger state corruption before this fix",
+                "data": {"0_obj": {"0_prop": 1},
+                         "1_any": 1},
+                "valid": true
+            }
+        ]
+    }
+]

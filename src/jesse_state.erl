@@ -38,7 +38,7 @@
         , set_error_list/2
         , find_schema/2
         , resolve_reference/2
-        , leave_reference/2
+        , undo_resolve_reference/2
         ]).
 
 -export_type([ state/0
@@ -213,10 +213,13 @@ resolve_reference(State, Reference) ->
       end
   end.
 
-%% @doc Revert changes, made by resolve_reference
--spec leave_reference(state(), state()) -> state().
-leave_reference(RefState, #state{root_schema = RootSchema, id = Id}) ->
-  RefState#state{root_schema = RootSchema, id = Id}.
+%% @doc Revert changes made by resolve_reference
+-spec undo_resolve_reference(state(), state()) -> state().
+undo_resolve_reference(RefState, OriginalState) ->
+  RefState#state{ root_schema = OriginalState#state.root_schema
+                , current_schema = OriginalState#state.current_schema
+                , id = OriginalState#state.id
+                }.
 
 %% @doc Retrive a specific part of a schema
 %% @private

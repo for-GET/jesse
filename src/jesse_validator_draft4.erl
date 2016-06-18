@@ -247,8 +247,8 @@ check_value(Value, [{?NOT, Schema} | Attrs], State) ->
     check_value(Value, Attrs, NewState);
 check_value(Value, [{?REF, Reference} | Attrs], State) ->
     NewState = resolve_ref(Value, Reference, State),
-    RefState = check_value(Value, Attrs, NewState),
-    leave_ref(RefState, State);
+    NewState2 = check_value(Value, Attrs, NewState),
+    undo_resolve_ref(NewState2, State);
 check_value(_Value, [], State) ->
   State;
 check_value(Value, [_Attr | Attrs], State) ->
@@ -1190,11 +1190,8 @@ resolve_ref(Value, Reference, State) ->
   Schema = get_current_schema(NewState),
   jesse_schema_validator:validate_with_state(Schema, Value, NewState).
 
-%% @doc Revert some parts of state when reference goes out of scope
-leave_ref(RefState, OrigState) ->
-  %% Replace `root_schema` and `id` in RefState from State.
-  jesse_state:leave_reference(RefState, OrigState).
-
+undo_resolve_ref(State, OriginalState) ->
+  jesse_state:undo_resolve_reference(State, OriginalState).
 
 %%=============================================================================
 %% @doc Returns `true' if given values (instance) are equal, otherwise `false'
