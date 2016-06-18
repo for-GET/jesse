@@ -153,3 +153,5 @@ uniqueItems(Config) ->
 itemsExtra(Config) ->
   do_test("itemsExtra", Config).
 
+remote_ref_regression_case(Config) ->
+  do_test("remoteRefRegression_19", Config).
