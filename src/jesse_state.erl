@@ -66,7 +66,7 @@
                                           jesse:json_term() |
                                           ?not_found
                                             )
-         , id                 :: binary()
+         , id                 :: binary() | 'undefined'
          }
        ).
 
