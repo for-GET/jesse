@@ -225,9 +225,8 @@ Maps example
 
 ## JSON Schema versions
 
-Currently there are two drafts of JSON Schema: draft3 and draft4. jesse
-supports only draft3, but the architecture allows to extend jesse to support
-any schema formats. To decide which validator to use jesse tries to read $schema
+Currently there are two popular drafts of JSON Schema: draft3 and draft4. jesse
+supports both. To decide which validator to use jesse tries to read $schema
 property from the given schema, and checks if it's a supported one, otherwise it
 will return an error. If $schema property isn't provided in the given schema,
 jesse will use the default validator (currently the validator for draft3).
