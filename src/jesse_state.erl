@@ -181,8 +181,10 @@ resolve_ref(State, Reference) ->
     [$# | Pointer] ->
       Path = jesse_json_path:parse(Pointer),
       case local_schema(State#state.root_schema, Path) of
-        ?not_found -> jesse_error:handle_schema_invalid(?schema_invalid, State);
-        Schema     -> set_current_schema(State, Schema)
+        ?not_found ->
+          jesse_error:handle_schema_invalid(?schema_invalid, State);
+        Schema ->
+          set_current_schema(State, Schema)
       end;
     %% Remote references
     RemoteURI ->
@@ -265,9 +267,11 @@ combine_id(Id, Ref) ->
   RefStr = unicode:characters_to_list(Ref),
   case http_uri:parse(RefStr) of
     %% Absolute
-    {ok, _} -> RefStr;
+    {ok, _} ->
+      RefStr;
     %% Relative
-    _Error  -> combine_relative_id(Id, RefStr)
+    _Error ->
+      combine_relative_id(Id, RefStr)
   end.
 
 combine_relative_id(undefined, Id) ->
@@ -293,9 +297,12 @@ find_schema(#state{schema_loader_fun=LoaderFun}, SchemaURI) ->
         Schema;
       Schema ->
         case jesse_lib:is_json_object(Schema) of
-          true  -> Schema;
-          false -> ?not_found
+          true ->
+            Schema;
+          false ->
+            ?not_found
         end
   catch
-    _:_ -> ?not_found
+    _:_ ->
+      ?not_found
   end.
