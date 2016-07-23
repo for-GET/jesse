@@ -106,38 +106,8 @@ jesse_run(JsonInstance, Schema) ->
   jesse:validate_with_schema( SchemaBinary
                             , JsonInstanceBinary
                             , [ {parser_fun, fun jsx:decode/1}
-                              , {schema_loader_fun, fun loader/1}
                               ]
                             ).
-loader(Id) ->
-  try
-    jesse_database:read(Id)
-  catch
-    throw:{database_error, Id, schema_not_found} ->
-      externalLoader(Id);
-    error:badarg -> % no ETS table ->
-      externalLoader(Id)
-  end.
-
-externalLoader("file://" ++ Path = URI) ->
-  {ok, Body} = file:read_file(Path),
-  ParsedSchema = jsx:decode(Body),
-  ok = jesse:add_schema(URI, ParsedSchema),
-  ParsedSchema;
-externalLoader("http://" ++ _ = URI) ->
-  {ok, Response} = httpc:request(get, {URI, []}, [], [{body_format, binary}]),
-  {{_Line, 200, _}, _Headers, Body} = Response,
-  ParsedSchema = jsx:decode(Body),
-  ok = jesse:add_schema(URI, ParsedSchema),
-  ParsedSchema;
-externalLoader("https://" ++ _ = URI) ->
-  {ok, Response} = httpc:request(get, {URI, []}, [], [{body_format, binary}]),
-  {{_Line, 200, _}, _Headers, Body} = Response,
-  ParsedSchema = jsx:decode(Body),
-  ok = jesse:add_schema(URI, ParsedSchema),
-  ParsedSchema;
-externalLoader(Id) ->
-  throw({database_error, Id, schema_not_found}).
 
 ensure_started(App) ->
   case application:start(App) of

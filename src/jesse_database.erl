@@ -33,6 +33,7 @@
         , delete/1
         , read/1
         , update/4
+        , load/1
         ]).
 
 -export_type([ update_result/0
@@ -108,6 +109,20 @@ read(Key) ->
       Term;
     _ ->
       throw({database_error, Key, schema_not_found})
+  end.
+
+%% @doc Reads a schema definition with the same key as `Key' from the internal
+%% storage. If there is no such key in the storage, it will try to fetch and add
+%% one to the internal storage if the Key uses the file:, http: or https: URI
+%% scheme. If this fails as well, an exception will be thrown.
+-spec load(Key :: any()) -> jesse:json_term() | no_return().
+load(Key) ->
+  try
+    create_table(table_name()),
+    read(Key)
+  catch
+    throw:{database_error, Key, schema_not_found} ->
+      externalLoad(Key)
   end.
 
 %%% Internal functions
@@ -233,3 +248,33 @@ is_outdated(InFile, SecondaryKey) ->
 %% value.
 %% @private
 table_name() -> ?JESSE_ETS.
+
+%% @doc Try to fetch and add a schema definition to the internal storage if
+%% the Key uses the file:, http: or https: URI scheme. If this fails, an
+%% exception will be thrown.
+-spec externalLoad(Key :: any()) -> jesse:json_term() | no_return().
+externalLoad("file://" ++ Path = Key) ->
+  {ok, Body} = file:read_file(Path),
+  Schema = jsx:decode(Body),
+  ValidationFun = fun jesse_lib:is_json_object/1,
+  MakeKeyFun    = fun(_) -> Key end,
+  ok = jesse_database:add(Schema, ValidationFun, MakeKeyFun),
+  Schema;
+externalLoad("http://" ++ _ = Key) ->
+  {ok, Response} = httpc:request(get, {Key, []}, [], [{body_format, binary}]),
+  {{_Line, 200, _}, _Headers, Body} = Response,
+  Schema = jsx:decode(Body),
+  ValidationFun = fun jesse_lib:is_json_object/1,
+  MakeKeyFun    = fun(_) -> Key end,
+  ok = jesse_database:add(Schema, ValidationFun, MakeKeyFun),
+  Schema;
+externalLoad("https://" ++ _ = Key) ->
+  {ok, Response} = httpc:request(get, {Key, []}, [], [{body_format, binary}]),
+  {{_Line, 200, _}, _Headers, Body} = Response,
+  Schema = jsx:decode(Body),
+  ValidationFun = fun jesse_lib:is_json_object/1,
+  MakeKeyFun    = fun(_) -> Key end,
+  ok = jesse_database:add(Schema, ValidationFun, MakeKeyFun),
+  Schema;
+externalLoad(Key) ->
+  throw({database_error, Key, schema_not_found}).

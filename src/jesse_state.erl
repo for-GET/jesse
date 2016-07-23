@@ -274,17 +274,57 @@ combine_id(Id, Ref) ->
       combine_relative_id(Id, RefStr)
   end.
 
+combine_relative_id(IdBin, RelId) when is_binary(IdBin) ->
+  combine_relative_id(unicode:characters_to_list(IdBin), RelId);
 combine_relative_id(undefined, Id) ->
   Id;
 combine_relative_id(Id, [$# | Fragment]) ->
-  [WithoutFragment | _] = re:split(Id, <<$#>>, [{return, list}]),
+  [WithoutFragment | _] = re:split(Id, "#", [{return, list}]),
   WithoutFragment ++ [$# | Fragment];
-combine_relative_id(Id, NewFile) when is_binary(Id) ->
-  combine_relative_id(unicode:characters_to_list(Id), NewFile);
-combine_relative_id(Id, NewFile) ->
-  BaseURI = filename:dirname(Id),
-  FileName = unicode:characters_to_list(NewFile),
-  BaseURI ++ [$/ | FileName].
+combine_relative_id(Id, RelId) ->
+  Base = filename:dirname(Id),
+  combine_relative_id2(Base, RelId).
+
+combine_relative_id2("file:", RelId) ->
+  Canonical = canonical_path(RelId),
+  filename:join(Canonical);
+combine_relative_id2("file://" ++ Path, RelId) ->
+  Canonical = canonical_path(filename:join([Path, RelId])),
+  "file://" ++ filename:join(Canonical);
+combine_relative_id2("http:", RelId) ->
+  Canonical = canonical_path(RelId),
+  "http://" ++ string:join(Canonical, "/");
+combine_relative_id2("http://" ++ Path, RelId) ->
+  Canonical = canonical_path([Path, $/, RelId]),
+  "http://" ++ string:join(Canonical, "/");
+combine_relative_id2("https:", RelId) ->
+  Canonical = canonical_path(RelId),
+  "https://" ++ string:join(Canonical, "/");
+combine_relative_id2("https://" ++ Path, RelId) ->
+  Canonical = canonical_path([Path, $/, RelId]),
+  "https://" ++ string:join(Canonical, "/");
+combine_relative_id2(".", RelId) ->
+  Canonical = canonical_path(RelId),
+  filename:join(Canonical);
+combine_relative_id2(Path, RelId) ->
+  Canonical = canonical_path(filename:join([Path, RelId])),
+  filename:join(Canonical).
+
+canonical_path(Path) ->
+  PathItems = re:split(Path, "\\\\|/", [{return, list}]),
+  canonical_path2(PathItems, []).
+
+canonical_path2([], Acc) ->
+    lists:reverse(Acc);
+canonical_path2([H|T], Acc) ->
+  case H of
+    "." ->
+      canonical_path2(T, Acc);
+    ".." ->
+      canonical_path2(T, tl(Acc));
+    _ ->
+      canonical_path2(T, [H|Acc])
+  end.
 
 %% @doc Find a schema based on URI
 -spec find_schema(State :: state(), SchemaURI :: string() | binary()) ->
