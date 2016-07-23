@@ -37,8 +37,8 @@
         , set_current_schema/2
         , set_error_list/2
         , find_schema/2
-        , resolve_reference/2
-        , undo_resolve_reference/2
+        , resolve_ref/2
+        , undo_resolve_ref/2
         ]).
 
 -export_type([ state/0
@@ -174,8 +174,8 @@ set_error_list(State, ErrorList) ->
   State#state{error_list = ErrorList}.
 
 %% @doc Resolve a reference
--spec resolve_reference(State :: state(), Reference :: binary()) -> state().
-resolve_reference(State, Reference) ->
+-spec resolve_ref(State :: state(), Reference :: binary()) -> state().
+resolve_ref(State, Reference) ->
   case combine_id(State#state.id, Reference) of
     %% Local references
     [$# | Pointer] ->
@@ -214,8 +214,8 @@ resolve_reference(State, Reference) ->
   end.
 
 %% @doc Revert changes made by resolve_reference
--spec undo_resolve_reference(state(), state()) -> state().
-undo_resolve_reference(RefState, OriginalState) ->
+-spec undo_resolve_ref(state(), state()) -> state().
+undo_resolve_ref(RefState, OriginalState) ->
   RefState#state{ root_schema = OriginalState#state.root_schema
                 , current_schema = OriginalState#state.current_schema
                 , id = OriginalState#state.id

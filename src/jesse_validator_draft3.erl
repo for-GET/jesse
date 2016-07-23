@@ -899,12 +899,12 @@ check_extends_array(Value, Extends, State) ->
 
 %% @private
 resolve_ref(Value, Reference, State) ->
-  NewState = jesse_state:resolve_reference(State, Reference),
+  NewState = jesse_state:resolve_ref(State, Reference),
   Schema = get_current_schema(NewState),
   jesse_schema_validator:validate_with_state(Schema, Value, NewState).
 
 undo_resolve_ref(State, OriginalState) ->
-  jesse_state:undo_resolve_reference(State, OriginalState).
+  jesse_state:undo_resolve_ref(State, OriginalState).
 
 %%=============================================================================
 %% @doc Returns `true' if given values (instance) are equal, otherwise `false'
