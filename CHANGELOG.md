@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 1.5.0
+
+* Default schema loader now supports file: http: and https: URI schemes.
+  When a schema cannot be found in the internal storage, a schema hosted under
+  one of the supported URI schemes will be fetched and stored.
+  To maintain the old behavior (internal storage only) give the option
+  `schema_loader_fun` the value `fun jesse_database:load/1`.
+
 ## 1.4.0
 
 * Added jesse_error:to_json
