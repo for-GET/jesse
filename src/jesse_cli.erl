@@ -94,7 +94,7 @@ jesse_run(JsonInstance, Schema) ->
   {ok, SchemaBinary0} = file:read_file(Schema),
   SchemaJsx0 = jsx:decode(SchemaBinary0),
   SchemaFqdn = "file://" ++ filename:absname(Schema),
-  SchemaJsx = case proplists:get_value(<<"id">>, SchemaJsx0) of
+  SchemaJsx = case jesse_json_path:value(<<"id">>, SchemaJsx0, undefined) of
                 undefined ->
                   [ {<<"id">>, unicode:characters_to_binary(SchemaFqdn)}
                     | SchemaJsx0

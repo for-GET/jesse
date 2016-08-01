@@ -292,8 +292,8 @@ get_schema_info(File, {Acc, ParseFun}) ->
 %% @private
 -spec get_schema_id(Schema :: jesse:json_term()) -> string() | undefined.
 get_schema_id(Schema) ->
-  case jesse_json_path:value(?ID, Schema, ?not_found) of
-    ?not_found ->
+  case jesse_json_path:value(?ID, Schema, undefined) of
+    undefined ->
       undefined;
     Id ->
       erlang:binary_to_list(Id)
