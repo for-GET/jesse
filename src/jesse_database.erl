@@ -34,6 +34,7 @@
         , add_path/3
         , load/1
         , load_uri/1
+        , load_all/0
         , delete/1
         ]).
 
@@ -151,6 +152,12 @@ load_uri(Key) ->
       add_uri(Key),
       load(Key)
   end.
+
+%% @doc Loads all schemas in the internal storage.
+-spec load_all() -> [tuple()].
+load_all() ->
+  Table = create_table(table_name()),
+  ets:tab2list(Table).
 
 %% @doc Deletes a schema definition from the internal storage associated with,
 %% or sourced with the key `Key'.
