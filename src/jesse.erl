@@ -120,7 +120,7 @@ load_schemas(Path, ParserFun) ->
                   , MakeKeyFun    :: fun((json_term()) -> any())
                   ) -> jesse_database:update_result().
 load_schemas(Path, ParserFun, ValidationFun, MakeKeyFun) ->
-  jesse_database:update(Path, ParserFun, ValidationFun, MakeKeyFun).
+  jesse_database:add_path(Path, ParserFun, ValidationFun, MakeKeyFun).
 
 %% @doc Equivalent to {@link validate/3} where `Options' is an empty list.
 -spec validate( Schema :: any()
@@ -149,7 +149,7 @@ validate(Schema, Data, Options) ->
   try
     ParserFun  = proplists:get_value(parser_fun, Options, fun(X) -> X end),
     ParsedData = try_parse(data, ParserFun, Data),
-    JsonSchema = jesse_database:read(Schema),
+    JsonSchema = jesse_database:load(Schema),
     jesse_schema_validator:validate(JsonSchema, ParsedData, Options)
   catch
     throw:Error -> {error, Error}

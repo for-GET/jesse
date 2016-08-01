@@ -36,9 +36,10 @@
         , set_allowed_errors/2
         , set_current_schema/2
         , set_error_list/2
-        , find_schema/2
         , resolve_ref/2
         , undo_resolve_ref/2
+        , canonical_path/2
+        , combine_id/2
         ]).
 
 -export_type([ state/0
@@ -61,7 +62,7 @@
                                      ) -> list() | no_return()
                                             )
          , default_schema_ver :: binary()
-         , schema_loader_fun  :: fun(( binary()
+         , schema_loader_fun  :: fun(( string()
                                      ) -> {ok, jesse:json_term()} |
                                           jesse:json_term() |
                                           ?not_found
@@ -173,40 +174,31 @@ set_current_schema(#state{id = Id} = State, NewSchema) ->
 set_error_list(State, ErrorList) ->
   State#state{error_list = ErrorList}.
 
-%% @doc Resolve a reference
+%% @doc Resolve a reference.
 -spec resolve_ref(State :: state(), Reference :: binary()) -> state().
 resolve_ref(State, Reference) ->
   case combine_id(State#state.id, Reference) of
     %% Local references
-    [$# | Pointer] ->
+    "#" ++ Pointer ->
       Path = jesse_json_path:parse(Pointer),
-      case local_schema(State#state.root_schema, Path) of
+      case load_local_schema(State#state.root_schema, Path) of
         ?not_found ->
           jesse_error:handle_schema_invalid(?schema_invalid, State);
         Schema ->
           set_current_schema(State, Schema)
       end;
-    %% Remote references
     RemoteURI ->
-      %% Split the URI on the fragment if it exists
-      [BaseURI | MaybePointer] = re:split( RemoteURI
-                                         , <<$#>>
-                                         , [{return, binary}, unicode]
-                                         ),
-      case jesse_state:find_schema(State, BaseURI) of
+      [BaseURI | Pointer] = re:split( RemoteURI
+                                    , <<$#>>
+                                    , [{return, binary}, unicode]
+                                    ),
+      case load_schema(State, BaseURI) of
         ?not_found ->
           jesse_error:handle_schema_invalid(?schema_invalid, State);
         RemoteSchema ->
-          %% Set the new root schema
           NewState = State#state{root_schema = RemoteSchema, id = BaseURI},
-          %% Retrive the part we want
-          Path = case MaybePointer of
-                   [] ->
-                     [];
-                   [Pointer] ->
-                     jesse_json_path:parse(Pointer)
-                 end,
-          case local_schema(RemoteSchema, Path) of
+          Path = jesse_json_path:parse(Pointer),
+          case load_local_schema(RemoteSchema, Path) of
             ?not_found ->
               jesse_error:handle_schema_invalid(?schema_invalid, State);
             Schema ->
@@ -215,7 +207,7 @@ resolve_ref(State, Reference) ->
       end
   end.
 
-%% @doc Revert changes made by resolve_reference
+%% @doc Revert changes made by resolve_reference.
 -spec undo_resolve_ref(state(), state()) -> state().
 undo_resolve_ref(RefState, OriginalState) ->
   RefState#state{ root_schema = OriginalState#state.root_schema
@@ -223,24 +215,27 @@ undo_resolve_ref(RefState, OriginalState) ->
                 , id = OriginalState#state.id
                 }.
 
-%% @doc Retrive a specific part of a schema
+%% @doc Retrieve a specific part of a schema
 %% @private
--spec local_schema(Schema :: not_found | jesse:json_term(),
-                   Path :: [binary()]) -> not_found | jesse:json_term().
-local_schema(?not_found, _Path) ->
+-spec load_local_schema( Schema :: not_found | jesse:json_term()
+                       , Path :: [binary()]
+                       ) -> not_found | jesse:json_term().
+load_local_schema(?not_found, _Path) ->
   ?not_found;
-local_schema(Schema, []) ->
+load_local_schema(Schema, []) ->
   case jesse_lib:is_json_object(Schema) of
-    true  -> Schema;
-    false -> ?not_found
+    true ->
+      Schema;
+    false ->
+      ?not_found
   end;
-local_schema(Schema, [<<>> | Keys]) ->
-  local_schema(Schema, Keys);
-local_schema(Schema, [Key | Keys]) ->
+load_local_schema(Schema, [<<>> | Keys]) ->
+  load_local_schema(Schema, Keys);
+load_local_schema(Schema, [Key | Keys]) ->
   case jesse_lib:is_json_object(Schema) of
     true  ->
       SubSchema = jesse_json_path:value(Key, Schema, ?not_found),
-      local_schema(SubSchema, Keys);
+      load_local_schema(SubSchema, Keys);
     false ->
       case jesse_lib:is_array(Schema) of
         true ->
@@ -248,7 +243,7 @@ local_schema(Schema, [Key | Keys]) ->
           try list_to_integer(binary_to_list(Key)) of
             Index ->
               SubSchema = lists:nth(Index + 1, Schema),
-              local_schema(SubSchema, Keys)
+              load_local_schema(SubSchema, Keys)
           catch
             _:_ -> ?not_found
           end;
@@ -263,75 +258,95 @@ local_schema(Schema, [Key | Keys]) ->
                  undefined | binary()) -> http_uri:uri().
 combine_id(Id, undefined) ->
   Id;
-combine_id(Id, Ref) ->
-  RefStr = unicode:characters_to_list(Ref),
-  case http_uri:parse(RefStr) of
-    %% Absolute
+combine_id(Id, RefBin) ->
+  Ref = unicode:characters_to_list(RefBin),
+  case http_uri:parse(Ref) of
+    %% Absolute http/s:
     {ok, _} ->
-      RefStr;
+      Ref;
+    %% Absolute file:
+    {error, {no_default_port, file, Ref}} ->
+      Ref;
     %% Relative
-    _Error ->
-      combine_relative_id(Id, RefStr)
+    _ ->
+      combine_relative_id(Id, Ref)
   end.
 
+%% @doc Combine a relative id
+%% @private
 combine_relative_id(IdBin, RelId) when is_binary(IdBin) ->
   combine_relative_id(unicode:characters_to_list(IdBin), RelId);
-combine_relative_id(undefined, Id) ->
-  Id;
-combine_relative_id(Id, [$# | Fragment]) ->
+combine_relative_id(undefined, RelId) ->
+  RelId;
+combine_relative_id(Id, "#" ++ Fragment) ->
   [WithoutFragment | _] = re:split(Id, "#", [{return, list}]),
-  WithoutFragment ++ [$# | Fragment];
+  WithoutFragment ++ "#" ++ Fragment;
 combine_relative_id(Id, RelId) ->
   Base = filename:dirname(Id),
   combine_relative_id2(Base, RelId).
 
+%% @doc Combine a relative id
+%% @private
 combine_relative_id2("file:", RelId) ->
-  Canonical = canonical_path(RelId),
-  filename:join(Canonical);
+  canonical_path(RelId, "file:");
 combine_relative_id2("file://" ++ Path, RelId) ->
-  Canonical = canonical_path(filename:join([Path, RelId])),
-  "file://" ++ filename:join(Canonical);
+  canonical_path(filename:join([Path, RelId]), "file:");
 combine_relative_id2("http:", RelId) ->
-  Canonical = canonical_path(RelId),
-  "http://" ++ string:join(Canonical, "/");
+  canonical_path(RelId, "http:");
 combine_relative_id2("http://" ++ Path, RelId) ->
-  Canonical = canonical_path([Path, $/, RelId]),
-  "http://" ++ string:join(Canonical, "/");
+  canonical_path(Path ++ [$/, RelId], "http:");
 combine_relative_id2("https:", RelId) ->
-  Canonical = canonical_path(RelId),
-  "https://" ++ string:join(Canonical, "/");
+  canonical_path(RelId, "https:");
 combine_relative_id2("https://" ++ Path, RelId) ->
-  Canonical = canonical_path([Path, $/, RelId]),
-  "https://" ++ string:join(Canonical, "/");
+  canonical_path(Path ++ [$/, RelId], "https:");
 combine_relative_id2(".", RelId) ->
-  Canonical = canonical_path(RelId),
-  filename:join(Canonical);
+  canonical_path(RelId, "file:");
 combine_relative_id2(Path, RelId) ->
-  Canonical = canonical_path(filename:join([Path, RelId])),
-  filename:join(Canonical).
+  canonical_path(filename:join([Path, RelId]), "file:").
 
-canonical_path(Path) ->
+%% @doc Return a canonical URI path.
+%% @private
+canonical_path("file://" ++ Path, _) ->
+  "file://" ++ filename:join(raw_canonical_path(Path));
+canonical_path(Path, "file:" ++ _) ->
+  "file://" ++ filename:join(raw_canonical_path(Path));
+canonical_path("http://" ++ Path, _) ->
+  "http://" ++ string:join(raw_canonical_path(Path), "/");
+canonical_path(Path, "http:" ++ _) ->
+  "http://" ++ string:join(raw_canonical_path(Path), "/");
+canonical_path("https://" ++ Path, _) ->
+  "https://" ++ string:join(raw_canonical_path(Path), "/");
+canonical_path(Path, "https:" ++ _) ->
+  "https://" ++ string:join(raw_canonical_path(Path), "/");
+canonical_path(Path, _) ->
+  "file://" ++ filename:join(raw_canonical_path(filename:absname(Path))).
+
+%% @doc Return a raw canonical path.
+%% @private
+raw_canonical_path(Path) ->
   PathItems = re:split(Path, "\\\\|/", [{return, list}]),
-  canonical_path2(PathItems, []).
+  raw_canonical_path2(PathItems, []).
 
-canonical_path2([], Acc) ->
+%% @doc Return a raw canonical path.
+%% @private
+raw_canonical_path2([], Acc) ->
     lists:reverse(Acc);
-canonical_path2([H|T], Acc) ->
+raw_canonical_path2([H|T], Acc) ->
   case H of
     "." ->
-      canonical_path2(T, Acc);
+      raw_canonical_path2(T, Acc);
     ".." ->
-      canonical_path2(T, tl(Acc));
+      raw_canonical_path2(T, tl(Acc));
     _ ->
-      canonical_path2(T, [H|Acc])
+      raw_canonical_path2(T, [H|Acc])
   end.
 
-%% @doc Find a schema based on URI
--spec find_schema(State :: state(), SchemaURI :: string() | binary()) ->
-    jesse:json_term() | ?not_found.
-find_schema(State, SchemaURI) when is_binary(SchemaURI) ->
-  find_schema(State, unicode:characters_to_list(SchemaURI));
-find_schema(#state{schema_loader_fun=LoaderFun}, SchemaURI) ->
+%% @doc Load a schema based on URI
+-spec load_schema(State :: state(), SchemaURI :: string() | binary()) ->
+                     jesse:json_term() | ?not_found.
+load_schema(State, SchemaURI) when is_binary(SchemaURI) ->
+  load_schema(State, unicode:characters_to_list(SchemaURI));
+load_schema(#state{schema_loader_fun = LoaderFun}, SchemaURI) ->
   try LoaderFun(SchemaURI) of
       {ok, Schema} ->
         Schema;
@@ -343,6 +358,7 @@ find_schema(#state{schema_loader_fun=LoaderFun}, SchemaURI) ->
             ?not_found
         end
   catch
-    _:_ ->
+    _C:_E ->
+      %% io:format("load_schema: ~p\n", [{_C, _E, erlang:get_stacktrace()}]),
       ?not_found
   end.
