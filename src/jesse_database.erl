@@ -283,7 +283,15 @@ get_schema_infos(Files, ParseFun) ->
 get_schema_info(File, {Acc, ParseFun}) ->
   SourceKey = "file://" ++ filename:absname(File),
   {ok, SchemaBin} = file:read_file(File),
-  Schema = try_parse(ParseFun, SchemaBin),
+  Schema0 = try_parse(ParseFun, SchemaBin),
+  Schema = case jesse_json_path:value(<<"id">>, Schema0, undefined) of
+             undefined ->
+               [ {<<"id">>, unicode:characters_to_binary(SourceKey)}
+                 | Schema0
+               ];
+             _ ->
+               Schema0
+           end,
   {ok, #file_info{mtime = Mtime}} = file:read_file_info(File),
   {[{SourceKey, Mtime, Schema} | Acc], ParseFun}.
 
