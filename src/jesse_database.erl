@@ -82,16 +82,16 @@ add_uri("file://" ++ File = Key) ->
   store_schemas(SchemaInfos, ValidationFun);
 add_uri("http://" ++ _ = Key) ->
   {ok, Response} = httpc:request(get, {Key, []}, [], [{body_format, binary}]),
-  {{_Line, 200, _}, _Headers, Body} = Response,
+  {{_Line, 200, _}, Headers, Body} = Response,
   Schema = jsx:decode(Body),
-  SchemaInfos = [{Key, 0, Schema}],
+  SchemaInfos = [{Key, get_http_mtime(Headers), Schema}],
   ValidationFun = fun jesse_lib:is_json_object/1,
   store_schemas(SchemaInfos, ValidationFun);
 add_uri("https://" ++ _ = Key) ->
   {ok, Response} = httpc:request(get, {Key, []}, [], [{body_format, binary}]),
-  {{_Line, 200, _}, _Headers, Body} = Response,
+  {{_Line, 200, _}, Headers, Body} = Response,
   Schema = jsx:decode(Body),
-  SchemaInfos = [{Key, 0, Schema}],
+  SchemaInfos = [{Key, get_http_mtime(Headers), Schema}],
   ValidationFun = fun jesse_lib:is_json_object/1,
   store_schemas(SchemaInfos, ValidationFun);
 add_uri(Key) ->
@@ -305,6 +305,15 @@ get_schema_id(Schema) ->
       undefined;
     Id ->
       erlang:binary_to_list(Id)
+  end.
+
+%% @private
+get_http_mtime(Headers) ->
+  case proplists:get_value("last-modified", Headers) of
+    undefined ->
+      0;
+    Date ->
+      httpd_util:convert_request_date(Date)
   end.
 
 %% @doc Wraps up calls to a third party json parser.
