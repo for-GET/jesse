@@ -125,13 +125,13 @@ load(Key0) ->
   Table = create_table(table_name()),
   case ets:match_object(Table, {'_', Key, '_', '_'}) of
     %% ID
-    [{_SourceKey, Key, _TimeStamp, Schema}] ->
+    [{_SourceKey, Key, _Mtime, Schema}] ->
       Schema;
     [] ->
       SourceKey = Key,
       case ets:match_object(Table, {SourceKey, '_', '_', '_'}) of
         %% Source (URI)
-        [{SourceKey, _Key, _TimeStamp, Schema}] ->
+        [{SourceKey, _Key, _Mtime, Schema}] ->
           Schema;
         _ ->
           throw({database_error, Key, schema_not_found})
