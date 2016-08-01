@@ -91,11 +91,53 @@ jesse_run(JsonInstance, Schema) ->
   ok = ensure_started(jsx),
   ok = ensure_started(jesse),
   {ok, JsonInstanceBinary} = file:read_file(JsonInstance),
-  {ok, SchemaBinary} = file:read_file(Schema),
+  {ok, SchemaBinary0} = file:read_file(Schema),
+  SchemaJsx0 = jsx:decode(SchemaBinary0),
+  SchemaFqdn = "file://" ++ filename:absname(Schema),
+  SchemaJsx = case proplists:get_value(<<"id">>, SchemaJsx0) of
+                undefined ->
+                  [ {<<"id">>, unicode:characters_to_binary(SchemaFqdn)}
+                    | SchemaJsx0
+                  ];
+                _ ->
+                  SchemaJsx0
+              end,
+  SchemaBinary = jsx:encode(SchemaJsx),
   jesse:validate_with_schema( SchemaBinary
                             , JsonInstanceBinary
-                            , [{parser_fun, fun jsx:decode/1}]
+                            , [ {parser_fun, fun jsx:decode/1}
+                              , {schema_loader_fun, fun loader/1}
+                              ]
                             ).
+loader(Id) ->
+  try
+    jesse_database:read(Id)
+  catch
+    throw:{database_error, Id, schema_not_found} ->
+      externalLoader(Id);
+    error:badarg -> % no ETS table ->
+      externalLoader(Id)
+  end.
+
+externalLoader("file://" ++ Path = URI) ->
+  {ok, Body} = file:read_file(Path),
+  ParsedSchema = jsx:decode(Body),
+  ok = jesse:add_schema(URI, ParsedSchema),
+  ParsedSchema;
+externalLoader("http://" ++ _ = URI) ->
+  {ok, Response} = httpc:request(get, {URI, []}, [], [{body_format, binary}]),
+  {{_Line, 200, _}, _Headers, Body} = Response,
+  ParsedSchema = jsx:decode(Body),
+  ok = jesse:add_schema(URI, ParsedSchema),
+  ParsedSchema;
+externalLoader("https://" ++ _ = URI) ->
+  {ok, Response} = httpc:request(get, {URI, []}, [], [{body_format, binary}]),
+  {{_Line, 200, _}, _Headers, Body} = Response,
+  ParsedSchema = jsx:decode(Body),
+  ok = jesse:add_schema(URI, ParsedSchema),
+  ParsedSchema;
+externalLoader(Id) ->
+  throw({database_error, Id, schema_not_found}).
 
 ensure_started(App) ->
   case application:start(App) of
