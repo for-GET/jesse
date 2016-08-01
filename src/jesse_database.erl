@@ -31,7 +31,7 @@
 %% API
 -export([ add/3
         , add_uri/1
-        , add_path/4
+        , add_path/3
         , load/1
         , load_uri/1
         , delete/1
@@ -60,13 +60,13 @@
 %% @doc Adds a schema definition `Schema' to the internal storage associated
 %% with the key `Key'. It will overwrite an existing schema with the same key if
 %% there is any.
--spec add( Schema        :: jesse:json_term()
+-spec add( Key           :: string()
+         , Schema        :: jesse:json_term()
          , ValidationFun :: fun((any()) -> boolean())
-         , MakeKeyFun    :: fun((jesse:json_term()) -> string())
          ) -> store_result().
-add(Schema, ValidationFun, MakeKeyFun) ->
-  SchemaInfos = [{'$unknown', 0, Schema}],
-  store_schemas(SchemaInfos, ValidationFun, MakeKeyFun).
+add(Key, Schema, ValidationFun) ->
+  SchemaInfos = [{Key, 0, Schema}],
+  store_schemas(SchemaInfos, ValidationFun).
 
 %% @doc Add a schema definition to the internal storage identified by a URI Key.
 %% Supported URI schemes are file:, http: and https:. If this fails, an
@@ -78,30 +78,26 @@ add_uri("file://" ++ File = Key) ->
   Schema = jsx:decode(Body),
   SchemaInfos = [{Key, Mtime, Schema}],
   ValidationFun = fun jesse_lib:is_json_object/1,
-  MakeKeyFun = fun get_schema_id/1,
-  store_schemas(SchemaInfos, ValidationFun, MakeKeyFun);
+  store_schemas(SchemaInfos, ValidationFun);
 add_uri("http://" ++ _ = Key) ->
   {ok, Response} = httpc:request(get, {Key, []}, [], [{body_format, binary}]),
   {{_Line, 200, _}, _Headers, Body} = Response,
   Schema = jsx:decode(Body),
   SchemaInfos = [{Key, 0, Schema}],
   ValidationFun = fun jesse_lib:is_json_object/1,
-  MakeKeyFun = fun get_schema_id/1,
-  store_schemas(SchemaInfos, ValidationFun, MakeKeyFun);
+  store_schemas(SchemaInfos, ValidationFun);
 add_uri("https://" ++ _ = Key) ->
   {ok, Response} = httpc:request(get, {Key, []}, [], [{body_format, binary}]),
   {{_Line, 200, _}, _Headers, Body} = Response,
   Schema = jsx:decode(Body),
   SchemaInfos = [{Key, 0, Schema}],
   ValidationFun = fun jesse_lib:is_json_object/1,
-  MakeKeyFun = fun get_schema_id/1,
-  store_schemas(SchemaInfos, ValidationFun, MakeKeyFun);
+  store_schemas(SchemaInfos, ValidationFun);
 add_uri(Key) ->
   throw({database_error, Key, unknown_uri_scheme}).
 
 %% @doc Add schema definitions from all the files from directory `Dir', each
-%% being validated by `ValidationFun', and stored in the internal
-%% storage with a key returned by `MakeKeyFun'.
+%% being validated by `ValidationFun', and stored in the internal storage.
 %%
 %% The file modification time will also be stored, to skip unnecessary updates.
 %%
@@ -113,12 +109,11 @@ add_uri(Key) ->
 -spec add_path( Path          :: string()
               , ParseFun      :: fun((binary()) -> jesse:json_term())
               , ValidationFun :: fun((any()) -> boolean())
-              , MakeKeyFun    :: fun((jesse:json_term()) -> any())
               ) -> store_result().
-add_path(Path0, ParseFun, ValidationFun, MakeKeyFun) ->
-  Path = jesse_state:canonical_path(Path0, "file:"),
+add_path(Path0, ParseFun, ValidationFun) ->
+  "file://" ++ Path = jesse_state:canonical_path(Path0, "file:"),
   SchemaInfos = get_schema_infos(list_outdated(Path), ParseFun),
-  store_schemas(SchemaInfos, ValidationFun, MakeKeyFun).
+  store_schemas(SchemaInfos, ValidationFun).
 
 %% @doc Loads a schema definition associated with, or sourced with the key `Key'
 %% from the internal storage. If there is no such key in the storage, an
@@ -127,13 +122,15 @@ add_path(Path0, ParseFun, ValidationFun, MakeKeyFun) ->
 load(Key0) ->
   Key = jesse_state:canonical_path(Key0, Key0),
   Table = create_table(table_name()),
-  case ets:match_object(Table, {Key, '_', '_', '_'}) of
-    [{Key, _SecondaryKey, _TimeStamp, Schema}] ->
+  case ets:match_object(Table, {'_', Key, '_', '_'}) of
+    %% ID
+    [{_SourceKey, Key, _TimeStamp, Schema}] ->
       Schema;
     [] ->
-      SecondaryKey = Key,
-      case ets:match_object(Table, {'_', SecondaryKey, '_', '_'}) of
-        [{_Key, SecondaryKey, _TimeStamp, Schema}] ->
+      SourceKey = Key,
+      case ets:match_object(Table, {SourceKey, '_', '_', '_'}) of
+        %% Source (URI)
+        [{SourceKey, _Key, _TimeStamp, Schema}] ->
           Schema;
         _ ->
           throw({database_error, Key, schema_not_found})
@@ -161,9 +158,9 @@ load_uri(Key) ->
 delete(Key0) ->
   Key = jesse_state:canonical_path(Key0, Key0),
   Table = create_table(table_name()),
-  ets:match_delete(Table, {Key, '_', '_', '_'}),
-  SecondaryKey = Key,
-  ets:match_delete(Table, {'_', SecondaryKey, '_', '_'}),
+  SourceKey = Key,
+  ets:match_delete(Table, {SourceKey, '_', '_', '_'}),
+  ets:match_delete(Table, {'_', Key, '_', '_'}),
   ok.
 
 %%% Internal functions
@@ -186,16 +183,15 @@ table_exists(TableName) ->
 
 %% @doc Stores information on schema definitions `SchemaInfos' in the internal
 %% storage. Uses `ValidationFun' to validate each schema definition before it
-%% is stored. Each schema definition is stored with a key returned by
-%% `MakeKeyFun' applied to the schema entry. Returns `ok' in case if all the
+%% is stored. Returns `ok' in case if all the
 %% schemas passed the validation and were stored, otherwise a list of invalid
 %% entries is returned.
 %% @private
-store_schemas(SchemaInfos, ValidationFun, MakeKeyFun) ->
-  {Fails, _, _} = lists:foldl( fun store_schema/2
-                             , {[], ValidationFun, MakeKeyFun}
-                             , SchemaInfos
-                             ),
+store_schemas(SchemaInfos, ValidationFun) ->
+  {Fails, _} = lists:foldl( fun store_schema/2
+                          , {[], ValidationFun}
+                          , SchemaInfos
+                          ),
   case Fails of
     [] ->
       ok;
@@ -204,20 +200,20 @@ store_schemas(SchemaInfos, ValidationFun, MakeKeyFun) ->
   end.
 
 %% @private
-store_schema(SchemaInfo, {Acc, ValidationFun, MakeKeyFun}) ->
+store_schema(SchemaInfo, {Acc, ValidationFun}) ->
   {SourceKey, Mtime, Schema} = SchemaInfo,
   case ValidationFun(Schema) of
     true ->
-      Object = { MakeKeyFun(Schema)
-               , SourceKey
+      Object = { SourceKey
+               , get_schema_id(Schema)
                , Mtime
                , Schema
                },
       Table = create_table(table_name()),
       ets:insert(Table, Object),
-      {Acc, ValidationFun, MakeKeyFun};
+      {Acc, ValidationFun};
     false ->
-      {[SchemaInfo | Acc], ValidationFun, MakeKeyFun}
+      {[SchemaInfo | Acc], ValidationFun}
   end.
 
 %% @doc Returns a list of schema files in `Path' which have outdated
@@ -257,10 +253,10 @@ list_dir(Path0) ->
 %% @private
 is_outdated(File) ->
   SourceKey = "file://" ++ File,
-  case ets:match_object(table_name(), {'_', SourceKey, '_', '_'}) of
+  case ets:match_object(table_name(), {SourceKey, '_', '_', '_'}) of
     [] ->
       true;
-    [{_Key, SourceKey, Mtime, _Schema}] ->
+    [{SourceKey, _Key, Mtime, _Schema}] ->
       {ok, #file_info{mtime = CurrentMtime}} = file:read_file_info(File),
       CurrentMtime > Mtime
   end.
@@ -278,20 +274,20 @@ get_schema_infos(Files, ParseFun) ->
 
 %% @private
 get_schema_info(File, {Acc, ParseFun}) ->
-  SourceKey = "file://" ++ File,
+  SourceKey = "file://" ++ filename:absname(File),
   {ok, SchemaBin} = file:read_file(File),
   Schema = try_parse(ParseFun, SchemaBin),
   {ok, #file_info{mtime = Mtime}} = file:read_file_info(File),
   {[{SourceKey, Mtime, Schema} | Acc], ParseFun}.
 
 %% @doc Returns value of "id" field from json object `Schema', assuming that
-%% the given json object has such a field, otherwise return '$unknown'.
+%% the given json object has such a field, otherwise returns undefined.
 %% @private
--spec get_schema_id(Schema :: jesse:json_term()) -> string() | '$unknown'.
+-spec get_schema_id(Schema :: jesse:json_term()) -> string() | undefined.
 get_schema_id(Schema) ->
   case jesse_json_path:value(?ID, Schema, ?not_found) of
     ?not_found ->
-      '$unknown';
+      undefined;
     Id ->
       erlang:binary_to_list(Id)
   end.

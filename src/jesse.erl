@@ -30,7 +30,7 @@
         , add_schema/3
         , del_schema/1
         , load_schemas/2
-        , load_schemas/4
+        , load_schemas/3
         , validate/2
         , validate/3
         , validate_with_schema/2
@@ -56,8 +56,7 @@ main(Args) ->
                     ok | jesse_error:error().
 add_schema(Key, Schema) ->
   ValidationFun = fun jesse_lib:is_json_object/1,
-  MakeKeyFun    = fun(_) -> Key end,
-  jesse_database:add(Schema, ValidationFun, MakeKeyFun).
+  jesse_database:add(Schema, ValidationFun, Key).
 
 %% @doc Equivalent to `add_schema/2', but `Schema' is a binary string, and
 %% the third agument is a parse function to convert the binary string to
@@ -84,10 +83,8 @@ del_schema(Key) ->
 
 %% @doc Loads schema definitions from filesystem to in-memory storage.
 %%
-%% Equivalent to `load_schemas(Path, ParserFun, ValidationFun, MakeKeyFun)'
-%% where `ValidationFun' is `fun jesse_json:is_json_object/1' and
-%% `MakeKeyFun' is `fun jesse_lib:get_schema_id/1'. In this case
-%% the key will be the value of `id' attribute from the given schemas.
+%% Equivalent to `load_schemas(Path, ParserFun, ValidationFun)'
+%% where `ValidationFun' is `fun jesse_json:is_json_object/1'.
 -spec load_schemas( Path      :: string()
                   , ParserFun :: fun((binary()) -> json_term())
                   ) -> jesse_database:update_result().
@@ -95,14 +92,12 @@ load_schemas(Path, ParserFun) ->
   load_schemas( Path
               , ParserFun
               , fun jesse_lib:is_json_object/1
-              , fun jesse_lib:get_schema_id/1
               ).
 
 %% @doc Loads schema definitions from filesystem to in-memory storage.
 %% The function loads all the files from directory `Path', then each schema
 %% entry will be checked for a validity by function `ValidationFun', and
-%% will be stored in in-memory storage with a key returned by `MakeKeyFun'
-%% function.
+%% will be stored in in-memory storage.
 %%
 %% In addition to a schema definition, a timestamp of the schema file will be
 %% stored, so, during the next update timestamps will be compared to avoid
@@ -117,10 +112,9 @@ load_schemas(Path, ParserFun) ->
 -spec load_schemas( Path          :: string()
                   , ParserFun     :: fun((binary()) -> json_term())
                   , ValidationFun :: fun((any()) -> boolean())
-                  , MakeKeyFun    :: fun((json_term()) -> any())
                   ) -> jesse_database:update_result().
-load_schemas(Path, ParserFun, ValidationFun, MakeKeyFun) ->
-  jesse_database:add_path(Path, ParserFun, ValidationFun, MakeKeyFun).
+load_schemas(Path, ParserFun, ValidationFun) ->
+  jesse_database:add_path(Path, ParserFun, ValidationFun).
 
 %% @doc Equivalent to {@link validate/3} where `Options' is an empty list.
 -spec validate( Schema :: any()
