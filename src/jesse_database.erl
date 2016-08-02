@@ -65,7 +65,8 @@
          , Schema        :: jesse:json_term()
          , ValidationFun :: fun((any()) -> boolean())
          ) -> store_result().
-add(Key, Schema, ValidationFun) ->
+add(Key0, Schema, ValidationFun) ->
+  Key = jesse_state:canonical_path(Key0, Key0),
   SchemaInfos = [{Key, 0, Schema}],
   store_schemas(SchemaInfos, ValidationFun).
 
@@ -73,27 +74,12 @@ add(Key, Schema, ValidationFun) ->
 %% Supported URI schemes are file:, http: and https:. If this fails, an
 %% exception will be thrown.
 -spec add_uri(Key :: string()) -> store_result().
-add_uri("file://" ++ File = Key) ->
-  {ok, Body} = file:read_file(File),
-  {ok, #file_info{mtime = Mtime}} = file:read_file_info(File),
-  Schema = jsx:decode(Body),
-  SchemaInfos = [{Key, Mtime, Schema}],
-  ValidationFun = fun jesse_lib:is_json_object/1,
-  store_schemas(SchemaInfos, ValidationFun);
+add_uri("file://" ++ _ = Key) ->
+  add_file_uri(Key);
 add_uri("http://" ++ _ = Key) ->
-  {ok, Response} = httpc:request(get, {Key, []}, [], [{body_format, binary}]),
-  {{_Line, 200, _}, Headers, Body} = Response,
-  Schema = jsx:decode(Body),
-  SchemaInfos = [{Key, get_http_mtime(Headers), Schema}],
-  ValidationFun = fun jesse_lib:is_json_object/1,
-  store_schemas(SchemaInfos, ValidationFun);
+  add_http_uri(Key);
 add_uri("https://" ++ _ = Key) ->
-  {ok, Response} = httpc:request(get, {Key, []}, [], [{body_format, binary}]),
-  {{_Line, 200, _}, Headers, Body} = Response,
-  Schema = jsx:decode(Body),
-  SchemaInfos = [{Key, get_http_mtime(Headers), Schema}],
-  ValidationFun = fun jesse_lib:is_json_object/1,
-  store_schemas(SchemaInfos, ValidationFun);
+  add_http_uri(Key);
 add_uri(Key) ->
   throw({database_error, Key, unknown_uri_scheme}).
 
@@ -306,6 +292,27 @@ get_schema_id(Schema) ->
     Id ->
       erlang:binary_to_list(Id)
   end.
+
+%% @private
+add_file_uri(Key0) ->
+  Key = jesse_state:canonical_path(Key0, Key0),
+  "file://" ++ File = Key,
+  {ok, Body} = file:read_file(File),
+  {ok, #file_info{mtime = Mtime}} = file:read_file_info(File),
+  Schema = jsx:decode(Body),
+  SchemaInfos = [{Key, Mtime, Schema}],
+  ValidationFun = fun jesse_lib:is_json_object/1,
+  store_schemas(SchemaInfos, ValidationFun).
+
+%% @private
+add_http_uri(Key0) ->
+  Key = jesse_state:canonical_path(Key0, Key0),
+  {ok, Response} = httpc:request(get, {Key, []}, [], [{body_format, binary}]),
+  {{_Line, 200, _}, Headers, Body} = Response,
+  Schema = jsx:decode(Body),
+  SchemaInfos = [{Key, get_http_mtime(Headers), Schema}],
+  ValidationFun = fun jesse_lib:is_json_object/1,
+  store_schemas(SchemaInfos, ValidationFun).
 
 %% @private
 get_http_mtime(Headers) ->
