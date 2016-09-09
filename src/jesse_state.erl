@@ -196,7 +196,12 @@ resolve_ref(State, Reference) ->
         ?not_found ->
           jesse_error:handle_schema_invalid(?schema_invalid, State);
         RemoteSchema ->
-          NewState = State#state{root_schema = RemoteSchema, id = BaseURI},
+          SchemaVer =
+            jesse_json_path:value(?SCHEMA, RemoteSchema, ?default_schema_ver),
+          NewState = State#state{ root_schema = RemoteSchema
+                                , id = BaseURI
+                                , default_schema_ver = SchemaVer
+                                },
           Path = jesse_json_path:parse(Pointer),
           case load_local_schema(RemoteSchema, Path) of
             ?not_found ->
