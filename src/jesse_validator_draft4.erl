@@ -968,6 +968,11 @@ check_format(Value, _Format = <<"ip-address">>, State) when is_binary(Value) ->
     {ok, _IPv4Address} -> State;
     {error, einval}    -> handle_data_invalid(?wrong_format, Value, State)
   end;
+check_format(Value, _Format = <<"ipv6">>, State) when is_binary(Value) ->
+  case inet:parse_ipv6strict_address(binary_to_list(Value)) of
+    {ok, _IPv6Address} -> State;
+    {error, einval}    -> handle_data_invalid(?wrong_format, Value, State)
+  end;
 check_format(_Value, _Format, State) ->
   State.
 
