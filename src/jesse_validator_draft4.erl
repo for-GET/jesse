@@ -946,6 +946,11 @@ check_enum(Value, Enum, State) ->
 %% Used for semantic validation.
 %% TODO: Implement the standard formats
 %% @private
+check_format(Value, _Format = <<"date">>, State) when is_binary(Value) ->
+  case valid_date(Value) of
+    true  -> State;
+    false -> handle_data_invalid(?wrong_format, Value, State)
+  end;
 check_format(_Value, _Format, State) ->
   State.
 
@@ -1300,3 +1305,15 @@ add_to_path(State, Property) ->
 %% @private
 remove_last_from_path(State) ->
   jesse_state:remove_last_from_path(State).
+
+%% @private
+valid_date(<<Year:4/bytes, $-, Month:2/bytes, $-, Day:2/bytes>>) ->
+  try
+    calendar:valid_date( binary_to_integer(Year)
+                       , binary_to_integer(Month)
+                       , binary_to_integer(Day)
+                       )
+  catch
+    error:badarg -> false
+  end;
+valid_date(_Other) -> false.
