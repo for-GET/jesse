@@ -951,6 +951,11 @@ check_format(Value, _Format = <<"date">>, State) when is_binary(Value) ->
     true  -> State;
     false -> handle_data_invalid(?wrong_format, Value, State)
   end;
+check_format(Value, _Format = <<"time">>, State) when is_binary(Value) ->
+  case valid_time(Value) of
+    true  -> State;
+    false -> handle_data_invalid(?wrong_format, Value, State)
+  end;
 check_format(_Value, _Format, State) ->
   State.
 
@@ -1317,3 +1322,21 @@ valid_date(<<Year:4/bytes, $-, Month:2/bytes, $-, Day:2/bytes>>) ->
     error:badarg -> false
   end;
 valid_date(_Other) -> false.
+
+%% @private
+valid_time(<<Hour:2/bytes, $:, Minute:2/bytes, $:, Second:2/bytes>>) ->
+  try { binary_to_integer(Hour)
+      , binary_to_integer(Minute)
+      , binary_to_integer(Second)
+      }
+  of
+      {H, M, S} when
+        H >= 0, H =< 23,
+        M >= 0, M =< 59,
+        S >= 0, S =< 50;
+        H =:= 24, M =:= 0, S =:= 0 -> true;
+      _Other -> false
+  catch
+    error:badarg -> false
+  end;
+valid_time(_Other) -> false.
