@@ -963,6 +963,11 @@ check_format(Value, _Format = <<"time">>, State) when is_binary(Value) ->
     true  -> State;
     false -> handle_data_invalid(?wrong_format, Value, State)
   end;
+check_format(Value, _Format = <<"email">>, State) when is_binary(Value) ->
+  case re:run(Value, <<"^[^@]+@[^@]+$">>, [{capture, none}, unicode]) of
+    match   -> State;
+    nomatch -> handle_data_invalid(?wrong_format, Value, State)
+  end;
 check_format(Value, _Format = <<"ip-address">>, State) when is_binary(Value) ->
   case inet:parse_ipv4strict_address(binary_to_list(Value)) of
     {ok, _IPv4Address} -> State;
