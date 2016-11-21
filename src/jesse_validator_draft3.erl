@@ -487,7 +487,7 @@ get_additional_properties(Value, Properties, PatternProperties) ->
 %% @private
 filter_extra_names(Pattern, ExtraNames) ->
   Filter = fun(ExtraName) ->
-               case re:run(ExtraName, Pattern, [{capture, none}]) of
+               case re:run(ExtraName, Pattern, [{capture, none}, unicode]) of
                  match   -> false;
                  nomatch -> true
                end
