@@ -1,0 +1,75 @@
+[
+    {
+        "description": "anyOf/oneOf with allowed_errors",
+        "options": {
+            "allowed_errors": 0
+        },
+        "schema": {
+            "type": "object",
+            "properties": {
+                "anyOf": {
+                    "anyOf": [
+                        {
+                            "enum": [0]
+                        }, {
+                            "enum": [0, 1]
+                        }
+                    ]
+                },
+                "oneOf": {
+                    "oneOf": [
+                        {
+                            "enum": [0]
+                        }, {
+                            "enum": [0, 1]
+                        }
+                    ]
+                }
+            }
+        },
+        "tests": [
+            {
+                "description": "anyOf: all valid",
+                "data": {
+                    "anyOf": 0
+                },
+                "valid": true
+            },
+            {
+                "description": "anyOf: one valid",
+                "data": {
+                    "anyOf": 1
+                },
+                "valid": true
+            },
+            {
+                "description": "anyOf: invalid",
+                "data": {
+                    "anyOf": 2
+                },
+                "valid": false
+            },
+            {
+                "description": "oneOf: all valid",
+                "data": {
+                    "oneOf": 0
+                },
+                "valid": false
+            },
+            {
+                "description": "oneOf: one valid",
+                "data": {
+                    "oneOf": 1
+                },
+                "valid": true
+            },
+            {
+                "description": "oneOf: invalid",
+                "data": {
+                    "oneOf": 2
+                },
+                "valid": false
+            }
+        ]
+    }
+]

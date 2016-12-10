@@ -155,3 +155,12 @@ itemsExtra(Config) ->
 
 remoteRefExtra(Config) ->
   do_test("remoteRefExtra", Config).
+
+anyOfOneOfAllowedErrorsZeroExtra(Config) ->
+  do_test("anyOfOneOfAllowedErrorsZeroExtra", Config).
+
+anyOfOneOfAllowedErrorsOneExtra(Config) ->
+  do_test("anyOfOneOfAllowedErrorsOneExtra", Config).
+
+anyOfOneOfAllowedErrorsInfinityExtra(Config) ->
+  do_test("anyOfOneOfAllowedErrorsInfinityExtra", Config).

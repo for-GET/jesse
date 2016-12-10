@@ -30,6 +30,7 @@
 %% JSON-Schema-Test-Suite attributes definitions
 -define(DATA,        <<"data">>).
 -define(DESCRIPTION, <<"description">>).
+-define(OPTIONS,     <<"options">>).
 -define(SCHEMA,      <<"schema">>).
 -define(TESTS,       <<"tests">>).
 -define(VALID,       <<"valid">>).
@@ -57,26 +58,29 @@ do_test(Key, Config) ->
                      Description = get_path(?DESCRIPTION, Test),
                      Schema = get_path(?SCHEMA, Test),
                      SchemaTests = get_path(?TESTS, Test),
+                     Options = get_path(?OPTIONS, Test),
                      ct:pal( "** Description: ~s~n"
+                             "** Options: ~p~n"
                              "** Schema: ~p~n"
                              "** Schema tests: ~p~n"
-                           , [Description, Schema, SchemaTests]
+                           , [Description, Options, Schema, SchemaTests]
                            ),
-                     test_schema(DefaultSchema, Schema, SchemaTests)
+                     test_schema(DefaultSchema, Options, Schema, SchemaTests)
                  end
                , Tests
                ).
 
 %%% Internal functions
 
-test_schema(DefaultSchema, Schema, SchemaTests) ->
+test_schema(DefaultSchema, Opts0, Schema, SchemaTests) ->
+  Opts1 = make_options(Opts0),
   lists:foreach( fun(Test) ->
                      Description = get_path(?DESCRIPTION, Test),
                      Instance = get_path(?DATA, Test),
                      ct:pal("* Test case: ~s~n", [Description]),
                      Opts = [ {default_schema_ver, DefaultSchema}
                             , {schema_loader_fun, fun load_schema/1}
-                            ],
+                            ] ++ Opts1,
                      try jesse:validate_with_schema(Schema, Instance, Opts) of
                          Result ->
                          ct:pal("Result: ~p~n", [Result]),
@@ -95,6 +99,21 @@ test_schema(DefaultSchema, Schema, SchemaTests) ->
                  end
                , SchemaTests
                ).
+
+make_options(Options) ->
+  lists:map( fun ({Key0, Value0}) ->
+                 Key = case is_binary(Key0) of
+                         true -> list_to_existing_atom(binary_to_list(Key0));
+                         false -> Key0
+                       end,
+                 Value = case is_binary(Value0) of
+                         true -> list_to_existing_atom(binary_to_list(Value0));
+                         false -> Value0
+                       end,
+                 {Key, Value}
+             end
+           , Options
+           ).
 
 testfile_to_key(TestFile) ->
   filename:rootname(filename:basename(TestFile)).
