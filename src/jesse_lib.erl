@@ -74,7 +74,8 @@ is_json_object([{Key, _Value} | _])
 ?IF_MAPS(is_json_object(Map) when erlang:is_map(Map) -> true;)
 is_json_object(_)                                   -> false.
 
-%% @doc Checks if the given value is json `null'.
+%% @doc Checks if the given value is json `null' or `undefined'.
 -spec is_null(Value :: any()) -> boolean().
-is_null(null)   -> true;
-is_null(_Value) -> false.
+is_null(null)      -> true;
+is_null(undefined) -> true;
+is_null(_Value)    -> false.
