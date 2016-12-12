@@ -1335,9 +1335,9 @@ remove_last_from_path(State) ->
 %% @private
 valid_date(<<Year:4/bytes, $-, Month:2/bytes, $-, Day:2/bytes>>) ->
   try
-    calendar:valid_date( binary_to_integer(Year)
-                       , binary_to_integer(Month)
-                       , binary_to_integer(Day)
+    calendar:valid_date( list_to_integer(binary_to_list(Year))
+                       , list_to_integer(binary_to_list(Month))
+                       , list_to_integer(binary_to_list(Day))
                        )
   catch
     error:badarg -> false
@@ -1346,9 +1346,9 @@ valid_date(_Other) -> false.
 
 %% @private
 valid_time(<<Hour:2/bytes, $:, Minute:2/bytes, $:, Second:2/bytes>>) ->
-  try { binary_to_integer(Hour)
-      , binary_to_integer(Minute)
-      , binary_to_integer(Second)
+  try { list_to_integer(binary_to_list(Hour))
+      , list_to_integer(binary_to_list(Minute))
+      , list_to_integer(binary_to_list(Second))
       }
   of
       {H, M, S} when
