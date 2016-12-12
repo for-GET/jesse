@@ -944,7 +944,6 @@ check_enum(Value, Enum, State) ->
 
 %% @doc format
 %% Used for semantic validation.
-%% TODO: Implement the standard formats
 %% @private
 check_format(Value, _Format = <<"date">>, State) when is_binary(Value) ->
   case valid_date(Value) of
