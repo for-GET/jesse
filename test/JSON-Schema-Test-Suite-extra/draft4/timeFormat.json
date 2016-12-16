@@ -1,0 +1,51 @@
+[
+    {
+        "description": "time format validation",
+        "schema": {
+            "type": "string",
+            "format": "time"
+        },
+        "tests": [
+            {
+                "description": "empty array",
+                "data": "",
+                "valid": false
+            },
+            {
+                "description": "no extra spaces",
+                "data": " 13:58:21 ",
+                "valid": false
+            },
+            {
+                "description": "invalid hour",
+                "data": "25:11:11",
+                "valid": false
+            },
+            {
+                "description": "midnight",
+                "data": "00:00:00",
+                "valid": true
+            },
+            {
+                "description": "alternative midnight",
+                "data": "24:00:00",
+                "valid": true
+            },
+            {
+                "description": "second before midnight",
+                "data": "23:59:59",
+                "valid": true
+            },
+            {
+                "description": "no leap second",
+                "data": "23:59:60",
+                "valid": false
+            },
+            {
+                "description": "wrong format",
+                "data": "9:12:33",
+                "valid": false
+            }
+        ]
+    }
+]
