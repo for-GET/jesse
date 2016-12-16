@@ -155,3 +155,6 @@ itemsExtra(Config) ->
 
 remoteRefExtra(Config) ->
   do_test("remoteRefExtra", Config).
+
+dateFormat(Config) ->
+  do_test("dateFormat", Config).
