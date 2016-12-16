@@ -159,6 +159,9 @@ remoteRefExtra(Config) ->
 dateFormat(Config) ->
   do_test("dateFormat", Config).
 
+dateTimeFormat(Config) ->
+  do_test("dateTimeFormat", Config).
+
 ipAddressFormat(Config) ->
   do_test("ipAddressFormat", Config).
 
