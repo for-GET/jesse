@@ -944,8 +944,39 @@ check_enum(Value, Enum, State) ->
 
 %% @doc format
 %% Used for semantic validation.
-%% TODO: Implement the standard formats
 %% @private
+check_format(Value, _Format = <<"date">>, State) when is_binary(Value) ->
+  case valid_date(Value) of
+    true  -> State;
+    false -> handle_data_invalid(?wrong_format, Value, State)
+  end;
+check_format(Value, _Format = <<"date-time">>, State) when is_binary(Value) ->
+  try
+    <<Date:10/bytes, $T, Time:8/bytes, $Z>> = Value,
+    valid_date(Date) andalso valid_time(Time)
+  catch
+    error:{badmatch, _} -> handle_data_invalid(?wrong_format, Value, State)
+  end;
+check_format(Value, _Format = <<"time">>, State) when is_binary(Value) ->
+  case valid_time(Value) of
+    true  -> State;
+    false -> handle_data_invalid(?wrong_format, Value, State)
+  end;
+check_format(Value, _Format = <<"email">>, State) when is_binary(Value) ->
+  case re:run(Value, <<"^[^@]+@[^@]+$">>, [{capture, none}, unicode]) of
+    match   -> State;
+    nomatch -> handle_data_invalid(?wrong_format, Value, State)
+  end;
+check_format(Value, _Format = <<"ip-address">>, State) when is_binary(Value) ->
+  case inet_parse:ipv4strict_address(binary_to_list(Value)) of
+    {ok, _IPv4Address} -> State;
+    {error, einval}    -> handle_data_invalid(?wrong_format, Value, State)
+  end;
+check_format(Value, _Format = <<"ipv6">>, State) when is_binary(Value) ->
+  case inet_parse:ipv6strict_address(binary_to_list(Value)) of
+    {ok, _IPv6Address} -> State;
+    {error, einval}    -> handle_data_invalid(?wrong_format, Value, State)
+  end;
 check_format(_Value, _Format, State) ->
   State.
 
@@ -1307,3 +1338,33 @@ add_to_path(State, Property) ->
 %% @private
 remove_last_from_path(State) ->
   jesse_state:remove_last_from_path(State).
+
+%% @private
+valid_date(<<Year:4/bytes, $-, Month:2/bytes, $-, Day:2/bytes>>) ->
+  try
+    calendar:valid_date( list_to_integer(binary_to_list(Year))
+                       , list_to_integer(binary_to_list(Month))
+                       , list_to_integer(binary_to_list(Day))
+                       )
+  catch
+    error:badarg -> false
+  end;
+valid_date(_Other) -> false.
+
+%% @private
+valid_time(<<Hour:2/bytes, $:, Minute:2/bytes, $:, Second:2/bytes>>) ->
+  try { list_to_integer(binary_to_list(Hour))
+      , list_to_integer(binary_to_list(Minute))
+      , list_to_integer(binary_to_list(Second))
+      }
+  of
+      {H, M, S} when
+        H >= 0, H =< 23,
+        M >= 0, M =< 59,
+        S >= 0, S =< 50;
+        H =:= 24, M =:= 0, S =:= 0 -> true;
+      _Other -> false
+  catch
+    error:badarg -> false
+  end;
+valid_time(_Other) -> false.
