@@ -968,11 +968,13 @@ check_format(Value, _Format = <<"email">>, State) when is_binary(Value) ->
     nomatch -> handle_data_invalid(?wrong_format, Value, State)
   end;
 check_format(Value, _Format = <<"ip-address">>, State) when is_binary(Value) ->
+  %% avoiding inet:parse_ipv4strict_address to maintain R15 compatibility
   case inet_parse:ipv4strict_address(binary_to_list(Value)) of
     {ok, _IPv4Address} -> State;
     {error, einval}    -> handle_data_invalid(?wrong_format, Value, State)
   end;
 check_format(Value, _Format = <<"ipv6">>, State) when is_binary(Value) ->
+  %% avoiding inet:parse_ipv6strict_address to maintain R15 compatibility
   case inet_parse:ipv6strict_address(binary_to_list(Value)) of
     {ok, _IPv6Address} -> State;
     {error, einval}    -> handle_data_invalid(?wrong_format, Value, State)
@@ -1342,6 +1344,7 @@ remove_last_from_path(State) ->
 %% @private
 valid_date(<<Year:4/bytes, $-, Month:2/bytes, $-, Day:2/bytes>>) ->
   try
+    %% avoiding binary_to_integer to maintain R15 compatibility
     calendar:valid_date( list_to_integer(binary_to_list(Year))
                        , list_to_integer(binary_to_list(Month))
                        , list_to_integer(binary_to_list(Day))
@@ -1353,6 +1356,7 @@ valid_date(_Other) -> false.
 
 %% @private
 valid_time(<<Hour:2/bytes, $:, Minute:2/bytes, $:, Second:2/bytes>>) ->
+  %% avoiding binary_to_integer to maintain R15 compatibility
   try { list_to_integer(binary_to_list(Hour))
       , list_to_integer(binary_to_list(Minute))
       , list_to_integer(binary_to_list(Second))
