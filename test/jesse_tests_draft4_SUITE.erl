@@ -158,3 +158,6 @@ remoteRefExtra(Config) ->
 
 dateFormat(Config) ->
   do_test("dateFormat", Config).
+
+ipAddressFormat(Config) ->
+  do_test("ipAddressFormat", Config).
