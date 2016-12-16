@@ -490,7 +490,7 @@ get_additional_properties(Value, Properties, PatternProperties) ->
 %% @private
 filter_extra_names(Pattern, ExtraNames) ->
   Filter = fun(ExtraName) ->
-               case re:run(ExtraName, Pattern, [{capture, none}]) of
+               case re:run(ExtraName, Pattern, [{capture, none}, unicode]) of
                  match   -> false;
                  nomatch -> true
                end
@@ -968,11 +968,13 @@ check_format(Value, _Format = <<"email">>, State) when is_binary(Value) ->
     nomatch -> handle_data_invalid(?wrong_format, Value, State)
   end;
 check_format(Value, _Format = <<"ip-address">>, State) when is_binary(Value) ->
+  %% avoiding inet:parse_ipv4strict_address to maintain R15 compatibility
   case inet_parse:ipv4strict_address(binary_to_list(Value)) of
     {ok, _IPv4Address} -> State;
     {error, einval}    -> handle_data_invalid(?wrong_format, Value, State)
   end;
 check_format(Value, _Format = <<"ipv6">>, State) when is_binary(Value) ->
+  %% avoiding inet:parse_ipv6strict_address to maintain R15 compatibility
   case inet_parse:ipv6strict_address(binary_to_list(Value)) of
     {ok, _IPv6Address} -> State;
     {error, einval}    -> handle_data_invalid(?wrong_format, Value, State)
@@ -1134,7 +1136,11 @@ check_any_of_(Value, [], State) ->
   handle_data_invalid(?any_schemas_not_valid, Value, State);
 check_any_of_(Value, [Schema | Schemas], State) ->
   case validate_schema(Value, Schema, State) of
-    {true, NewState} -> NewState;
+    {true, NewState} ->
+        case jesse_state:get_error_list(NewState) of
+            [] -> NewState;
+            _  -> check_any_of_(Value, Schemas, State)
+        end;
     {false, _} -> check_any_of_(Value, Schemas, State)
   end.
 
@@ -1168,7 +1174,10 @@ check_one_of_(Value, _Schemas, State, Valid) when Valid > 1 ->
 check_one_of_(Value, [Schema | Schemas], State, Valid) ->
   case validate_schema(Value, Schema, State) of
     {true, NewState} ->
-      check_one_of_(Value, Schemas, NewState, Valid + 1);
+        case jesse_state:get_error_list(NewState) of
+            [] -> check_one_of_(Value, Schemas, NewState, Valid + 1);
+            _  -> check_one_of_(Value, Schemas, State, Valid)
+        end;
     {false, _} ->
       check_one_of_(Value, Schemas, State, Valid)
   end.
@@ -1335,6 +1344,7 @@ remove_last_from_path(State) ->
 %% @private
 valid_date(<<Year:4/bytes, $-, Month:2/bytes, $-, Day:2/bytes>>) ->
   try
+    %% avoiding binary_to_integer to maintain R15 compatibility
     calendar:valid_date( list_to_integer(binary_to_list(Year))
                        , list_to_integer(binary_to_list(Month))
                        , list_to_integer(binary_to_list(Day))
@@ -1346,6 +1356,7 @@ valid_date(_Other) -> false.
 
 %% @private
 valid_time(<<Hour:2/bytes, $:, Minute:2/bytes, $:, Second:2/bytes>>) ->
+  %% avoiding binary_to_integer to maintain R15 compatibility
   try { list_to_integer(binary_to_list(Hour))
       , list_to_integer(binary_to_list(Minute))
       , list_to_integer(binary_to_list(Second))

@@ -140,3 +140,6 @@ itemsExtra(Config) ->
 
 remoteRefExtra(Config) ->
   do_test("remoteRefExtra", Config).
+
+unicodePatternProperties(Config) ->
+  do_test("unicodePatternProperties", Config).
