@@ -162,5 +162,8 @@ dateFormat(Config) ->
 ipAddressFormat(Config) ->
   do_test("ipAddressFormat", Config).
 
+ipv6Format(Config) ->
+  do_test("ipv6Format", Config).
+
 timeFormat(Config) ->
   do_test("timeFormat", Config).
