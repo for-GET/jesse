@@ -1,0 +1,51 @@
+[
+    {
+        "description": "ipv4 address format validation",
+        "schema": {
+            "type": "string",
+            "format": "ip-address"
+        },
+        "tests": [
+            {
+                "description": "empty string",
+                "data": "",
+                "valid": false
+            },
+            {
+                "description": "all zeroes",
+                "data": "0.0.0.0",
+                "valid": true
+            },
+            {
+                "description": "all ones",
+                "data": "255.255.255.255",
+                "valid": true
+            },
+            {
+                "description": "valid address",
+                "data": "192.168.1.1",
+                "valid": true
+            },
+            {
+                "description": "extra spaces",
+                "data": " 192.168.1.1 ",
+                "valid": false
+            },
+            {
+                "description": "wrong octet value",
+                "data": "192.168.1.300",
+                "valid": false
+            },
+            {
+                "description": "ipv6 address",
+                "data": "2001:4860:4860::8888",
+                "valid": false
+            },
+            {
+                "description": "hostname",
+                "data": "www.ietf.org",
+                "valid": false
+            }
+        ]
+    }
+]

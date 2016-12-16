@@ -1365,7 +1365,7 @@ valid_time(<<Hour:2/bytes, $:, Minute:2/bytes, $:, Second:2/bytes>>) ->
       {H, M, S} when
         H >= 0, H =< 23,
         M >= 0, M =< 59,
-        S >= 0, S =< 50;
+        S >= 0, S =< 59;
         H =:= 24, M =:= 0, S =:= 0 -> true;
       _Other -> false
   catch

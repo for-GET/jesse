@@ -1,0 +1,61 @@
+[
+    {
+        "description": "ipv6 address format validation",
+        "schema": {
+            "type": "string",
+            "format": "ipv6"
+        },
+        "tests": [
+            {
+                "description": "empty string",
+                "data": "",
+                "valid": false
+            },
+            {
+                "description": "all zeroes",
+                "data": "::",
+                "valid": true
+            },
+            {
+                "description": "all ones",
+                "data": "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff",
+                "valid": true
+            },
+            {
+                "description": "loopback",
+                "data": "::1",
+                "valid": true
+            },
+            {
+                "description": "valid ipv6 address",
+                "data": "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
+                "valid": true
+            },
+            {
+                "description": "extra spaces",
+                "data": " 2001:0db8:85a3:0000:0000:8a2e:0370:7334 ",
+                "valid": false
+            },
+            {
+                "description": "ipv4 not allowed",
+                "data": "192.168.1.1",
+                "valid": false
+            },
+            {
+                "description": "hostname",
+                "data": "www.ietf.org",
+                "valid": false
+            },
+            {
+                "description": "ipv4 mapped",
+                "data": "::ffff:c000:0280",
+                "valid": true
+            },
+            {
+                "description": "case insensitive",
+                "data": "::FfFf:C000:0280",
+                "valid": true
+            }
+        ]
+    }
+]

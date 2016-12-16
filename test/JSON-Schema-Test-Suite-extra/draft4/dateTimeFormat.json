@@ -1,0 +1,51 @@
+[
+    {
+        "description": "date-time format validation",
+        "schema": {
+            "type": "string",
+            "format": "date-time"
+        },
+        "tests": [
+            {
+                "description": "empty string",
+                "data": "",
+                "valid": false
+            },
+            {
+                "description": "valid timestamp",
+                "data": "2016-12-16T11:36:04Z",
+                "valid": true
+            },
+            {
+                "description": "minimal timestamp",
+                "data": "0000-01-01T00:00:00Z",
+                "valid": true
+            },
+            {
+                "description": "submaximal timestamp",
+                "data": "9999-12-31T23:59:59Z",
+                "valid": true
+            },
+            {
+                "description": "maximal timestamp",
+                "data": "9999-12-31T24:00:00Z",
+                "valid": true
+            },
+            {
+                "description": "extra spaces",
+                "data": " 2016-12-16T11:36:04Z ",
+                "valid": false
+            },
+            {
+                "description": "non-UTC timezone",
+                "data": "2016-12-16T14:36:04+0300",
+                "valid": false
+            },
+            {
+                "description": "basic format",
+                "data": "20161216T113604Z",
+                "valid": false
+            }
+        ]
+    }
+]

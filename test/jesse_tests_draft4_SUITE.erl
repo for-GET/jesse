@@ -167,3 +167,18 @@ anyOfOneOfAllowedErrorsInfinityExtra(Config) ->
 
 unicodePatternProperties(Config) ->
   do_test("unicodePatternProperties", Config).
+
+dateFormat(Config) ->
+  do_test("dateFormat", Config).
+
+dateTimeFormat(Config) ->
+  do_test("dateTimeFormat", Config).
+
+ipAddressFormat(Config) ->
+  do_test("ipAddressFormat", Config).
+
+ipv6Format(Config) ->
+  do_test("ipv6Format", Config).
+
+timeFormat(Config) ->
+  do_test("timeFormat", Config).
