@@ -6,9 +6,7 @@ jesse (JSON Schema Erlang) is an implementation of a JSON Schema validator
 for Erlang.
 
 jesse implements [Draft 03] (http://tools.ietf.org/html/draft-zyp-json-schema-03) and [Draft 04] (http://tools.ietf.org/html/draft-zyp-json-schema-04) of
-the specification. It supports all core schema definitions except:
-
-* format
+the specification.
 
 ## Quick start - CLI
 
