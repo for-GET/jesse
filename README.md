@@ -10,6 +10,12 @@ jesse implements the following specifications:
 * [Draft 03](http://tools.ietf.org/html/draft-zyp-json-schema-03)
 * [Draft 04](http://tools.ietf.org/html/draft-zyp-json-schema-04)
 
+## Erlang API Docs
+
+Automatically generated docs are available https://dev.erldocs.com/github.com/for-get/jesse/ .
+
+Please keep in mind that the public API is the `jesse.erl` module alone.
+
 ## Quick start - CLI
 
 You can fire up `jesse` from the CLI, with
