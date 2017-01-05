@@ -1016,17 +1016,20 @@ check_multiple_of(_Value, _MultipleOf, State) ->
 %%
 %% @private
 check_required(Value, [_ | _] = Required, State) ->
-  IsValid = lists:all( fun(PropertyName) ->
-                           get_value(PropertyName, Value) =/= ?not_found
-                       end
-                     , Required
-                     ),
-    case IsValid of
-      true  -> State;
-      false -> handle_data_invalid(?missing_required_property, Value, State)
-    end;
+  check_required_values(Value, Required, State);
 check_required(_Value, _InvalidRequired, State) ->
-    handle_schema_invalid(?wrong_required_array, State).
+  handle_schema_invalid(?wrong_required_array, State).
+
+check_required_values(_Value, [], State) -> State;
+check_required_values(Value, [PropertyName | Required], State) ->
+  case get_value(PropertyName, Value) =/= ?not_found of
+    'false' ->
+      NewState =
+        handle_data_invalid(?missing_required_property, PropertyName, State),
+      check_required_values(Value, Required, NewState);
+    'true' ->
+      check_required_values(Value, Required, State)
+  end.
 
 %% @doc 5.4.1. maxProperties
 %%
