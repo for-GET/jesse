@@ -171,8 +171,8 @@ unicodePatternProperties(Config) ->
 dateTimeFormat(Config) ->
   do_test("dateTimeFormat", Config).
 
-ipAddressFormat(Config) ->
-  do_test("ipAddressFormat", Config).
+ipv4Format(Config) ->
+  do_test("ipv4Format", Config).
 
 ipv6Format(Config) ->
   do_test("ipv6Format", Config).

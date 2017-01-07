@@ -3,7 +3,7 @@
         "description": "ipv4 address format validation",
         "schema": {
             "type": "string",
-            "format": "ip-address"
+            "format": "ipv4"
         },
         "tests": [
             {
