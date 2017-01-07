@@ -118,7 +118,7 @@
 
 %% Maps conditional compilation
 -ifdef(erlang_deprecated_types).
--define(IF_MAPS(EXP), ).
+-define(IF_MAPS(Exp), ).
 -else.
 -define(IF_MAPS(Exp), Exp).
 -endif.

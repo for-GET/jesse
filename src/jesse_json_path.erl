@@ -10,7 +10,7 @@
 -type kvc_obj_node() :: proplist() | {struct, proplist()} | [{}] | dict()
                       | gb_tree() | term().
 -type typed_proplist() :: {proplist() | {gb_tree, gb_tree()}, elem_type()}.
--define(IF_MAPS(_), ).
+-define(IF_MAPS(Exp), ).
 -else.
 -type kvc_obj_node() :: proplist() | {struct, proplist()} | [{}] | dict:dict()
                       | gb_trees:tree() | map() | term().
