@@ -956,6 +956,9 @@ check_format(Value, _Format = <<"email">>, State) when is_binary(Value) ->
     match   -> State;
     nomatch -> handle_data_invalid(?wrong_format, Value, State)
   end;
+check_format(Value, _Format = <<"hostname">>, State) when is_binary(Value) ->
+  %% not yet supported
+  State;
 check_format(Value, _Format = <<"ipv4">>, State) when is_binary(Value) ->
   %% avoiding inet:parse_ipv4strict_address to maintain R15 compatibility
   case inet_parse:ipv4strict_address(binary_to_list(Value)) of
@@ -968,6 +971,9 @@ check_format(Value, _Format = <<"ipv6">>, State) when is_binary(Value) ->
     {ok, _IPv6Address} -> State;
     {error, einval}    -> handle_data_invalid(?wrong_format, Value, State)
   end;
+check_format(Value, _Format = <<"uri">>, State) when is_binary(Value) ->
+  %% not yet supported
+  State;
 check_format(_Value, _Format, State) ->
   State.
 
