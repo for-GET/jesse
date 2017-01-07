@@ -245,10 +245,11 @@ check_value(Value, [{?ONEOF, Schemas} | Attrs], State) ->
 check_value(Value, [{?NOT, Schema} | Attrs], State) ->
     NewState = check_not(Value, Schema, State),
     check_value(Value, Attrs, NewState);
-check_value(Value, [{?REF, Reference} | Attrs], State) ->
-    NewState = resolve_ref(Value, Reference, State),
-    NewState2 = check_value(Value, Attrs, NewState),
-    undo_resolve_ref(NewState2, State);
+check_value(Value, [{?REF, RefSchemaURI}], State) ->
+  {NewState0, Schema} = resolve_ref(RefSchemaURI, State),
+  NewState =
+    jesse_schema_validator:validate_with_state(Schema, Value, NewState0),
+  undo_resolve_ref(NewState, State);
 check_value(_Value, [], State) ->
   State;
 check_value(Value, [_Attr | Attrs], State) ->
@@ -1225,10 +1226,10 @@ validate_schema(Value, Schema, State0) ->
 %% @doc Resolve a JSON reference
 %% The "id" keyword is taken care of behind the scenes in jesse_state.
 %% @private
-resolve_ref(Value, Reference, State) ->
+resolve_ref(Reference, State) ->
   NewState = jesse_state:resolve_ref(State, Reference),
   Schema = get_current_schema(NewState),
-  jesse_schema_validator:validate_with_state(Schema, Value, NewState).
+  {NewState, Schema}.
 
 undo_resolve_ref(State, OriginalState) ->
   jesse_state:undo_resolve_ref(State, OriginalState).
