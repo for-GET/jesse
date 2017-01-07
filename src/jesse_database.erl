@@ -30,138 +30,190 @@
 
 %% API
 -export([ add/3
+        , add_uri/1
+        , add_path/3
+        , load/1
+        , load_uri/1
+        , load_all/0
         , delete/1
-        , read/1
-        , update/4
         ]).
 
--export_type([ update_result/0
-             , error/0
+-export_type([ error/0
+             , store_result/0
              ]).
 
--type update_result() :: ok | [fail()].
-
 -type error() :: {error, error_reason()}.
-
 -type error_reason() :: { 'database_error'
-                        , Key ::any()
-                        , 'schema_not_found'
+                        , Key :: string()
+                        , 'schema_not_found' | 'unknown_uri_scheme'
                         }.
 
--type fail()          :: {file:filename(), file:date_time(), reason()}.
--type reason()        :: term().
+-type store_result() :: ok | [store_fail()].
+-type store_fail()   :: {file:filename(), file:date_time(), reason()}.
+-type reason()       :: term().
 
 -define(JESSE_ETS, jesse_ets).
 
 -include_lib("kernel/include/file.hrl").
+-include("jesse_schema_validator.hrl").
 
 %%% API
-%% @doc Adds a schema definition `Schema' to in-memory storage associated with
-%% a key `Key'. It will overwrite an existing schema with the same key if
+%% @doc Adds a schema definition `Schema' to the internal storage associated
+%% with the key `Key'. It will overwrite an existing schema with the same key if
 %% there is any.
--spec add( Schema        :: jesse:json_term()
+-spec add( Key           :: string()
+         , Schema        :: jesse:json_term()
          , ValidationFun :: fun((any()) -> boolean())
-         , MakeKeyFun    :: fun((jesse:json_term()) -> any())
-         ) -> update_result().
-add(Schema, ValidationFun, MakeKeyFun) ->
-  store_schema([{"", "", Schema}], ValidationFun, MakeKeyFun).
+         ) -> store_result().
+add(Key0, Schema, ValidationFun) ->
+  Key = jesse_state:canonical_path(Key0, Key0),
+  SchemaInfos = [{Key, 0, Schema}],
+  store_schemas(SchemaInfos, ValidationFun).
 
-%% @doc Deletes a schema definition from in-memory storage associated with
-%% the key `Key'.
--spec delete(Key :: any()) -> ok.
-delete(Key) ->
-  Table = table_name(),
-  ets:delete(Table, Key),
-  ok.
+%% @doc Add a schema definition to the internal storage identified by a URI Key.
+%% Supported URI schemes are file:, http: and https:. If this fails, an
+%% exception will be thrown.
+-spec add_uri(Key :: string()) -> store_result().
+add_uri("file://" ++ _ = Key) ->
+  add_file_uri(Key);
+add_uri("http://" ++ _ = Key) ->
+  add_http_uri(Key);
+add_uri("https://" ++ _ = Key) ->
+  add_http_uri(Key);
+add_uri(Key) ->
+  throw({database_error, Key, unknown_uri_scheme}).
 
-%% @doc Loads schema definitions from filesystem to in-memory storage.
-%% The function loads all the files from directory `Path', then each schema
-%% entry will be checked for a validity by function `ValidationFun', and
-%% will be stored in in-memory storage with a key returned by `MakeKeyFun'
-%% function.
+%% @doc Add schema definitions from all the files from directory `Dir', each
+%% being validated by `ValidationFun', and stored in the internal storage.
 %%
-%% In addition to a schema definition, a timestamp of the schema file will be
-%% stored, so, during the next update timestamps will be compared to avoid
-%% unnecessary updates.
+%% The file modification time will also be stored, to skip unnecessary updates.
 %%
-%% Schema definitions are stored in the format which json parsing function
-%% `ParseFun' returns.
+%% Schema definitions are stored in the format that `ParseFun' returns.
 %%
 %% NOTE: it's impossible to automatically update schema definitions added by
-%%       add_schema/2, the only way to update them is to use add_schema/2
-%%       again with the new definition.
--spec update( Path          :: string()
-            , ParseFun      :: fun((binary()) -> jesse:json_term())
-            , ValidationFun :: fun((any()) -> boolean())
-            , MakeKeyFun    :: fun((jesse:json_term()) -> any())
-            ) -> update_result().
-update(Path, ParseFun, ValidationFun, MakeKeyFun) ->
-  Schemas = load_schema(Path, get_updated_files(Path), ParseFun),
-  store_schema(Schemas, ValidationFun, MakeKeyFun).
+%%       add/2. The only way to update those is to use add/2 again with the new
+%%       definition.
+-spec add_path( Path          :: string()
+              , ParseFun      :: fun((binary()) -> jesse:json_term())
+              , ValidationFun :: fun((any()) -> boolean())
+              ) -> store_result().
+add_path(Path0, ParseFun, ValidationFun) ->
+  "file://" ++ Path = jesse_state:canonical_path(Path0, "file:"),
+  SchemaInfos = get_schema_infos(list_outdated(Path), ParseFun),
+  store_schemas(SchemaInfos, ValidationFun).
 
-%% @doc Reads a schema definition with the same key as `Key' from the internal
-%% storage. If there is no such key in the storage, an exception will be thrown.
--spec read(Key :: any()) -> jesse:json_term() | no_return().
-read(Key) ->
-  case ets:lookup(table_name(), Key) of
-    [{Key, _SecondaryKey, _TimeStamp, Term}] ->
-      Term;
-    _ ->
-      throw({database_error, Key, schema_not_found})
+%% @doc Loads a schema definition associated with, or sourced with the key `Key'
+%% from the internal storage. If there is no such key in the storage, an
+%% exception will be thrown.
+-spec load(Key :: string()) -> jesse:json_term() | no_return().
+load(Key0) ->
+  Key = jesse_state:canonical_path(Key0, Key0),
+  Table = create_table(table_name()),
+  case ets:match_object(Table, {'_', Key, '_', '_'}) of
+    %% ID
+    [{_SourceKey, Key, _Mtime, Schema}] ->
+      Schema;
+    [] ->
+      SourceKey = Key,
+      case ets:match_object(Table, {SourceKey, '_', '_', '_'}) of
+        %% Source (URI)
+        [{SourceKey, _Key, _Mtime, Schema}] ->
+          Schema;
+        _ ->
+          throw({database_error, Key, schema_not_found})
+      end
   end.
 
+%% @doc Loads a schema definition associated with, or sourced with the key `Key'
+%% from the internal storage. If there is no such key in the storage, it will
+%% try to fetch and add one to the internal storage if the Key uses the file:,
+%% http: or https: URI scheme. If this fails as well, an exception will be
+%% thrown.
+-spec load_uri(Key :: string()) -> jesse:json_term() | no_return().
+load_uri(Key) ->
+  try
+    load(Key)
+  catch
+    throw:{database_error, Key, schema_not_found} ->
+      add_uri(Key),
+      load(Key)
+  end.
+
+%% @doc Loads all schemas in the internal storage.
+-spec load_all() -> [tuple()].
+load_all() ->
+  Table = create_table(table_name()),
+  ets:tab2list(Table).
+
+%% @doc Deletes a schema definition from the internal storage associated with,
+%% or sourced with the key `Key'.
+-spec delete(Key :: string()) -> ok.
+delete(Key0) ->
+  Key = jesse_state:canonical_path(Key0, Key0),
+  Table = create_table(table_name()),
+  SourceKey = Key,
+  ets:match_delete(Table, {SourceKey, '_', '_', '_'}),
+  ets:match_delete(Table, {'_', Key, '_', '_'}),
+  ok.
+
 %%% Internal functions
-%% @doc Stores schema definitions `Schemas' in in-memory storage.
-%% Uses `ValidationFun' to validate each schema definition before it is stored.
-%% Each schema definition is stored with a key returned by `MakeKeyFun' applied
-%% to the schema entry. Returns `ok' in case if all the schemas passed
-%% the validation and were stored, otherwise a list of invalid entries
-%% is returned.
-%% @private
-store_schema(Schemas, ValidationFun, MakeKeyFun) ->
-  Table    = create_table(table_name()),
-  StoreFun = fun({InFile, TimeStamp, Value} = Object, Acc) ->
-                 case ValidationFun(Value) of
-                   true ->
-                     NewObject = { MakeKeyFun(Value)
-                                 , InFile
-                                 , TimeStamp
-                                 , Value
-                                 },
-                     ets:insert(Table, NewObject),
-                     Acc;
-                   false ->
-                     [Object | Acc]
-                 end
-             end,
-  store_result(lists:foldl(StoreFun, [], Schemas)).
-
-%% @private
-store_result([])    -> ok;
-store_result(Fails) -> Fails.
-
 %% @doc Creates ETS table for internal cache if it does not exist yet,
 %% otherwise the name of the table is returned.
 %% @private
 create_table(TableName) ->
   case table_exists(TableName) of
-    false -> ets:new(TableName, [set, public, named_table]);
-    true -> TableName
-  end.
+    true ->
+      ok;
+    false ->
+      ets:new(TableName, [set, public, named_table])
+  end,
+  TableName.
 
 %% @doc Checks if ETS table with name `TableName' exists.
 %% @private
 table_exists(TableName) ->
-  case ets:info(TableName) of
-    undefined -> false;
-    _TableInfo -> true
+  ets:info(TableName) =/= undefined.
+
+%% @doc Stores information on schema definitions `SchemaInfos' in the internal
+%% storage. Uses `ValidationFun' to validate each schema definition before it
+%% is stored. Returns `ok' in case if all the
+%% schemas passed the validation and were stored, otherwise a list of invalid
+%% entries is returned.
+%% @private
+store_schemas(SchemaInfos, ValidationFun) ->
+  {Fails, _} = lists:foldl( fun store_schema/2
+                          , {[], ValidationFun}
+                          , SchemaInfos
+                          ),
+  case Fails of
+    [] ->
+      ok;
+    Fails ->
+      Fails
   end.
 
-%% @doc Returns a list of schema definitions files in `InDir' which need to be
-%% updated in the cache.
 %% @private
-get_updated_files(InDir) ->
-  case { get_file_list(InDir)
+store_schema(SchemaInfo, {Acc, ValidationFun}) ->
+  {SourceKey, Mtime, Schema} = SchemaInfo,
+  case ValidationFun(Schema) of
+    true ->
+      Object = { SourceKey
+               , get_schema_id(Schema)
+               , Mtime
+               , Schema
+               },
+      Table = create_table(table_name()),
+      ets:insert(Table, Object),
+      {Acc, ValidationFun};
+    false ->
+      {[SchemaInfo | Acc], ValidationFun}
+  end.
+
+%% @doc Returns a list of schema files in `Path' which have outdated
+%% cache entries.
+%% @private
+list_outdated(Path) ->
+  case { list_dir(Path)
        , table_exists(table_name())
        } of
     {[] = Files, _TableExists} ->
@@ -169,32 +221,107 @@ get_updated_files(InDir) ->
     {Files, false} ->
       Files;
     {Files, _TableExists} ->
-      Filter = fun(InFile) ->
-                   is_outdated( get_full_path(InDir, InFile)
-                              , InFile
-                              )
-               end,
-      lists:filter(Filter, Files)
+      lists:filter(fun is_outdated/1, Files)
+  end.
+
+%% @private
+list_dir(Path0) ->
+  {ok, Listing} = file:list_dir(Path0),
+  lists:foldl( fun([], Acc) ->
+                   Acc;
+                  (Filename, Acc) ->
+                   Path = filename:join([Path0, Filename]),
+                   case filelib:is_dir(Path) of
+                     true ->
+                       [list_dir(Path) | Acc];
+                     false ->
+                       [Path | Acc]
+                   end
+               end
+             , []
+             ,  Listing
+             ).
+
+%% @doc Checks if a schema file `Filename' has an outdated cache entry.
+%% @private
+is_outdated(File) ->
+  SourceKey = "file://" ++ File,
+  case ets:match_object(table_name(), {SourceKey, '_', '_', '_'}) of
+    [] ->
+      true;
+    [{SourceKey, _Key, Mtime, _Schema}] ->
+      {ok, #file_info{mtime = CurrentMtime}} = file:read_file_info(File),
+      CurrentMtime > Mtime
   end.
 
 %% @doc Loads schema definitions from a list of files `Files' located in
-%% directory `InDir', and parses each of entry by the given parse
+%% directory `Path', and parses each of entry by the given parse
 %% function `ParseFun'. Silently ignores subdirectories.
 %% @private
-load_schema(InDir, Files, ParseFun) ->
-  LoadFun = fun(InFile, Acc) ->
-                InFilePath      = get_full_path(InDir, InFile),
-                case file:read_file(InFilePath) of
-                  {ok, SchemaBin} ->
-                    {ok, FileInfo}  = file:read_file_info(InFilePath),
-                    TimeStamp       = FileInfo#file_info.mtime,
-                    Schema          = try_parse(ParseFun, SchemaBin),
-                    [{InFile, TimeStamp, Schema} | Acc];
-                  {error, eisdir} ->
-                    Acc
-                end
-            end,
-  lists:foldl(LoadFun, [], Files).
+get_schema_infos(Files, ParseFun) ->
+  {SchemaInfos, ParseFun} = lists:foldl( fun get_schema_info/2
+                                       , {[], ParseFun}
+                                       , Files
+                                       ),
+  SchemaInfos.
+
+%% @private
+get_schema_info(File, {Acc, ParseFun}) ->
+  SourceKey = "file://" ++ filename:absname(File),
+  {ok, SchemaBin} = file:read_file(File),
+  Schema0 = try_parse(ParseFun, SchemaBin),
+  Schema = case jesse_json_path:value(<<"id">>, Schema0, undefined) of
+             undefined ->
+               [ {<<"id">>, unicode:characters_to_binary(SourceKey)}
+                 | Schema0
+               ];
+             _ ->
+               Schema0
+           end,
+  {ok, #file_info{mtime = Mtime}} = file:read_file_info(File),
+  {[{SourceKey, Mtime, Schema} | Acc], ParseFun}.
+
+%% @doc Returns value of "id" field from json object `Schema', assuming that
+%% the given json object has such a field, otherwise returns undefined.
+%% @private
+-spec get_schema_id(Schema :: jesse:json_term()) -> string() | undefined.
+get_schema_id(Schema) ->
+  case jesse_json_path:value(?ID, Schema, undefined) of
+    undefined ->
+      undefined;
+    Id ->
+      erlang:binary_to_list(Id)
+  end.
+
+%% @private
+add_file_uri(Key0) ->
+  Key = jesse_state:canonical_path(Key0, Key0),
+  "file://" ++ File = Key,
+  {ok, Body} = file:read_file(File),
+  {ok, #file_info{mtime = Mtime}} = file:read_file_info(File),
+  Schema = jsx:decode(Body),
+  SchemaInfos = [{Key, Mtime, Schema}],
+  ValidationFun = fun jesse_lib:is_json_object/1,
+  store_schemas(SchemaInfos, ValidationFun).
+
+%% @private
+add_http_uri(Key0) ->
+  Key = jesse_state:canonical_path(Key0, Key0),
+  {ok, Response} = httpc:request(get, {Key, []}, [], [{body_format, binary}]),
+  {{_Line, 200, _}, Headers, Body} = Response,
+  Schema = jsx:decode(Body),
+  SchemaInfos = [{Key, get_http_mtime(Headers), Schema}],
+  ValidationFun = fun jesse_lib:is_json_object/1,
+  store_schemas(SchemaInfos, ValidationFun).
+
+%% @private
+get_http_mtime(Headers) ->
+  case proplists:get_value("last-modified", Headers) of
+    undefined ->
+      0;
+    Date ->
+      httpd_util:convert_request_date(Date)
+  end.
 
 %% @doc Wraps up calls to a third party json parser.
 %% @private
@@ -206,30 +333,9 @@ try_parse(ParseFun, SchemaBin) ->
       {parse_error, Error}
   end.
 
-%% @private
-get_file_list(InDir) ->
-  {ok, Files} = file:list_dir(InDir),
-  Files.
-
-%% @private
-get_full_path(Dir, File) ->
-  filename:join([Dir, File]).
-
-%% @doc Checks if a cache entry for a schema definition from file `InFile'
-%% is outdated. Returns `true' if the cache entry needs to be updated, or if
-%% the entry does not exist in the cache, otherwise `false' is returned.
-%% @private
-is_outdated(InFile, SecondaryKey) ->
-  case ets:match_object(table_name(), {'_', SecondaryKey, '_', '_'}) of
-    [] ->
-      true;
-    [{_Key, SecondaryKey, TimeStamp, _Value}] ->
-      {ok, #file_info{mtime = MtimeIn}} = file:read_file_info(InFile),
-      MtimeIn > TimeStamp
-  end.
-
-%% @doc Returns a name of ETS table which is used for in-memory cache.
+%% @doc Returns a name of ETS table which is used for the internal cache.
 %% Could be rewritten to use a configuration parameter instead of a hardcoded
 %% value.
 %% @private
-table_name() -> ?JESSE_ETS.
+table_name() ->
+  ?JESSE_ETS.

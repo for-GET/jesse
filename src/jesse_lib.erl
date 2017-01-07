@@ -25,7 +25,6 @@
 
 %% API
 -export([ empty_if_not_found/1
-        , get_schema_id/1
         , is_array/1
         , is_json_object/1
         , is_null/1
@@ -39,16 +38,6 @@
 -spec empty_if_not_found(Value :: any()) -> any().
 empty_if_not_found(?not_found) -> [];
 empty_if_not_found(Value)      -> Value.
-
-%% @doc Returns value of "id" field from json object `Schema', assuming that
-%% the given json object has such a field, otherwise an exception
-%% will be thrown.
--spec get_schema_id(Schema :: jesse:json_term()) -> string().
-get_schema_id(Schema) ->
-  case jesse_json_path:value(?ID, Schema, ?not_found) of
-    ?not_found -> throw({schema_invalid, Schema, missing_id_field});
-    Id         -> erlang:binary_to_list(Id)
-  end.
 
 %% @doc Checks if the given value is json `array'.
 %% This check is needed since objects in `jsx' are lists (proplists).

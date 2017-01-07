@@ -91,10 +91,22 @@ jesse_run(JsonInstance, Schema) ->
   ok = ensure_started(jsx),
   ok = ensure_started(jesse),
   {ok, JsonInstanceBinary} = file:read_file(JsonInstance),
-  {ok, SchemaBinary} = file:read_file(Schema),
+  {ok, SchemaBinary0} = file:read_file(Schema),
+  SchemaJsx0 = jsx:decode(SchemaBinary0),
+  SchemaFqdn = "file://" ++ filename:absname(Schema),
+  SchemaJsx = case jesse_json_path:value(<<"id">>, SchemaJsx0, undefined) of
+                undefined ->
+                  [ {<<"id">>, unicode:characters_to_binary(SchemaFqdn)}
+                    | SchemaJsx0
+                  ];
+                _ ->
+                  SchemaJsx0
+              end,
+  SchemaBinary = jsx:encode(SchemaJsx),
   jesse:validate_with_schema( SchemaBinary
                             , JsonInstanceBinary
-                            , [{parser_fun, fun jsx:decode/1}]
+                            , [ {parser_fun, fun jsx:decode/1}
+                              ]
                             ).
 
 ensure_started(App) ->
