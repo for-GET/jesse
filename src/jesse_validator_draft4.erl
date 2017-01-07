@@ -946,20 +946,8 @@ check_enum(Value, Enum, State) ->
 %% @doc format
 %% Used for semantic validation.
 %% @private
-check_format(Value, _Format = <<"date">>, State) when is_binary(Value) ->
-  case valid_date(Value) of
-    true  -> State;
-    false -> handle_data_invalid(?wrong_format, Value, State)
-  end;
 check_format(Value, _Format = <<"date-time">>, State) when is_binary(Value) ->
-  try
-    <<Date:10/bytes, $T, Time:8/bytes, $Z>> = Value,
-    valid_date(Date) andalso valid_time(Time)
-  catch
-    error:{badmatch, _} -> handle_data_invalid(?wrong_format, Value, State)
-  end;
-check_format(Value, _Format = <<"time">>, State) when is_binary(Value) ->
-  case valid_time(Value) of
+  case valid_datetime(Value) of
     true  -> State;
     false -> handle_data_invalid(?wrong_format, Value, State)
   end;
@@ -1343,33 +1331,10 @@ remove_last_from_path(State) ->
   jesse_state:remove_last_from_path(State).
 
 %% @private
-valid_date(<<Year:4/bytes, $-, Month:2/bytes, $-, Day:2/bytes>>) ->
-  try
-    %% avoiding binary_to_integer to maintain R15 compatibility
-    calendar:valid_date( list_to_integer(binary_to_list(Year))
-                       , list_to_integer(binary_to_list(Month))
-                       , list_to_integer(binary_to_list(Day))
-                       )
-  catch
-    error:badarg -> false
-  end;
-valid_date(_Other) -> false.
-
-%% @private
-valid_time(<<Hour:2/bytes, $:, Minute:2/bytes, $:, Second:2/bytes>>) ->
-  %% avoiding binary_to_integer to maintain R15 compatibility
-  try { list_to_integer(binary_to_list(Hour))
-      , list_to_integer(binary_to_list(Minute))
-      , list_to_integer(binary_to_list(Second))
-      }
-  of
-      {H, M, S} when
-        H >= 0, H =< 23,
-        M >= 0, M =< 59,
-        S >= 0, S =< 59;
-        H =:= 24, M =:= 0, S =:= 0 -> true;
-      _Other -> false
-  catch
-    error:badarg -> false
-  end;
-valid_time(_Other) -> false.
+valid_datetime(DateTimeBin) ->
+  case rfc3339:parse(DateTimeBin) of
+    {ok, _} ->
+      true;
+    _ ->
+      false
+  end.

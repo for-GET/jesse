@@ -22,13 +22,8 @@
                 "valid": true
             },
             {
-                "description": "submaximal timestamp",
-                "data": "9999-12-31T23:59:59Z",
-                "valid": true
-            },
-            {
                 "description": "maximal timestamp",
-                "data": "9999-12-31T24:00:00Z",
+                "data": "9999-12-31T23:59:59Z",
                 "valid": true
             },
             {
