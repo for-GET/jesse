@@ -1,4 +1,4 @@
-%% -*- mode: erlang;erlang-indent-level: 4;indent-tabs-mode: nil -*-
+%% -*- mode: erlang -*-
 
 %% https://github.com/basho/webmachine/commit/a907e90086b39dcddf602e09a9ea1dc57ba675e4
 
@@ -7,14 +7,14 @@
 %% front of existing items. It is an error if the value at `Key' is
 %% not a list in `C'.
 MergeConfig = fun({Key, ToAdd}, C) ->
-                      case lists:keyfind(Key, 1, C) of
-                          false ->
-                              lists:keystore(Key, 1, C, {Key, ToAdd});
-                          {Key, List} when is_list(List) ->
-                              %% remove items in ToAdd already in List
-                              ToAdd1 = [ I || I <- ToAdd, not lists:member(I, List) ],
-                              lists:keystore(Key, 1, C, {Key, ToAdd1 ++ List })
-                      end
+                  case lists:keyfind(Key, 1, C) of
+                    false ->
+                      lists:keystore(Key, 1, C, {Key, ToAdd});
+                    {Key, List} when is_list(List) ->
+                      %% remove items in ToAdd already in List
+                      ToAdd1 = [ I || I <- ToAdd, not lists:member(I, List) ],
+                      lists:keystore(Key, 1, C, {Key, ToAdd1 ++ List })
+                  end
               end.
 
 %% -- Add development only options if we are a top-level build  --
@@ -33,10 +33,10 @@ ErlOpts = {erl_opts, [ {d, 'DEV_ONLY'}
 %% Development only dependencies can be specified in the main
 %% rebar.config. This file should not need to be edited directly.
 DevOnlyDeps = case lists:keyfind(dev_only_deps, 1, CONFIG) of
-                  false ->
-                      [];
-                  {dev_only_deps, DOD} ->
-                      DOD
+                false ->
+                  [];
+                {dev_only_deps, DOD} ->
+                  DOD
               end,
 
 Deps = {deps, DevOnlyDeps},
@@ -45,13 +45,13 @@ ConfigPath = filename:dirname(SCRIPT),
 DevMarker = filename:join([ConfigPath, ".rebar", "DEV_MODE"]),
 _ = filelib:ensure_dir(DevMarker),
 case filelib:is_file(DevMarker) of
-    true ->
-        lists:foldl(fun(I, C) -> MergeConfig(I, C) end,
-                    CONFIG, [Deps, ErlOpts]);
-    false ->
-        %% If the ./.rebar/DEV_MODE marker is not present, this script simply
-        %% returns the config specified in rebar.config. This will be
-        %% the behavior when the project is built as a dependency of
-        %% another project.
-        CONFIG
+  true ->
+    lists:foldl(fun(I, C) -> MergeConfig(I, C) end,
+                CONFIG, [Deps, ErlOpts]);
+  false ->
+    %% If the ./.rebar/DEV_MODE marker is not present, this script simply
+    %% returns the config specified in rebar.config. This will be
+    %% the behavior when the project is built as a dependency of
+    %% another project.
+    CONFIG
 end.
