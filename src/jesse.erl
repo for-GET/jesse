@@ -56,7 +56,7 @@ main(Args) ->
                     ok | jesse_error:error().
 add_schema(Key, Schema) ->
   ValidationFun = fun jesse_lib:is_json_object/1,
-  jesse_database:add(Schema, ValidationFun, Key).
+  jesse_database:add(Key, Schema, ValidationFun).
 
 %% @doc Equivalent to `add_schema/2', but `Schema' is a binary string, and
 %% the third agument is a parse function to convert the binary string to
