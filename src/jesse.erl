@@ -52,8 +52,9 @@ main(Args) ->
 %% @doc Adds a schema definition `Schema' to in-memory storage associated with
 %% a key `Key'. It will overwrite an existing schema with the same key if
 %% there is any.
--spec add_schema(Key :: any(), Schema :: json_term()) ->
-                    ok | jesse_error:error().
+-spec add_schema( Key :: string()
+                , Schema :: json_term()
+                ) -> ok | jesse_error:error().
 add_schema(Key, Schema) ->
   ValidationFun = fun jesse_lib:is_json_object/1,
   jesse_database:add(Key, Schema, ValidationFun).
@@ -61,9 +62,9 @@ add_schema(Key, Schema) ->
 %% @doc Equivalent to `add_schema/2', but `Schema' is a binary string, and
 %% the third agument is a parse function to convert the binary string to
 %% a supported internal representation of json.
--spec add_schema( Key       :: any()
-                , Schema    :: binary()
-                , Options   :: [{Key :: atom(), Data :: any()}]
+-spec add_schema( Key     :: string()
+                , Schema  :: binary()
+                , Options :: [{K :: atom(), V :: any()}]
                 ) -> ok | jesse_error:error().
 add_schema(Key, Schema, Options) ->
   try
