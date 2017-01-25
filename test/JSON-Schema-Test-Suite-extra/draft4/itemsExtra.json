@@ -1,0 +1,27 @@
+[
+    {
+        "description": "size of items does not imply minItems",
+        "schema": {
+            "type": "array",
+            "items": [{}, {}, {}],
+            "additionalItems": false
+        },
+        "tests": [
+            {
+                "description": "empty array",
+                "data": [],
+                "valid": true
+            },
+            {
+                "description": "array with less items than size of items",
+                "data": [ 1, 2 ],
+                "valid": true
+            },
+            {
+                "description": "array with more items than size of items",
+                "data": [ 1, 2, 3, 4 ],
+                "valid": false
+            }
+        ]
+    }
+]

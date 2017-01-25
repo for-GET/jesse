@@ -26,6 +26,9 @@
 -export([ default_error_handler/3
         , handle_data_invalid/3
         , handle_schema_invalid/2
+        , to_json/1
+        , to_json/2
+        , reason_to_jsx/1
         ]).
 
 -export_type([ error/0
@@ -90,6 +93,44 @@ handle_schema_invalid(Info, State) ->
           },
   handle_error(Error, State).
 
+%% @doc Convert an error to a JSON string using jsx
+-spec to_json(Error :: error()) -> binary().
+to_json(Error) ->
+  to_json(Error, [indent]).
+
+%% @doc Convert an error to a JSON string using jsx
+-spec to_json(Error :: error(), JsxOptions :: [atom()]) -> binary().
+to_json({error, Reasons}, JsxOptions) ->
+  JsxReasons = lists:map(fun reason_to_jsx/1, Reasons),
+  jsx:encode([{reasons, JsxReasons}], JsxOptions).
+
+%% @doc Convert an error reason to jsx structs
+-spec reason_to_jsx(Reason :: error_reason()) -> jesse:json_term().
+reason_to_jsx({?schema_invalid, Schema, {Error, _}}) ->
+  [ {invalid, schema}
+  , {schema, Schema}
+  , {error, Error}
+  ];
+reason_to_jsx({?schema_invalid, Schema, Error}) ->
+  [ {invalid, schema}
+  , {schema, Schema}
+  , {error, Error}
+  ];
+reason_to_jsx({?data_invalid, Schema, {Error, _}, Data, Path}) ->
+  [ {invalid, data}
+  , {schema, Schema}
+  , {error, Error}
+  , {data, Data}
+  , {path, Path}
+  ];
+reason_to_jsx({?data_invalid, Schema, Error, Data, Path}) ->
+  [ {invalid, data}
+  , {schema, Schema}
+  , {error, Error}
+  , {data, Data}
+  , {path, Path}
+  ].
+
 %%% Internal functions
 %% @private
 handle_error(Error, State) ->
@@ -98,3 +139,5 @@ handle_error(Error, State) ->
   AllowedErrors = jesse_state:get_allowed_errors(State),
   NewErrorList  = ErrorHandler(Error, ErrorList, AllowedErrors),
   jesse_state:set_error_list(State, NewErrorList).
+
+%% @private

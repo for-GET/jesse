@@ -28,18 +28,11 @@
 -export_type([proplist/0, kvc_key/0, kvc_obj/0]).
 
 %% @doc Parse a JSON Pointer
-%% TODO: Parse according to specification. This does not accurately parse
-%%       tilde escaped JSON Pointers.
 -spec parse(JSONPointer :: string() | binary()) -> [binary()].
 parse(JSONPointer) ->
-  lists:map(
-    fun (Segment) when is_list(Segment) ->
-        unicode:characters_to_binary(Segment);
-        (Segment) when is_binary(Segment) ->
-        Segment
-    end,
-    re:split(JSONPointer, <<"/">>, [{return, binary}, unicode])
-   ).
+  lists:map( fun parse_json_pointer_token/1
+           , re:split(JSONPointer, "/", [{return, list}])
+           ).
 
 %% @doc Return the result of the query Path on P.
 -spec path(kvc_key() | [kvc_key()], kvc_obj()) -> term() | [].
@@ -79,14 +72,13 @@ value(K, P, Default) ->
         {value, V} ->
           V
       end;
-    ?IF_MAPS(                                   % for dialyzer on pre erl17
-       {{map, Map}, Type} ->
-      case maps:find(normalize(K, Type), Map) of
-        error ->
-          Default;
-        {ok, V} ->
-          V
-      end;)
+    ?IF_MAPS({{map, Map}, Type} ->
+                case maps:find(normalize(K, Type), Map) of
+                  error ->
+                    Default;
+                  {ok, V} ->
+                    V
+                end;)
     {Proplist, Type} ->
       case lists:keyfind(normalize(K, Type), 1, Proplist) of
         false ->
@@ -134,17 +126,22 @@ to_proplist(T) ->
 %% and also handle `jsx' empty objects)
 -spec unwrap_value(kvc_obj()) -> kvc_obj().
 unwrap_value({struct, L}) -> L;
-unwrap_value({L})         -> L;
-unwrap_value({})          -> [];
-unwrap_value([])          -> [];
-unwrap_value([{}])        -> [];
+unwrap_value({L}) -> L;
+unwrap_value({}) -> [];
+unwrap_value([]) -> [];
+unwrap_value([{}]) -> [];
 ?IF_MAPS(unwrap_value(Map) when erlang:is_map(Map) -> maps:to_list(Map);)
-unwrap_value(L)           -> L.
+unwrap_value(L) -> L.
 
 %% Internal API
 
+-ifdef(erlang_deprecated_types).
+to_proplist_map(_) ->
+  throw(erlang_deprecated_types).
+-else.
 to_proplist_map(Map) ->
   to_proplist_pl(maps:to_list(Map)).
+-endif.
 
 to_proplist_l(L) ->
   [to_proplist(V) || V <- L].
@@ -232,17 +229,26 @@ proplist_type_gb(D) ->
   {K, _V} = gb_trees:smallest(D),
   {{gb_tree, D}, typeof_elem(K)}.
 
+-ifdef(erlang_deprecated_types).
+proplist_type_map(_) ->
+  throw(erlang_deprecated_types).
+-else.
 proplist_type_map(D) ->
   [K | _] = maps:keys(D),
   {{map, D}, typeof_elem(K)}.
+-endif.
 
 proplist_type_undefined(_) ->
   {[], undefined}.
 
 
 first_of([F | Rest], V) ->
-  try F(V)
-  catch error:_ ->
+  try
+    F(V)
+  catch
+    throw:erlang_deprecated_types ->
+      first_of(Rest, V);
+    error:_ ->
       first_of(Rest, V)
   end.
 
@@ -284,3 +290,15 @@ normalize(K, string) when is_atom(K) ->
   atom_to_list(K);
 normalize(K, undefined) ->
   K.
+
+-spec parse_json_pointer_token(Token :: string()) -> binary().
+parse_json_pointer_token(Token) ->
+  DecodedToken = unicode:characters_to_binary(http_uri:decode(Token)),
+  lists:foldl( fun({From, To}, T) ->
+                   binary:replace(T, From, To)
+               end
+             , DecodedToken
+             , [ {<<"~0">>, <<"~">>}
+               , {<<"~1">>, <<"/">>}
+               ]
+             ).

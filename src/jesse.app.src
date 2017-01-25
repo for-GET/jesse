@@ -1,14 +1,14 @@
 %%-*- mode: erlang -*-
 
-{ application, jesse, [ {description, "jesse"}
-                      , {vsn, "0.1.3"}
+{ application, jesse, [ {description, "jesse (JSon Schema Erlang) is an implementation of a JSON Schema validator for Erlang."}
+                      , {vsn, "1.4.0"}
                       , {modules, []}
                       , {registered, []}
                       , {applications, [ kernel
                                        , stdlib
                                        ]}
                       , {maintainers, ["for-GET", "Heinz N. Gies"]}
-                      , {licenses, ["Apache"]}
+                      , {licenses, ["Apache 2.0"]}
                       , {links,[{ "Github"
                                 , "https://github.com/for-GET/jesse"}]}
                       ]}.

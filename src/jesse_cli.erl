@@ -62,11 +62,11 @@ run(Options, [Schema|_] = Schemata, [JsonInstance|JsonInstances]) ->
                [ {filename, list_to_binary(JsonInstance)}
                , {result, ok}
                ];
-             {error, Errors0} ->
-               Errors = errors_to_json(Errors0),
+             {error, Reasons} ->
+               JsxReasons = lists:map(fun jesse_error:reason_to_jsx/1, Reasons),
                [ {filename, list_to_binary(JsonInstance)}
                , {result, error}
-               , {errors, Errors}
+               , {errors, JsxReasons}
                ]
            end,
   case proplists:get_value(json, Options) of
@@ -104,31 +104,3 @@ ensure_started(App) ->
     {error, {already_started, App}} ->
       ok
   end.
-
-errors_to_json(Errors) ->
-  lists:map(fun error_to_json/1, Errors).
-
-error_to_json({schema_invalid, Schema, {Error, _}}) ->
-  [ {error, schema_invalid}
-  , {schema, Schema}
-  , {error, Error}
-  ];
-error_to_json({schema_invalid, Schema, Error}) ->
-  [ {error, schema_invalid}
-  , {schema, Schema}
-  , {error, Error}
-  ];
-error_to_json({data_invalid, Schema, {Error, _}, Data, Path}) ->
-  [ {error, data_invalid}
-  , {schema, Schema}
-  , {error, Error}
-  , {path, Path}
-  , {data, Data}
-  ];
-error_to_json({data_invalid, Schema, Error, Data, Path}) ->
-  [ {error, data_invalid}
-  , {schema, Schema}
-  , {error, Error}
-  , {path, Path}
-  , {data, Data}
-  ].

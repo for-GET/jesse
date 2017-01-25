@@ -117,18 +117,21 @@ get_error_list(#state{error_list = ErrorList}) ->
          , Options    :: [{Key :: atom(), Data :: any()}]
          ) -> state().
 new(JsonSchema, Options) ->
-  DefaultHandler   = fun jesse_error:default_error_handler/3,
   ErrorHandler     = proplists:get_value( error_handler
                                         , Options
-                                        , DefaultHandler
+                                        , ?default_error_handler_fun
                                         ),
   AllowedErrors    = proplists:get_value( allowed_errors
                                         , Options
                                         , 0
                                         ),
+  MetaSchemaVer = jesse_json_path:value( ?SCHEMA
+                                       , JsonSchema
+                                       , ?default_schema_ver
+                                       ),
   DefaultSchemaVer = proplists:get_value( default_schema_ver
                                         , Options
-                                        , ?default_schema_ver
+                                        , MetaSchemaVer
                                         ),
   LoaderFun = proplists:get_value( schema_loader_fun
                                  , Options
@@ -183,7 +186,10 @@ resolve_reference(State, Reference) ->
     %% Remote references
     RemoteURI ->
       %% Split the URI on the fragment if it exists
-      [BaseURI | MaybePointer] = re:split(RemoteURI, <<$#>>, [{return, list}]),
+      [BaseURI | MaybePointer] = re:split( RemoteURI
+                                         , <<$#>>
+                                         , [{return, binary}, unicode]
+                                         ),
       case jesse_state:find_schema(State, BaseURI) of
         ?not_found ->
           jesse_error:handle_schema_invalid(?schema_invalid, State);
@@ -192,8 +198,10 @@ resolve_reference(State, Reference) ->
           NewState = State#state{root_schema = RemoteSchema, id = BaseURI},
           %% Retrive the part we want
           Path = case MaybePointer of
-                   []        -> [];
-                   [Pointer] -> jesse_json_path:parse(Pointer)
+                   [] ->
+                     [];
+                   [Pointer] ->
+                     jesse_json_path:parse(Pointer)
                  end,
           case local_schema(RemoteSchema, Path) of
             ?not_found ->
@@ -206,6 +214,8 @@ resolve_reference(State, Reference) ->
 
 %% @doc Retrive a specific part of a schema
 %% @private
+-spec local_schema(Schema :: not_found | jesse:json_term(),
+                   Path :: [binary()]) -> not_found | jesse:json_term().
 local_schema(?not_found, _Path) ->
   ?not_found;
 local_schema(Schema, []) ->
@@ -213,7 +223,8 @@ local_schema(Schema, []) ->
     true  -> Schema;
     false -> ?not_found
   end;
-local_schema(Schema, [<<>> | Keys]) -> local_schema(Schema, Keys);
+local_schema(Schema, [<<>> | Keys]) ->
+  local_schema(Schema, Keys);
 local_schema(Schema, [Key | Keys]) ->
   case jesse_lib:is_json_object(Schema) of
     true  ->
@@ -255,14 +266,18 @@ combine_relative_id(undefined, Id) ->
 combine_relative_id(Id, [$# | Fragment]) ->
   [WithoutFragment | _] = re:split(Id, <<$#>>, [{return, list}]),
   WithoutFragment ++ [$# | Fragment];
+combine_relative_id(Id, NewFile) when is_binary(Id) ->
+  combine_relative_id(unicode:characters_to_list(Id), NewFile);
 combine_relative_id(Id, NewFile) ->
   BaseURI = filename:dirname(Id),
   FileName = unicode:characters_to_list(NewFile),
   BaseURI ++ [$/ | FileName].
 
 %% @doc Find a schema based on URI
--spec find_schema(State :: state(), SchemaURI :: binary()) ->
+-spec find_schema(State :: state(), SchemaURI :: string() | binary()) ->
     jesse:json_term() | ?not_found.
+find_schema(State, SchemaURI) when is_binary(SchemaURI) ->
+  find_schema(State, unicode:characters_to_list(SchemaURI));
 find_schema(#state{schema_loader_fun=LoaderFun}, SchemaURI) ->
   try LoaderFun(SchemaURI) of
       {ok, Schema} ->
