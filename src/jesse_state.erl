@@ -28,6 +28,7 @@
         , get_allowed_errors/1
         , get_current_path/1
         , get_current_schema/1
+        , get_current_schema_id/1
         , get_default_schema_ver/1
         , get_error_handler/1
         , get_error_list/1
@@ -95,6 +96,14 @@ get_current_path(#state{current_path = CurrentPath}) ->
 -spec get_current_schema(State :: state()) -> jesse:json_term().
 get_current_schema(#state{current_schema = CurrentSchema}) ->
   CurrentSchema.
+
+%% @doc Getter for `current_schema_id'.
+-spec get_current_schema_id(State :: state()) -> binary() | undefined.
+get_current_schema_id(#state{current_schema = CurrentSchema
+                            ,root_schema = RootSchema
+                            }) ->
+    Default = jesse_json_path:value(?ID, RootSchema, ?not_found),
+    jesse_json_path:value(?ID, CurrentSchema, Default).
 
 %% @doc Getter for `default_schema_ver'.
 -spec get_default_schema_ver(State :: state()) -> binary().
