@@ -64,7 +64,8 @@
                     | ?too_many_properties
                     | ?wrong_length
                     | ?wrong_size
-                    | ?wrong_type.
+                    | ?wrong_type
+                    | ?external_error.
 
 -type data_error_type() :: data_error()
                          | {data_error(), binary()}.
@@ -245,13 +246,13 @@ check_value(Value, [{?ONEOF, Schemas} | Attrs], State) ->
 check_value(Value, [{?NOT, Schema} | Attrs], State) ->
     NewState = check_not(Value, Schema, State),
     check_value(Value, Attrs, NewState);
-check_value(_Value, [], State) ->
-  State;
 check_value(Value, [{?REF, RefSchemaURI} | Attrs], State) ->
     NewState = validate_ref(Value, RefSchemaURI, State),
     check_value(Value, Attrs, NewState);
+check_value(Value, [], State) ->
+    check_external_validation(Value, State);
 check_value(Value, [_Attr | Attrs], State) ->
-  check_value(Value, Attrs, State).
+    check_value(Value, Attrs, State).
 
 %%% Internal functions
 %% @doc Adds Property to the current path and checks the value
@@ -1351,3 +1352,9 @@ valid_datetime(DateTimeBin) ->
     _ ->
       false
   end.
+
+check_external_validation(Value, State) ->
+    case jesse_state:get_extra_validator(State) of
+        undefined -> State;
+        Fun -> Fun(Value, State)
+    end.

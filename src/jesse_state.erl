@@ -26,6 +26,7 @@
 %% API
 -export([ add_to_path/2
         , get_allowed_errors/1
+        , get_extra_validator/1
         , get_current_path/1
         , get_current_schema/1
         , get_current_schema_id/1
@@ -49,6 +50,7 @@
 %% Includes
 -include("jesse_schema_validator.hrl").
 
+-type extra_validator() :: fun((jesse:json_term(), state()) -> state()) | undefined.
 %% Internal datastructures
 -record( state
        , { root_schema        :: jesse:json_term()
@@ -68,6 +70,7 @@
                                           jesse:json_term() |
                                           ?not_found
                                             )
+         , extra_validator    :: extra_validator()
          , id                 :: binary() | 'undefined'
          }
        ).
@@ -148,6 +151,9 @@ new(JsonSchema, Options) ->
                                  , Options
                                  , ?default_schema_loader_fun
                                  ),
+  ExtraValidator = proplists:get_value( extra_validator
+                                      , Options
+                                      ),
   NewState = #state{ root_schema        = JsonSchema
                    , current_path       = []
                    , allowed_errors     = AllowedErrors
@@ -155,6 +161,7 @@ new(JsonSchema, Options) ->
                    , error_handler      = ErrorHandler
                    , default_schema_ver = DefaultSchemaVer
                    , schema_loader_fun  = LoaderFun
+                   , extra_validator    = ExtraValidator
                    },
   set_current_schema(NewState, JsonSchema).
 
@@ -377,3 +384,5 @@ load_schema(#state{schema_loader_fun = LoaderFun}, SchemaURI) ->
       %% io:format("load_schema: ~p\n", [{_C, _E, erlang:get_stacktrace()}]),
       ?not_found
   end.
+
+get_extra_validator(#state{extra_validator=Fun}) -> Fun.
