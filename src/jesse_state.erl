@@ -225,6 +225,7 @@ resolve_ref(State, Reference) ->
 undo_resolve_ref(RefState, OriginalState) ->
   RefState#state{ root_schema = OriginalState#state.root_schema
                 , current_schema = OriginalState#state.current_schema
+                , default_schema_ver = OriginalState#state.default_schema_ver
                 , id = OriginalState#state.id
                 }.
 
