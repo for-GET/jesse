@@ -48,6 +48,7 @@
                     | ?wrong_length
                     | ?wrong_size
                     | ?wrong_type
+                    | ?not_in_enum
                     | ?external_error.
 
 -type data_error_type() :: data_error()
@@ -823,7 +824,7 @@ check_enum(Value, Enum, State) ->
   case IsValid of
     true  -> State;
     false ->
-      handle_data_invalid(?not_in_range, Value, State)
+      handle_data_invalid(?not_in_enum, Value, State)
   end.
 
 check_format(_Value, _Format, State) ->
