@@ -40,10 +40,11 @@
               , Options    :: [{Key :: atom(), Data :: any()}]
               ) -> {ok, jesse:json_term()}
                  | no_return().
-validate(JsonSchema, Value, Options) ->
+validate(JsonSchema, Value, Options0) ->
+  Options = [{with_value, Value} | proplists:delete(with_value, Options0)],
   State    = jesse_state:new(JsonSchema, Options),
   NewState = validate_with_state(JsonSchema, Value, State),
-  {result(NewState), Value}.
+  {result(NewState), jesse_state:get_current_value(NewState)}.
 
 %% @doc Validates json `Data' against `JsonSchema' with `State'.
 %% If the given json is valid, then the latest state is returned to the caller,
