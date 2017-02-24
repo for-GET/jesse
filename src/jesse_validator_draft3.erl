@@ -208,13 +208,11 @@ check_value(Value, [{?DISALLOW, Disallow} | Attrs], State) ->
 check_value(Value, [{?EXTENDS, Extends} | Attrs], State) ->
   NewState = check_extends(Value, Extends, State),
   check_value(Value, Attrs, NewState);
-check_value(Value, [{?REF, RefSchemaURI}], State) ->
-  {NewState0, Schema} = resolve_ref(RefSchemaURI, State),
-  NewState =
-    jesse_schema_validator:validate_with_state(Schema, Value, NewState0),
-  undo_resolve_ref(NewState, State);
 check_value(_Value, [], State) ->
   State;
+check_value(Value, [{?REF, RefSchemaURI} | Attrs], State) ->
+  NewState = validate_ref(Value, RefSchemaURI, State),
+  check_value(Value, Attrs, NewState);
 check_value(Value, [_Attr | Attrs], State) ->
   check_value(Value, Attrs, State).
 
@@ -897,6 +895,12 @@ check_extends_array(Value, Extends, State) ->
              , State
              , Extends
              ).
+
+%% @private
+validate_ref(Value, Reference, State) ->
+  {NewState, Schema} = resolve_ref(Reference, State),
+  ResultState = jesse_schema_validator:validate_with_state(Schema, Value, NewState),
+  undo_resolve_ref(ResultState, State).
 
 %% @private
 resolve_ref(Reference, State) ->
