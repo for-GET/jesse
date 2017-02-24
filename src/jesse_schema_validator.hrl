@@ -99,6 +99,7 @@
 -define(no_extra_items_allowed,      'no_extra_items_allowed').
 -define(not_allowed,                 'not_allowed').
 -define(not_unique,                  'not_unique').
+-define(not_in_enum,                 'not_in_enum').
 -define(not_in_range,                'not_in_range').
 -define(not_divisible,               'not_divisible').
 -define(wrong_type,                  'wrong_type').
@@ -113,6 +114,7 @@
 -define(not_one_schema_valid,        'not_one_schema_valid').
 -define(not_schema_valid,            'not_schema_valid').
 -define(wrong_not_schema,            'wrong_not_schema').
+-define(external_error,              'external_error').
 
 %%
 -define(not_found, not_found).

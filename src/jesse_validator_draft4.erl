@@ -56,6 +56,7 @@
                     | ?no_extra_properties_allowed
                     | ?no_match
                     | ?not_found
+                    | ?not_in_enum
                     | ?not_in_range
                     | ?not_multiple_of
                     | ?not_one_schema_valid
@@ -938,7 +939,7 @@ check_enum(Value, Enum, State) ->
   case IsValid of
     true  -> State;
     false ->
-      handle_data_invalid(?not_in_range, Value, State)
+      handle_data_invalid(?not_in_enum, Value, State)
   end.
 
 %% @doc format

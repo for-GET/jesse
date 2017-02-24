@@ -44,6 +44,7 @@
                     | ?not_allowed
                     | ?not_divisible
                     | ?not_found
+                    | ?not_in_enum
                     | ?not_in_range
                     | ?wrong_length
                     | ?wrong_size
@@ -822,7 +823,7 @@ check_enum(Value, Enum, State) ->
   case IsValid of
     true  -> State;
     false ->
-      handle_data_invalid(?not_in_range, Value, State)
+      handle_data_invalid(?not_in_enum, Value, State)
   end.
 
 check_format(_Value, _Format, State) ->
