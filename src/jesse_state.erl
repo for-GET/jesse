@@ -27,6 +27,7 @@
 -export([ add_to_path/2
         , get_allowed_errors/1
         , get_extra_validator/1
+        , get_current_value/1
         , get_current_path/1
         , get_current_schema/1
         , get_current_schema_id/1
@@ -37,6 +38,7 @@
         , remove_last_from_path/1
         , set_allowed_errors/2
         , set_current_schema/2
+        , set_value/3
         , set_error_list/2
         , resolve_ref/2
         , undo_resolve_ref/2
@@ -51,12 +53,15 @@
 -include("jesse_schema_validator.hrl").
 
 -type extra_validator() :: fun((jesse:json_term(), state()) -> state()) | undefined.
+-type setter_fun() :: fun((jesse:json_path(), jesse:json_term(), jesse:json_term()) -> jesse:json_term()) | undefined.
+
 %% Internal datastructures
 -record( state
        , { root_schema        :: jesse:json_term()
          , current_schema     :: jesse:json_term()
          , current_path       :: [binary() | non_neg_integer()]
                                  %% current path in reversed order
+         , current_value      :: jesse:json_term()
          , allowed_errors     :: non_neg_integer() | 'infinity'
          , error_list         :: list()
          , error_handler      :: fun(( jesse_error:error_reason()
@@ -71,6 +76,7 @@
                                           ?not_found
                                             )
          , extra_validator    :: extra_validator()
+         , setter_fun         :: setter_fun()
          , id                 :: binary() | 'undefined'
          }
        ).
@@ -154,6 +160,12 @@ new(JsonSchema, Options) ->
   ExtraValidator = proplists:get_value( extra_validator
                                       , Options
                                       ),
+  SetterFun = proplists:get_value( setter_fun
+                                 , Options
+                                 ),
+  Value = proplists:get_value( with_value
+                             , Options
+                             ),
   NewState = #state{ root_schema        = JsonSchema
                    , current_path       = []
                    , allowed_errors     = AllowedErrors
@@ -162,6 +174,8 @@ new(JsonSchema, Options) ->
                    , default_schema_ver = DefaultSchemaVer
                    , schema_loader_fun  = LoaderFun
                    , extra_validator    = ExtraValidator
+                   , setter_fun         = SetterFun
+                   , current_value      = Value
                    },
   set_current_schema(NewState, JsonSchema).
 
@@ -384,5 +398,17 @@ load_schema(#state{schema_loader_fun = LoaderFun}, SchemaURI) ->
       %% io:format("load_schema: ~p\n", [{_C, _E, erlang:get_stacktrace()}]),
       ?not_found
   end.
+
+%% @doc Getter for `current_value'.
+-spec get_current_value(State :: state()) -> jesse:json_term().
+get_current_value(#state{current_value = Value}) -> Value.
+
+-spec set_value(State :: state(), jesse:path(), jesse:json_term()) -> state().
+set_value(#state{setter_fun=undefined}=State, _Path, _Value) -> State;
+set_value(#state{current_value=undefined}=State, _Path, _Value) -> State;
+set_value(#state{setter_fun=Setter
+                ,current_value=Value
+                }=State, Path, NewValue) ->
+    State#state{current_value = Setter(Path, NewValue, Value)}.
 
 get_extra_validator(#state{extra_validator=Fun}) -> Fun.
