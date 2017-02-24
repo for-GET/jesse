@@ -31,6 +31,7 @@
 -include("jesse_schema_validator.hrl").
 
 -type schema_error() :: ?wrong_type_dependency
+                      | ?schema_invalid
                       | ?wrong_type_items.
 
 -type schema_error_type() :: schema_error()
@@ -348,21 +349,14 @@ check_properties(Value, Properties, State) ->
     = lists:foldl( fun({PropertyName, PropertySchema}, CurrentState) ->
                        case get_value(PropertyName, Value) of
                          ?not_found ->
-%% @doc 5.7.  required
-%%
-%% This attribute indicates if the instance must have a value, and not
-%% be undefined.  This is false by default, making the instance
-%% optional.
-%% @end
-                           case get_value(?REQUIRED, PropertySchema) of
-                             true ->
-                               handle_data_invalid( {?missing_required_property
-                                                     , PropertyName}
-                                                   , Value
-                                                   , CurrentState);
-                             _    ->
-                               CurrentState
-                           end;
+                             case get_value(?DEFAULT, PropertySchema) of
+                                 ?not_found -> check_required( PropertySchema
+                                                             , PropertyName
+                                                             , Value
+                                                             , CurrentState
+                                                             );
+                                 Default -> check_default(PropertyName, PropertySchema, Default, CurrentState)
+                             end;
                          Property ->
                            NewState = set_current_schema( CurrentState
                                                         , PropertySchema
@@ -582,6 +576,24 @@ check_items_fun(Tuples, State) ->
                              , Tuples
                              ),
   set_current_schema(TmpState, get_current_schema(State)).
+
+
+%% @doc 5.7.  required
+%%
+%% This attribute indicates if the instance must have a value, and not
+%% be undefined.  This is false by default, making the instance
+%% optional.
+%% @private
+check_required(PropertySchema, PropertyName, Value, CurrentState) ->
+    case get_value(?REQUIRED, PropertySchema) of
+        true ->
+            handle_data_invalid( {?missing_required_property
+                                  , PropertyName}
+                                 , Value
+                                 , CurrentState);
+        _    ->
+            CurrentState
+    end.
 
 %% @doc 5.8.  dependencies
 %%
@@ -980,7 +992,11 @@ compare_properties(Value1, Value2) ->
 %% Wrappers
 %% @private
 get_value(Key, Schema) ->
-  jesse_json_path:value(Key, Schema, ?not_found).
+  get_value(Key, Schema, ?not_found).
+
+%% @private
+get_value(Key, Schema, Default) ->
+  jesse_json_path:value(Key, Schema, Default).
 
 %% @private
 unwrap(Value) ->
@@ -1027,3 +1043,54 @@ check_external_validation(Value, State) ->
         undefined -> State;
         Fun -> Fun(Value, State)
     end.
+
+%% @private
+set_value(PropertyName, Value, State) ->
+    Path = lists:reverse([PropertyName] ++ jesse_state:get_current_path(State)),
+    jesse_state:set_value(State, Path, Value).
+
+-define(types_for_defaults, [ ?STRING
+                            , ?NUMBER
+                            , ?INTEGER
+                            , ?BOOLEAN
+                            , ?OBJECT
+                            ]).
+
+%% @private
+check_default(PropertyName, PropertySchema, Default, State) ->
+    Type = get_value(?TYPE, PropertySchema, ?not_found),
+    case Type =/= ?not_found
+         andalso lists:member(Type, ?types_for_defaults)
+         andalso is_type_valid(Default, Type, State) of
+        false -> State;
+        true -> set_default(PropertyName, PropertySchema, Default, State)
+    end.
+
+%% @private
+set_default(PropertyName, PropertySchema, Default, State) ->
+    State1 = set_value(PropertyName, Default, State),
+    Schema = jesse_state:get_current_schema(State1),
+    case Schema =/= PropertySchema andalso validate_schema(Default, PropertySchema, State1) of
+        {true, State4} -> State4;
+        _ -> State
+    end.
+
+%% @doc Validate a value against a schema in a given state.
+%% Used by all combinators to run validation on a schema.
+%% @private
+validate_schema(Value, Schema, State0) ->
+  try
+    case jesse_lib:is_json_object(Schema) of
+      true ->
+        State1 = set_current_schema(State0, Schema),
+        State2 = jesse_schema_validator:validate_with_state( Schema
+                                                           , Value
+                                                           , State1
+                                                           ),
+        {true, State2};
+      false ->
+        handle_schema_invalid(?schema_invalid, State0)
+    end
+  catch
+    throw:Errors -> {false, Errors}
+  end.
