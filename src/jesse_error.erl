@@ -64,7 +64,7 @@
                            ) -> [error_reason()] | no_return().
 default_error_handler(Error, ErrorList, AllowedErrors) ->
   case AllowedErrors > length(ErrorList) orelse AllowedErrors =:= 'infinity' of
-    true  -> [Error | ErrorList];
+    true  -> ErrorList ++ [Error];
     false -> throw([Error | ErrorList])
   end.
 
