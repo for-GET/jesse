@@ -294,14 +294,13 @@ map_data_test_draft(URI) ->
   %% In case of future fails it can be replaced with manual catching and sorting
   %% of throwed error list, then checked using ?assertMatch
   ?assertThrow([{data_invalid,
-                 {[ {<<"type">>, <<"integer">>} ]},
-                 wrong_type, #{},
-                 [<<"baz">>]},
-
-                {data_invalid,
                  {[ {<<"type">>, <<"object">>} | _ ]},
                  wrong_type, 42,
                  [<<"foo">>]}
+               ,{data_invalid,
+                 {[ {<<"type">>, <<"integer">>} ]},
+                 wrong_type, #{},
+                 [<<"baz">>]}
                 ],
                jesse_schema_validator:validate(Schema, InvalidJson,
                                                [{allowed_errors, infinity}])).
