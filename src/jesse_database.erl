@@ -224,23 +224,15 @@ list_outdated(Path) ->
       lists:filter(fun is_outdated/1, Files)
   end.
 
+%% @doc Recursively lists all regular files from a directory `Dir`.
 %% @private
-list_dir(Path0) ->
-  {ok, Listing} = file:list_dir(Path0),
-  lists:foldl( fun([], Acc) ->
-                   Acc;
-                  (Filename, Acc) ->
-                   Path = filename:join([Path0, Filename]),
-                   case filelib:is_dir(Path) of
-                     true ->
-                       list_dir(Path) ++ Acc;
-                     false ->
-                       [Path | Acc]
-                   end
-               end
-             , []
-             ,  Listing
-             ).
+list_dir(Dir) ->
+  filelib:fold_files( Dir
+                    , "^.*$" %% Allow any regular file.
+                    , true
+                    , fun(Path, Acc) -> [Path | Acc] end
+                    , []
+                    ).
 
 %% @doc Checks if a schema file `Filename' has an outdated cache entry.
 %% @private
