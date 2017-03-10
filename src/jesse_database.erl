@@ -233,7 +233,7 @@ list_dir(Path0) ->
                    Path = filename:join([Path0, Filename]),
                    case filelib:is_dir(Path) of
                      true ->
-                       [list_dir(Path) | Acc];
+                       list_dir(Path) ++ Acc;
                      false ->
                        [Path | Acc]
                    end
