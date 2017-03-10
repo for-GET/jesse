@@ -36,7 +36,7 @@ main([]) ->
 main(["-h"]) ->
   main(["--help"]);
 main(["--help"]) ->
-  io:fwrite( "Usage: ~s [--json] path_to_json_schema -- "
+  io:fwrite( "Usage: ~s [--json] [path_to_json_schema] path_to_json_schema -- "
              "path_to_json_instance [path_to_json_instance] ~n"
            , [escript:script_name()]
            );
@@ -56,7 +56,7 @@ main([Schema|Rest], Options, Schemata, []) ->
 run(_Options, _Schemata, []) ->
   ok;
 run(Options, [Schema|_] = Schemata, [JsonInstance|JsonInstances]) ->
-  JesseResult = jesse_run(JsonInstance, Schema),
+  JesseResult = jesse_run(JsonInstance, Schema, Schemata),
   Result = case JesseResult of
              {ok, _} ->
                [ {filename, list_to_binary(JsonInstance)}
@@ -84,30 +84,18 @@ run(Options, [Schema|_] = Schemata, [JsonInstance|JsonInstances]) ->
       halt(1)
   end.
 
-jesse_run(JsonInstance, Schema) ->
+jesse_run(JsonInstance, Schema, Schemata) ->
   %% Don't use application:ensure_all_started(jesse)
   %% nor application:ensure_started(_)
   %% in order to maintain compatibility with R16B01 and lower
   ok = ensure_started(jsx),
   ok = ensure_started(jesse),
+  ok = add_schemata(Schemata),
   {ok, JsonInstanceBinary} = file:read_file(JsonInstance),
-  {ok, SchemaBinary0} = file:read_file(Schema),
-  SchemaJsx0 = jsx:decode(SchemaBinary0),
-  SchemaFqdn = "file://" ++ filename:absname(Schema),
-  SchemaJsx = case jesse_json_path:value(<<"id">>, SchemaJsx0, undefined) of
-                undefined ->
-                  [ {<<"id">>, unicode:characters_to_binary(SchemaFqdn)}
-                    | SchemaJsx0
-                  ];
-                _ ->
-                  SchemaJsx0
-              end,
-  SchemaBinary = jsx:encode(SchemaJsx),
-  jesse:validate_with_schema( SchemaBinary
-                            , JsonInstanceBinary
-                            , [ {parser_fun, fun jsx:decode/1}
-                              ]
-                            ).
+  JsonInstanceJsx = jsx:decode(JsonInstanceBinary),
+  jesse:validate( Schema
+                , JsonInstanceJsx
+                ).
 
 ensure_started(App) ->
   case application:start(App) of
@@ -115,4 +103,24 @@ ensure_started(App) ->
       ok;
     {error, {already_started, App}} ->
       ok
+  end.
+
+add_schemata([]) ->
+  ok;
+add_schemata([Schema|Rest]) ->
+  {ok, SchemaBinary} = file:read_file(Schema),
+  SchemaJsx0 = jsx:decode(SchemaBinary),
+  SchemaJsx = maybe_fill_schema_id(Schema, SchemaJsx0),
+  ok = jesse:add_schema(Schema, SchemaJsx),
+  add_schemata(Rest).
+
+maybe_fill_schema_id(Schema, SchemaJsx) ->
+  SchemaFqdn = "file://" ++ filename:absname(Schema),
+  case jesse_json_path:value(<<"id">>, SchemaJsx, undefined) of
+    undefined ->
+      [ {<<"id">>, unicode:characters_to_binary(SchemaFqdn)}
+        | SchemaJsx
+      ];
+    _ ->
+      SchemaJsx
   end.
