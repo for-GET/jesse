@@ -245,13 +245,11 @@ check_value(Value, [{?ONEOF, Schemas} | Attrs], State) ->
 check_value(Value, [{?NOT, Schema} | Attrs], State) ->
     NewState = check_not(Value, Schema, State),
     check_value(Value, Attrs, NewState);
-check_value(Value, [{?REF, RefSchemaURI}], State) ->
-  {NewState0, Schema} = resolve_ref(RefSchemaURI, State),
-  NewState =
-    jesse_schema_validator:validate_with_state(Schema, Value, NewState0),
-  undo_resolve_ref(NewState, State);
+check_value(Value, [{?REF, RefSchemaURI} | Attrs], State) ->
+    NewState = resolve_ref(Value, RefSchemaURI, State),
+    check_value(Value, Attrs, NewState);
 check_value(_Value, [], State) ->
-  State;
+    State;
 check_value(Value, [_Attr | Attrs], State) ->
   check_value(Value, Attrs, State).
 
@@ -1022,14 +1020,13 @@ check_required(_Value, _InvalidRequired, State) ->
 
 check_required_values(_Value, [], State) -> State;
 check_required_values(Value, [PropertyName | Required], State) ->
-  case get_value(PropertyName, Value) =/= ?not_found of
-    'false' ->
-      NewState =
-        handle_data_invalid(?missing_required_property, PropertyName, State),
-      check_required_values(Value, Required, NewState);
-    'true' ->
-      check_required_values(Value, Required, State)
-  end.
+    case get_value(PropertyName, Value) =/= ?not_found of
+        'false' ->
+            NewState = handle_data_invalid(?missing_required_property, PropertyName, State),
+            check_required_values(Value, Required, NewState);
+        'true' ->
+            check_required_values(Value, Required, State)
+    end.
 
 %% @doc 5.4.1. maxProperties
 %%
@@ -1104,8 +1101,14 @@ check_all_of(_Value, _InvalidSchemas, State) ->
 check_all_of_(_Value, [], State) ->
     State;
 check_all_of_(Value, [Schema | Schemas], State) ->
-  case validate_schema(Value, Schema, State) of
-    {true, NewState} -> check_all_of_(Value, Schemas, NewState);
+  case validate_schema(Value, Schema, jesse_state:set_error_list(State, [])) of
+    {true, NewState} ->
+        case jesse_state:get_error_list(NewState) of
+            [] -> check_all_of_(Value, Schemas, NewState);
+            NewErrors  ->
+                Errors = jesse_state:get_error_list(State) ++ NewErrors, 
+                check_all_of_(Value, Schemas, jesse_state:set_error_list(State, Errors))
+        end;
     {false, _} -> handle_data_invalid(?all_schemas_not_valid, Value, State)
   end.
 
@@ -1133,11 +1136,13 @@ check_any_of(_Value, _InvalidSchemas, State) ->
 check_any_of_(Value, [], State) ->
   handle_data_invalid(?any_schemas_not_valid, Value, State);
 check_any_of_(Value, [Schema | Schemas], State) ->
-  case validate_schema(Value, Schema, State) of
+  case validate_schema(Value, Schema, jesse_state:set_error_list(State, [])) of
     {true, NewState} ->
         case jesse_state:get_error_list(NewState) of
             [] -> NewState;
-            _  -> check_any_of_(Value, Schemas, State)
+            NewErrors  ->
+                Errors = jesse_state:get_error_list(State) ++ NewErrors, 
+                check_any_of_(Value, Schemas, jesse_state:set_error_list(State, Errors))
         end;
     {false, _} -> check_any_of_(Value, Schemas, State)
   end.
@@ -1164,17 +1169,19 @@ check_one_of(_Value, _InvalidSchemas, State) ->
   handle_schema_invalid(?wrong_one_of_schema_array, State).
 
 check_one_of_(_Value, [], State, 1) ->
-  State;
+  jesse_state:set_error_list(State, []);
 check_one_of_(Value, [], State, 0) ->
   handle_data_invalid(?not_one_schema_valid, Value, State);
 check_one_of_(Value, _Schemas, State, Valid) when Valid > 1 ->
   handle_data_invalid(?not_one_schema_valid, Value, State);
 check_one_of_(Value, [Schema | Schemas], State, Valid) ->
-  case validate_schema(Value, Schema, State) of
+  case validate_schema(Value, Schema, jesse_state:set_error_list(State, [])) of
     {true, NewState} ->
         case jesse_state:get_error_list(NewState) of
             [] -> check_one_of_(Value, Schemas, NewState, Valid + 1);
-            _  -> check_one_of_(Value, Schemas, State, Valid)
+            NewErrors  ->
+                Errors = jesse_state:get_error_list(State) ++ NewErrors, 
+                check_one_of_(Value, Schemas, jesse_state:set_error_list(State, Errors), Valid)
         end;
     {false, _} ->
       check_one_of_(Value, Schemas, State, Valid)
@@ -1223,13 +1230,12 @@ validate_schema(Value, Schema, State0) ->
 %% @doc Resolve a JSON reference
 %% The "id" keyword is taken care of behind the scenes in jesse_state.
 %% @private
-resolve_ref(Reference, State) ->
-  NewState = jesse_state:resolve_ref(State, Reference),
+resolve_ref(Value, Reference, State) ->
+  NewState = jesse_state:resolve_ref(jesse_state:set_error_list(State, []), Reference),
   Schema = get_current_schema(NewState),
-  {NewState, Schema}.
-
-undo_resolve_ref(State, OriginalState) ->
-  jesse_state:undo_resolve_ref(State, OriginalState).
+  ResultState = jesse_schema_validator:validate_with_state(Schema, Value, NewState),
+  ErrorList = jesse_state:get_error_list(State) ++ jesse_state:get_error_list(ResultState),
+  jesse_state:set_error_list(State, ErrorList).
 
 %%=============================================================================
 %% @doc Returns `true' if given values (instance) are equal, otherwise `false'
