@@ -228,7 +228,7 @@ list_outdated(Path) ->
 %% @private
 list_dir(Dir) ->
   filelib:fold_files( Dir
-                    , "^.*$" %% Allow any regular file.
+                    , "^.+$" %% Allow any regular file.
                     , true
                     , fun(Path, Acc) -> [Path | Acc] end
                     , []
