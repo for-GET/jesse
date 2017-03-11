@@ -280,6 +280,10 @@ ErrorType}` where
 
   But most of common cases should work fine.
 
+* internal references (id attribute) are NOT supported
+
+  http://json-schema.org/latest/json-schema-core.html#rfc.section.8.2.1
+
 ## Contributing
 
 If you see something missing or incorrect, a pull request is most welcome!

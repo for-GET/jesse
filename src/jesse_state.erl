@@ -177,9 +177,21 @@ set_error_list(State, ErrorList) ->
 %% @doc Resolve a reference.
 -spec resolve_ref(State :: state(), Reference :: binary()) -> state().
 resolve_ref(State, Reference) ->
-  case combine_id(State#state.id, Reference) of
-    %% Local references
-    "#" ++ Pointer ->
+  Id = State#state.id,
+  CanonicalReference = combine_id(Id, Reference),
+  [BaseURI | Pointer] = re:split( CanonicalReference
+                                , <<$#>>
+                                , [{return, binary}, unicode]
+                                ),
+  IsLocalReference =
+    case Id of
+      undefined ->
+        BaseURI =:= <<"">>;
+      _ ->
+        binary_to_list(BaseURI) =:= Id
+    end,
+  case IsLocalReference of
+    true ->
       Path = jesse_json_path:parse(Pointer),
       case load_local_schema(State#state.root_schema, Path) of
         ?not_found ->
@@ -187,11 +199,7 @@ resolve_ref(State, Reference) ->
         Schema ->
           set_current_schema(State, Schema)
       end;
-    RemoteURI ->
-      [BaseURI | Pointer] = re:split( RemoteURI
-                                    , <<$#>>
-                                    , [{return, binary}, unicode]
-                                    ),
+    false ->
       case load_schema(State, BaseURI) of
         ?not_found ->
           jesse_error:handle_schema_invalid(?schema_invalid, State);
