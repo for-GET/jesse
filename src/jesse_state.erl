@@ -68,7 +68,7 @@
                                           jesse:json_term() |
                                           ?not_found
                                             )
-         , id                 :: binary() | 'undefined'
+         , id                 :: http_uri:uri() | 'undefined'
          }
        ).
 
