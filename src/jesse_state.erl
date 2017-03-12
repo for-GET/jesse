@@ -99,11 +99,11 @@ get_current_schema(#state{current_schema = CurrentSchema}) ->
 
 %% @doc Getter for `current_schema_id'.
 -spec get_current_schema_id(State :: state()) -> binary() | undefined.
-get_current_schema_id(#state{current_schema = CurrentSchema
-                            ,root_schema = RootSchema
+get_current_schema_id(#state{ current_schema = CurrentSchema
+                            , root_schema = RootSchema
                             }) ->
-    Default = jesse_json_path:value(?ID, RootSchema, ?not_found),
-    jesse_json_path:value(?ID, CurrentSchema, Default).
+  Default = jesse_json_path:value(?ID, RootSchema, ?not_found),
+  jesse_json_path:value(?ID, CurrentSchema, Default).
 
 %% @doc Getter for `default_schema_ver'.
 -spec get_default_schema_ver(State :: state()) -> binary().
