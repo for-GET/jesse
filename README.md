@@ -20,13 +20,15 @@ Please keep in mind that the public API is the `jesse.erl` module alone.
 
 You can fire up `jesse` from the CLI, with
 ```bash
-bin/jesse path_to_json_schema -- path_to_json_instance [path_to_json_instance]
+bin/jesse [path_to_json_schema] path_to_json_schema -- path_to_json_instance [path_to_json_instance]
 ```
 
 You can also output the result in JSON format, with `--json`, and beautify it e.g. with python
 ```bash
-bin/jesse path_to_json_schema --json -- path_to_json_instance [path_to_json_instance] | python -m json.tool
+bin/jesse [path_to_json_schema] path_to_json_schema --json -- path_to_json_instance [path_to_json_instance] | python -m json.tool
 ```
+
+You can pass multiple JSON schemas which should be loaded into jesse in-memory storage, but JSON instances will be validated against the last JSON schema passed.
 
 ## Quick start - Erlang
 
