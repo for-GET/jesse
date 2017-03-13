@@ -38,7 +38,9 @@ setter_test() ->
   Fun = fun([K], V, {L1}) ->
                 {[{K, V} | proplists:delete(K, L1)]}
         end,
-  Options = [{setter_fun, Fun}],
+  Options = [ {setter_fun, Fun}
+            , {validator_options, [use_defaults]}
+            ],
 
   [ ?assertEqual({ok, Value}
                 ,jesse_schema_validator:validate(Schema, Value, [])
