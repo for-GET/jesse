@@ -65,7 +65,7 @@
 default_error_handler(Error, ErrorList, AllowedErrors) ->
   case AllowedErrors > length(ErrorList) orelse AllowedErrors =:= 'infinity' of
     true  -> ErrorList ++ [Error];
-    false -> throw([Error | ErrorList])
+    false -> throw(ErrorList ++ [Error])
   end.
 
 %% @doc Generates a new data error and returns the updated state.
