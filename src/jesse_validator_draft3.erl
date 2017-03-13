@@ -45,6 +45,7 @@
                     | ?not_allowed
                     | ?not_divisible
                     | ?not_found
+                    | ?not_in_enum
                     | ?not_in_range
                     | ?wrong_length
                     | ?wrong_size

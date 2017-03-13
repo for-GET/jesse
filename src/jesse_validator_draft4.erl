@@ -56,6 +56,7 @@
                     | ?no_extra_properties_allowed
                     | ?no_match
                     | ?not_found
+                    | ?not_in_enum
                     | ?not_in_range
                     | ?not_multiple_of
                     | ?not_one_schema_valid
@@ -224,34 +225,34 @@ check_value(Value, [{?MULTIPLEOF, Multiple} | Attrs], State) ->
              end,
   check_value(Value, Attrs, NewState);
 check_value(Value, [{?MAXPROPERTIES, MaxProperties} | Attrs], State) ->
-    NewState = case jesse_lib:is_json_object(Value) of
-                   true  -> check_max_properties(Value, MaxProperties, State);
-                   false -> State
-               end,
-    check_value(Value, Attrs, NewState);
+  NewState = case jesse_lib:is_json_object(Value) of
+               true  -> check_max_properties(Value, MaxProperties, State);
+               false -> State
+             end,
+  check_value(Value, Attrs, NewState);
 check_value(Value, [{?MINPROPERTIES, MinProperties} | Attrs], State) ->
-    NewState = case jesse_lib:is_json_object(Value) of
-                   true  -> check_min_properties(Value, MinProperties, State);
-                   false -> State
-               end,
-    check_value(Value, Attrs, NewState);
+  NewState = case jesse_lib:is_json_object(Value) of
+               true  -> check_min_properties(Value, MinProperties, State);
+               false -> State
+             end,
+  check_value(Value, Attrs, NewState);
 check_value(Value, [{?ALLOF, Schemas} | Attrs], State) ->
-    NewState = check_all_of(Value, Schemas, State),
-    check_value(Value, Attrs, NewState);
+  NewState = check_all_of(Value, Schemas, State),
+  check_value(Value, Attrs, NewState);
 check_value(Value, [{?ANYOF, Schemas} | Attrs], State) ->
-    NewState = check_any_of(Value, Schemas, State),
-    check_value(Value, Attrs, NewState);
+  NewState = check_any_of(Value, Schemas, State),
+  check_value(Value, Attrs, NewState);
 check_value(Value, [{?ONEOF, Schemas} | Attrs], State) ->
-    NewState = check_one_of(Value, Schemas, State),
-    check_value(Value, Attrs, NewState);
+  NewState = check_one_of(Value, Schemas, State),
+  check_value(Value, Attrs, NewState);
 check_value(Value, [{?NOT, Schema} | Attrs], State) ->
-    NewState = check_not(Value, Schema, State),
-    check_value(Value, Attrs, NewState);
+  NewState = check_not(Value, Schema, State),
+  check_value(Value, Attrs, NewState);
 check_value(Value, [{?REF, RefSchemaURI} | Attrs], State) ->
-    NewState = validate_ref(Value, RefSchemaURI, State),
-    check_value(Value, Attrs, NewState);
+  NewState = validate_ref(Value, RefSchemaURI, State),
+  check_value(Value, Attrs, NewState);
 check_value(Value, [], State) ->
-    check_external_validation(Value, State);
+  check_external_validation(Value, State);
 check_value(Value, [_Attr | Attrs], State) ->
     check_value(Value, Attrs, State).
 
@@ -311,7 +312,7 @@ is_type_valid(Value, ?NULL)    -> jesse_lib:is_null(Value).
 check_union_type(Value, [_ | _] = UnionType, _State) ->
   lists:any(fun(Type) -> is_type_valid(Value, Type) end, UnionType);
 check_union_type(_Value, _InvalidTypes, State) ->
-    handle_schema_invalid(?wrong_type_specification, State).
+  handle_schema_invalid(?wrong_type_specification, State).
 
 %% @private
 wrong_type(Value, State) ->
@@ -824,7 +825,7 @@ check_max_items(Value, _MaxItems, State) ->
 %%
 %% @private
 check_unique_items([], true, State) ->
-    State;
+  State;
 check_unique_items(Value, true, State) ->
   try
     lists:foldl( fun(_Item, []) ->
@@ -1054,7 +1055,7 @@ check_max_properties(Value, MaxProperties, State)
       false -> handle_data_invalid(?too_many_properties, Value, State)
     end;
 check_max_properties(_Value, _MaxProperties, State) ->
-    handle_schema_invalid(?wrong_max_properties, State).
+  handle_schema_invalid(?wrong_max_properties, State).
 
 %% @doc 5.4.2. minProperties
 %%
@@ -1105,7 +1106,7 @@ check_all_of(_Value, _InvalidSchemas, State) ->
   handle_schema_invalid(?wrong_all_of_schema_array, State).
 
 check_all_of_(_Value, [], State) ->
-    State;
+  State;
 check_all_of_(Value, [Schema | Schemas], State) ->
   case validate_schema(Value, Schema, State) of
     {true, NewState} -> check_all_of_(Value, Schemas, NewState);
