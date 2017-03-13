@@ -1050,18 +1050,17 @@ set_value(PropertyName, Value, State) ->
     Path = lists:reverse([PropertyName] ++ jesse_state:get_current_path(State)),
     jesse_state:set_value(State, Path, Value).
 
--define(types_for_defaults, [ ?STRING
-                            , ?NUMBER
-                            , ?INTEGER
-                            , ?BOOLEAN
-                            , ?OBJECT
-                            ]).
+check_default_for_type(Default, State) ->
+    jesse_state:validator_option('use_defaults', State, false)
+      andalso (not jesse_lib:is_json_object(Default)
+      orelse jesse_state:validator_option('apply_defaults_to_empty_objects', State, false)
+      orelse not jesse_lib:is_json_object_empty(Default)).
 
 %% @private
 check_default(PropertyName, PropertySchema, Default, State) ->
     Type = get_value(?TYPE, PropertySchema, ?not_found),
     case Type =/= ?not_found
-         andalso lists:member(Type, ?types_for_defaults)
+         andalso check_default_for_type(Default, State)
          andalso is_type_valid(Default, Type, State) of
         false -> State;
         true -> set_default(PropertyName, PropertySchema, Default, State)
@@ -1070,9 +1069,8 @@ check_default(PropertyName, PropertySchema, Default, State) ->
 %% @private
 set_default(PropertyName, PropertySchema, Default, State) ->
     State1 = set_value(PropertyName, Default, State),
-    Schema = jesse_state:get_current_schema(State1),
     State2 = add_to_path(State1, PropertyName),
-    case Schema =/= PropertySchema andalso validate_schema(Default, PropertySchema, State2) of
+    case validate_schema(Default, PropertySchema, State2) of
         {true, State4} -> jesse_state:remove_last_from_path(State4);
         _ -> State
     end.

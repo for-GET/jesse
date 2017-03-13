@@ -1373,18 +1373,17 @@ set_value(PropertyName, Value, State) ->
     Path = lists:reverse([PropertyName] ++ jesse_state:get_current_path(State)),
     jesse_state:set_value(State, Path, Value).
 
--define(types_for_defaults, [ ?STRING
-                            , ?NUMBER
-                            , ?INTEGER
-                            , ?BOOLEAN
-                            , ?OBJECT
-                            ]).
+check_default_for_type(Default, State) ->
+    jesse_state:validator_option('use_defaults', State, false)
+      andalso (not jesse_lib:is_json_object(Default)
+      orelse jesse_state:validator_option('apply_defaults_to_empty_objects', State, false)
+      orelse not jesse_lib:is_json_object_empty(Default)).
 
 %% @private
 check_default(PropertyName, PropertySchema, Default, State) ->
     Type = get_value(?TYPE, PropertySchema, ?not_found),
     case Type =/= ?not_found
-         andalso lists:member(Type, ?types_for_defaults)
+         andalso check_default_for_type(Default, State)
          andalso is_type_valid(Default, Type) of
         false -> State;
         true -> set_default(PropertyName, PropertySchema, Default, State)
