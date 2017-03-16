@@ -4,7 +4,7 @@
 %% @doc Implementation of Key Value Coding style "queries" for commonly
 %% used Erlang data structures.
 -module(jesse_json_path).
--export([parse/1, path/2, path/3, value/3, to_proplist/1, unwrap_value/1]).
+-export([parse/1, path/2, path/3, value/3, to_proplist/1, unwrap_value/1, with_unwrapped/2]).
 
 -ifdef(erlang_deprecated_types).
 -type kvc_obj_node() :: proplist() | {struct, proplist()} | [{}] | dict()
@@ -132,6 +132,19 @@ unwrap_value([]) -> [];
 unwrap_value([{}]) -> [];
 ?IF_MAPS(unwrap_value(Map) when erlang:is_map(Map) -> maps:to_list(Map);)
 unwrap_value(L) -> L.
+
+%% @doc Unwrap data, call `Fun' on unwrapped data and wrap back in the
+%% same format.
+-spec with_unwrapped(kvc_obj(), fun( (list()) -> list())) -> kvc_obj().
+with_unwrapped({struct, L}, Fun) -> {struct, Fun(L)};
+with_unwrapped({L}, Fun) -> {Fun(L)};
+with_unwrapped({}, _Fun) -> {};
+with_unwrapped([], _Fun) -> [];
+with_unwrapped([{}], _Fun) -> [{}];
+?IF_MAPS(with_unwrapped(Map, Fun) when erlang:is_map(Map) -> maps:from_list(Fun(maps:to_list(Map)));)
+with_unwrapped(L, Fun) when is_list(L) -> Fun(L);
+with_unwrapped(Other, _) -> Other.
+
 
 %% Internal API
 

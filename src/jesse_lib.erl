@@ -28,6 +28,7 @@
         , is_array/1
         , is_json_object/1
         , is_null/1
+        , materialize_refs/2
         ]).
 
 %% Includes
@@ -67,3 +68,42 @@ is_json_object(_)                                   -> false.
 -spec is_null(Value :: any()) -> boolean().
 is_null(null)   -> true;
 is_null(_Value) -> false.
+
+
+%% @doc Returns the same schema, but with all references recursively resolved
+-spec materialize_refs(jesse:json_term(), [tuple()]) -> jesse:json_term().
+materialize_refs(JsonSchema, Options) ->
+  State = jesse_state:new(JsonSchema, Options),
+  jesse_json_path:with_unwrapped(
+    JsonSchema,
+    fun(Elements) -> do_materialize_refs(Elements, State) end).
+
+do_materialize_refs([{?REF, RefSchemaURI} | Attrs], State) ->
+  RefState = jesse_state:resolve_ref(State, RefSchemaURI),
+  RefSchema = jesse_state:get_current_schema(RefState),
+  RefResolvedSchema = do_materialize_refs(jesse_json_path:unwrap_value(RefSchema), RefState),
+  %% Recurse
+  NextSchema = do_materialize_refs(Attrs, State),
+  RefResolvedSchema ++ NextSchema;
+do_materialize_refs([{Key, Value} | Attrs], State) ->
+  NewVal = case is_json_object(Value) of
+             true ->
+               jesse_json_path:with_unwrapped(
+                 Value,
+                 fun(Elements) ->
+                     do_materialize_refs(Elements, State)
+                 end);
+             false ->
+               case is_array(Value) of
+                 true ->
+                   [jesse_json_path:with_unwrapped(
+                      Item,
+                      fun(Elements) ->
+                          do_materialize_refs(Elements, State)
+                      end)
+                    || Item <- Value];
+                 false -> Value
+               end
+           end,
+  [{Key, NewVal} | do_materialize_refs(Attrs, State)];
+do_materialize_refs(Other, _) -> Other.

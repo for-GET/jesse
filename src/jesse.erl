@@ -31,6 +31,8 @@
         , del_schema/1
         , load_schemas/2
         , load_schemas/3
+        , materialize_refs/2
+        , materialize_refs_for_schema/2
         , validate/2
         , validate/3
         , validate_with_schema/2
@@ -116,6 +118,23 @@ load_schemas(Path, ParserFun) ->
                   ) -> jesse_database:update_result().
 load_schemas(Path, ParserFun, ValidationFun) ->
   jesse_database:add_path(Path, ParserFun, ValidationFun).
+
+%% @doc Returns corresponding schema with all references recursively resolved.
+-spec materialize_refs( SchemaKey :: any()
+                      , Options :: [{Key :: atom(), Data :: any()}]
+                      ) -> json_term().
+materialize_refs(SchemaKey, Options) ->
+  JsonSchema = jesse_database:load(SchemaKey),
+  materialize_refs_for_schema(JsonSchema, Options).
+
+%% @doc Returns the same schema, but with all references recursively resolved.
+-spec materialize_refs_for_schema( Schema :: json_term() | binary()
+                                 , Options :: [{Key :: atom(), Data :: any()}]
+                                 ) -> json_term().
+materialize_refs_for_schema(Schema, Options) ->
+  ParserFun    = proplists:get_value(parser_fun, Options, fun(X) -> X end),
+  ParsedSchema = try_parse(schema, ParserFun, Schema),
+  jesse_lib:materialize_refs(ParsedSchema, Options).
 
 %% @doc Equivalent to {@link validate/3} where `Options' is an empty list.
 -spec validate( Schema :: any()
