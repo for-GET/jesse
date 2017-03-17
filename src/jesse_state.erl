@@ -30,6 +30,8 @@
         , get_current_schema/1
         , get_current_schema_id/1
         , get_default_schema_ver/1
+        , get_validator/1
+        , get_validator_state/1
         , get_error_handler/1
         , get_error_list/1
         , new/2
@@ -37,6 +39,7 @@
         , set_allowed_errors/2
         , set_current_schema/2
         , set_error_list/2
+        , set_validator_state/2
         , resolve_ref/2
         , undo_resolve_ref/2
         , canonical_path/2
@@ -50,6 +53,8 @@
 -include("jesse_schema_validator.hrl").
 
 %% Internal datastructures
+-type http_uri() :: string().
+
 -record( state
        , { allowed_errors :: jesse:allowed_errors()
          , current_path :: current_path()
@@ -61,6 +66,8 @@
          , id :: jesse:schema_id()
          , root_schema :: jesse:schema()
          , schema_loader_fun :: jesse:schema_loader_fun()
+         , validator :: module() | 'undefined'
+         , validator_state :: jesse_validator:state()
          }
        ).
 
@@ -107,6 +114,16 @@ get_current_schema_id(#state{ current_schema = CurrentSchema
 get_default_schema_ver(#state{default_schema_ver = SchemaVer}) ->
   SchemaVer.
 
+%% @doc Getter for `validator'.
+-spec get_validator(State :: state()) -> module() | undefined.
+get_validator(#state{validator = Validator}) ->
+  Validator.
+
+%% @doc Getter for `validator_state'.
+-spec get_validator_state(State :: state()) -> jesse_validator:state().
+get_validator_state(#state{validator_state = ValidatorState}) ->
+  ValidatorState.
+
 %% @doc Getter for `error_handler'.
 -spec get_error_handler(State :: state()) -> jesse:error_handler().
 get_error_handler(#state{error_handler = ErrorHandler}) ->
@@ -142,11 +159,24 @@ new(JsonSchema, Options) ->
                                  , Options
                                  , ?default_schema_loader_fun
                                  ),
+  Validator = proplists:get_value( validator
+                                 , Options
+                                 , undefined
+                                 ),
+  ValidatorOpts = proplists:get_value( validator_opts
+                                     , Options
+                                     , undefined
+                                     ),
+  ValidatorState = init_validator_state( Validator
+                                       , ValidatorOpts
+                                       ),
   NewState = #state{ root_schema        = JsonSchema
                    , current_path       = []
                    , allowed_errors     = AllowedErrors
                    , error_list         = []
                    , error_handler      = ErrorHandler
+                   , validator          = Validator
+                   , validator_state    = ValidatorState
                    , default_schema_ver = DefaultSchemaVer
                    , schema_loader_fun  = LoaderFun
                    },
@@ -178,6 +208,13 @@ set_current_schema(#state{id = Id} = State, NewSchema) ->
                     ) -> state().
 set_error_list(State, ErrorList) ->
   State#state{error_list = ErrorList}.
+
+%% @doc Setter for `validator_state'.
+-spec set_validator_state( State :: state()
+                         , ValidatorState :: jesse_validator:state()
+                         ) -> state().
+set_validator_state(State, ValidatorState) ->
+  State#state{validator_state = ValidatorState}.
 
 %% @doc Resolve a reference.
 -spec resolve_ref(State :: state(), Reference :: jesse:schema_ref()) -> state().
@@ -234,6 +271,16 @@ undo_resolve_ref(RefState, OriginalState) ->
                 , id = OriginalState#state.id
                 }.
 
+%% @doc Init custom validator state.
+%% @private
+-spec init_validator_state( Validator :: module() | undefined
+                          , Opts :: jesse_validator:opts()
+                          ) -> jesse_validator:state().
+init_validator_state(undefined, _) ->
+  undefined;
+init_validator_state(Validator, Opts) ->
+  jesse_validator:init_state(Validator, Opts).
+
 %% @doc Retrieve a specific part of a schema
 %% @private
 -spec load_local_schema( Schema :: ?not_found | jesse:schema()
@@ -273,8 +320,8 @@ load_local_schema(Schema, [Key | Keys]) ->
 
 %% @doc Resolve a new id
 %% @private
--spec combine_id(undefined | http_uri:uri(),
-                 undefined | binary()) -> http_uri:uri().
+-spec combine_id(undefined | http_uri(),
+                 undefined | binary()) -> http_uri().
 combine_id(Id, undefined) ->
   Id;
 combine_id(Id, RefBin) ->

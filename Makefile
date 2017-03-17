@@ -109,7 +109,7 @@ eunit:
 
 .PHONY: ct
 ct:
-	$(REBAR) ct skip_deps=true suites="jesse_tests_draft3,jesse_tests_draft4"
+	$(REBAR) ct skip_deps=true suites="jesse_tests_draft3,jesse_tests_draft4,jesse_tests_generic"
 
 .PHONY: xref
 xref:
