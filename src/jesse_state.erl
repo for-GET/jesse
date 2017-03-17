@@ -30,6 +30,8 @@
         , get_current_schema/1
         , get_current_schema_id/1
         , get_default_schema_ver/1
+        , get_validator/1
+        , get_validator_state/1
         , get_error_handler/1
         , get_error_list/1
         , new/2
@@ -37,6 +39,7 @@
         , set_allowed_errors/2
         , set_current_schema/2
         , set_error_list/2
+        , set_validator_state/2
         , resolve_ref/2
         , undo_resolve_ref/2
         , canonical_path/2
@@ -62,6 +65,8 @@
                                      , non_neg_integer()
                                      ) -> list() | no_return()
                                             )
+         , validator          :: module() | 'undefined'
+         , validator_state    :: any() | 'undefined'
          , default_schema_ver :: binary()
          , schema_loader_fun  :: fun(( string()
                                      ) -> {ok, jesse:json_term()} |
@@ -110,6 +115,16 @@ get_current_schema_id(#state{ current_schema = CurrentSchema
 get_default_schema_ver(#state{default_schema_ver = SchemaVer}) ->
   SchemaVer.
 
+%% @doc Getter for `validator'.
+-spec get_validator(State :: state()) -> module() | undefined.
+get_validator(#state{validator = Validator}) ->
+  Validator.
+
+%% @doc Getter for `validator_state'.
+-spec get_validator_state(State :: state()) -> any() | undefined.
+get_validator_state(#state{validator_state = ValidatorState}) ->
+  ValidatorState.
+
 %% @doc Getter for `error_handler'.
 -spec get_error_handler(State :: state()) -> fun(( jesse_error:error_reason()
                                                  , [jesse_error:error_reason()]
@@ -144,15 +159,22 @@ new(JsonSchema, Options) ->
                                         , Options
                                         , MetaSchemaVer
                                         ),
-  LoaderFun = proplists:get_value( schema_loader_fun
-                                 , Options
-                                 , ?default_schema_loader_fun
-                                 ),
+  Validator        = proplists:get_value( validator
+                                        , Options
+                                        , undefined
+                                        ),
+  ValidatorState   = init_validator_state(Validator),
+  LoaderFun        = proplists:get_value( schema_loader_fun
+                                        , Options
+                                        , ?default_schema_loader_fun
+                                        ),
   NewState = #state{ root_schema        = JsonSchema
                    , current_path       = []
                    , allowed_errors     = AllowedErrors
                    , error_list         = []
                    , error_handler      = ErrorHandler
+                   , validator          = Validator
+                   , validator_state    = ValidatorState
                    , default_schema_ver = DefaultSchemaVer
                    , schema_loader_fun  = LoaderFun
                    },
@@ -182,6 +204,11 @@ set_current_schema(#state{id = Id} = State, NewSchema) ->
 -spec set_error_list(State :: state(), ErrorList :: list()) -> state().
 set_error_list(State, ErrorList) ->
   State#state{error_list = ErrorList}.
+
+%% @doc Setter for `validator_state'.
+-spec set_validator_state(State :: state(), ValidatorState :: any()) -> state().
+set_validator_state(State, ValidatorState) ->
+  State#state{validator_state = ValidatorState}.
 
 %% @doc Resolve a reference.
 -spec resolve_ref(State :: state(), Reference :: binary()) -> state().
@@ -237,6 +264,14 @@ undo_resolve_ref(RefState, OriginalState) ->
                 , default_schema_ver = OriginalState#state.default_schema_ver
                 , id = OriginalState#state.id
                 }.
+
+%% @doc Init custom validator state.
+%% @private
+-spec init_validator_state(Validator :: module() | undefined) -> any() | undefined.
+init_validator_state(undefined) ->
+  undefined;
+init_validator_state(Validator) ->
+  Validator:init_state().
 
 %% @doc Retrieve a specific part of a schema
 %% @private

@@ -31,6 +31,16 @@
 %% Includes
 -include("jesse_schema_validator.hrl").
 
+%% Behaviour definition
+-callback check_value(Value, JsonSchema, State) ->
+  {Value, JsonSchema, State} | no_return()
+    when
+    Value      :: any(),
+    JsonSchema :: jesse:json_term(),
+    State      :: jesse_state:state().
+
+-callback init_state() -> any() | undefined.
+
 %%% API
 %% @doc Validates json `Data' against `JsonSchema' with `Options'.
 %% If the given json is valid, then it is returned to the caller as is,
@@ -54,10 +64,29 @@ validate(JsonSchema, Value, Options) ->
                          ) -> jesse_state:state()
                             | no_return().
 validate_with_state(JsonSchema, Value, State) ->
-  SchemaVer = get_schema_ver(JsonSchema, State),
-  select_and_run_validator(SchemaVer, JsonSchema, Value, State).
+  Validator = select_validator(JsonSchema, State),
+  run_validator(Validator, Value, JsonSchema, State).
+
 
 %%% Internal functions
+%% @doc Gets validator from the state or else
+%% selects an appropriate one by schema version.
+%% @private
+select_validator(JsonSchema, State) ->
+  case jesse_state:get_validator(State) of
+    undefined ->
+      select_validator_by_schema(get_schema_ver(JsonSchema, State), State);
+    Validator ->
+      Validator
+  end.
+
+select_validator_by_schema(?json_schema_draft3, _) ->
+  jesse_validator_draft3;
+select_validator_by_schema(?json_schema_draft4, _) ->
+  jesse_validator_draft4;
+select_validator_by_schema(SchemaURI, State) ->
+  jesse_error:handle_schema_invalid({?schema_unsupported, SchemaURI}, State).
+
 %% @doc Returns "$schema" property from `JsonSchema' if it is present,
 %% otherwise the default schema version from `State' is returned.
 %% @private
@@ -76,18 +105,15 @@ result(State) ->
     _  -> throw(ErrorList)
   end.
 
-%% @doc Runs appropriate validator depending on schema version
-%% it is called with.
+%% @doc Goes through attributes of the given `JsonSchema' and
+%% validates the `Value' against them calling `Validator'.
 %% @private
-select_and_run_validator(?json_schema_draft3, JsonSchema, Value, State) ->
-  jesse_validator_draft3:check_value( Value
-                                    , jesse_json_path:unwrap_value(JsonSchema)
-                                    , State
-                                    );
-select_and_run_validator(?json_schema_draft4, JsonSchema, Value, State) ->
-    jesse_validator_draft4:check_value( Value
-                                      , jesse_json_path:unwrap_value(JsonSchema)
-                                      , State
-                                      );
-select_and_run_validator(SchemaURI, _JsonSchema, _Value, State) ->
-  jesse_error:handle_schema_invalid({?schema_unsupported, SchemaURI}, State).
+run_validator(_Validator, _Value, [], State) ->
+  State;
+run_validator(Validator, Value0, JsonSchema0, State0) ->
+  JsonSchema1 = jesse_json_path:unwrap_value(JsonSchema0),
+  {Value, JsonSchema, State} = Validator:check_value( Value0
+                                                    , JsonSchema1
+                                                    , State0
+                                                    ),
+  run_validator(Validator, Value, JsonSchema, State).
