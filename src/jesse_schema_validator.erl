@@ -25,6 +25,7 @@
 
 %% API
 -export([ validate/3
+        , validate_ref/4
         , validate_with_state/3
         ]).
 
@@ -53,6 +54,21 @@
 validate(JsonSchema, Value, Options) ->
   State    = jesse_state:new(JsonSchema, Options),
   NewState = validate_with_state(JsonSchema, Value, State),
+  {result(NewState), Value}.
+
+%% @doc Validates json `Data' against `Ref' in `JsonSchema' with `Options'.
+%% If the given json is valid, then it is returned to the caller as is,
+%% otherwise an exception will be thrown.
+-spec validate_ref( Ref        :: binary()
+                  , JsonSchema :: jesse:json_term()
+                  , Data       :: jesse:json_term()
+                  , Options    :: [{Key :: atom(), Data :: any()}]
+                  ) -> {ok, jesse:json_term()}
+                     | no_return().
+validate_ref(Ref, JsonSchema, Value, Options) ->
+  State    = jesse_state:new(JsonSchema, Options),
+  Schema   = [{<<"$ref">>, Ref}],
+  NewState = validate_with_state(Schema, Value, State),
   {result(NewState), Value}.
 
 %% @doc Validates json `Data' against `JsonSchema' with `State'.

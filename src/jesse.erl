@@ -33,6 +33,8 @@
         , load_schemas/3
         , validate/2
         , validate/3
+        , validate_ref/2
+        , validate_ref/3
         , validate_with_schema/2
         , validate_with_schema/3
         ]).
@@ -150,6 +152,34 @@ validate(Schema, Data, Options) ->
     throw:Error -> {error, Error}
   end.
 
+%% @doc Equivalent to {@link validate/2} where `Ref' is an absolute $ref
+%% which base Uri is a schema key in the internal storage.
+-spec validate_ref( Ref  :: string()
+                  , Data :: json_term() | binary()
+                  ) -> {ok, json_term()}
+                 | jesse_error:error()
+                 | jesse_database:error().
+validate_ref(Ref, Data) ->
+  validate_ref(Ref, Data, []).
+
+%% @doc Equivalent to {@link validate/3} where `Ref' is an absolute $ref
+%% which base Uri is a schema key in the internal storage.
+-spec validate_ref( Ref     :: string()
+                  , Data    :: json_term() | binary()
+                  , Options :: [{Key :: atom(), Data :: any()}]
+                  ) -> {ok, json_term()}
+                 | jesse_error:error()
+                 | jesse_database:error().
+validate_ref(Ref, Data, Options) ->
+  try
+    ParserFun  = proplists:get_value(parser_fun, Options, fun(X) -> X end),
+    ParsedData = try_parse(data, ParserFun, Data),
+    {JsonSchema, LocalRef} = parse_ref(Ref),
+    jesse_schema_validator:validate_ref(LocalRef, JsonSchema, ParsedData, Options)
+  catch
+    throw:Error -> {error, Error}
+  end.
+
 %% @doc Equivalent to {@link validate_with_schema/3} where `Options'
 %% is an empty list.
 -spec validate_with_schema( Schema :: json_term() | binary()
@@ -195,3 +225,15 @@ try_parse(Type, ParserFun, JsonBin) ->
         schema -> throw({schema_error, {parse_error, Error}})
       end
   end.
+
+%% @doc Loads schema from the internal storage according to the base uri
+%% in `Ref' and prepares local ref.
+%% @private
+parse_ref(Ref) ->
+  [BaseURI, LocalRef] = re:split( Ref
+                                , <<$#>>
+                                , [{return, binary}, unicode]
+                                ),
+  JsonSchema = jesse_database:load(binary_to_list(BaseURI)),
+  LocalRef1  = <<$#, LocalRef/binary>>,
+  {JsonSchema, LocalRef1}.
