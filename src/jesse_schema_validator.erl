@@ -32,12 +32,12 @@
 -include("jesse_schema_validator.hrl").
 
 %% Behaviour definition
--callback check_value(Value, JsonSchema, State) ->
-  {Value, JsonSchema, State} | no_return()
+-callback check_value(Value, Attr, State) ->
+  State | no_return()
     when
-    Value      :: any(),
-    JsonSchema :: jesse:json_term(),
-    State      :: jesse_state:state().
+    Value :: any(),
+    Attr  :: {binary(), jesse:json_term()},
+    State :: jesse_state:state().
 
 -callback init_state() -> any() | undefined.
 
@@ -63,8 +63,9 @@ validate(JsonSchema, Value, Options) ->
                          , State      :: jesse_state:state()
                          ) -> jesse_state:state()
                             | no_return().
-validate_with_state(JsonSchema, Value, State) ->
-  Validator = select_validator(JsonSchema, State),
+validate_with_state(JsonSchema0, Value, State) ->
+  Validator = select_validator(JsonSchema0, State),
+  JsonSchema = jesse_json_path:unwrap_value(JsonSchema0),
   run_validator(Validator, Value, JsonSchema, State).
 
 
@@ -110,10 +111,9 @@ result(State) ->
 %% @private
 run_validator(_Validator, _Value, [], State) ->
   State;
-run_validator(Validator, Value0, JsonSchema0, State0) ->
-  JsonSchema1 = jesse_json_path:unwrap_value(JsonSchema0),
-  {Value, JsonSchema, State} = Validator:check_value( Value0
-                                                    , JsonSchema1
-                                                    , State0
-                                                    ),
-  run_validator(Validator, Value, JsonSchema, State).
+run_validator(Validator, Value, [Attr | Attrs], State0) ->
+  State = Validator:check_value( Value
+                               , Attr
+                               , State0
+                               ),
+  run_validator(Validator, Value, Attrs, State).

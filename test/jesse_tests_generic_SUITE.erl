@@ -59,19 +59,18 @@ end_per_suite(_Config) ->
 init_state() ->
   0.
 
-check_value(Value, [{<<"customDef">>, Property} | Attrs], State0) ->
+check_value(Value, {<<"customDef">>, Property}, State0) ->
   State = update_custom_state(State0),
-  NewState = case jesse_json_path:path(Property, Value) of
-               true  -> State;
-               false -> jesse_error:handle_data_invalid( 'custom_validator_reject'
-                                                       , Value
-                                                       , State);
-               %% Skip if custom property is missing
-               [] -> State
-  end,
-  {Value, Attrs, NewState};
-check_value(Value, JsonSchema, State) ->
-  jesse_validator_draft4:check_value(Value, JsonSchema, State).
+  case jesse_json_path:path(Property, Value) of
+    true  -> State;
+    false -> jesse_error:handle_data_invalid( 'custom_validator_reject'
+                                            , Value
+                                            , State);
+    %% Skip if custom property is missing
+    [] -> State
+  end;
+check_value(Value, Attr, State) ->
+  jesse_validator_draft4:check_value(Value, Attr, State).
 
 update_custom_state(State) ->
   ValidatorState = 0 = jesse_state:get_validator_state(State),

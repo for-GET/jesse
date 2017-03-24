@@ -80,188 +80,161 @@ init_state() ->
 
 %% @doc Validates the value `Value' against the attributes
 %% of the given schema `JsonSchema'.
--spec check_value(Value, JsonSchema, State) ->
-  {Value, JsonSchema, State} | no_return()
+-spec check_value(Value, Attr, State) ->
+  State | no_return()
     when
-    Value      :: any(),
-    JsonSchema :: jesse:json_term(),
-    State      :: jesse_state:state().
-check_value(Value, [{?TYPE, Type} | Attrs], State) ->
-  NewState = check_type(Value, Type, State),
-  {Value, Attrs, NewState};
-check_value(Value, [{?PROPERTIES, Properties} | Attrs], State) ->
-  NewState = case jesse_lib:is_json_object(Value) of
-               true  -> check_properties( Value
-                                        , unwrap(Properties)
+    Value :: any(),
+    Attr  :: {binary(), jesse:json_term()},
+    State :: jesse_state:state().
+check_value(Value, {?TYPE, Type}, State) ->
+  check_type(Value, Type, State);
+check_value(Value, {?PROPERTIES, Properties}, State) ->
+  case jesse_lib:is_json_object(Value) of
+    true  -> check_properties( Value
+                             , unwrap(Properties)
+                             , State
+                             );
+    false -> State
+  end;
+check_value( Value
+           , {?PATTERNPROPERTIES, PatternProperties}
+           , State
+           ) ->
+  case jesse_lib:is_json_object(Value) of
+    true  -> check_pattern_properties( Value
+                                     , PatternProperties
+                                     , State
+                                     );
+    false -> State
+  end;
+check_value( Value
+           , {?ADDITIONALPROPERTIES, AdditionalProperties}
+           , State
+           ) ->
+  case jesse_lib:is_json_object(Value) of
+    true  -> check_additional_properties( Value
+                                        , AdditionalProperties
                                         , State
                                         );
-               false -> State
-             end,
-  {Value, Attrs, NewState};
-check_value( Value
-           , [{?PATTERNPROPERTIES, PatternProperties} | Attrs]
-           , State
-           ) ->
-  NewState = case jesse_lib:is_json_object(Value) of
-               true  -> check_pattern_properties( Value
-                                                , PatternProperties
-                                                , State
-                                                );
-               false -> State
-             end,
-  {Value, Attrs, NewState};
-check_value( Value
-           , [{?ADDITIONALPROPERTIES, AdditionalProperties} | Attrs]
-           , State
-           ) ->
-  NewState = case jesse_lib:is_json_object(Value) of
-               true  -> check_additional_properties( Value
-                                                   , AdditionalProperties
-                                                   , State
-                                                   );
-               false -> State
-       end,
-  {Value, Attrs, NewState};
-check_value(Value, [{?ITEMS, Items} | Attrs], State) ->
-  NewState = case jesse_lib:is_array(Value) of
-               true  -> check_items(Value, Items, State);
-               false -> State
-             end,
-  {Value, Attrs, NewState};
+    false -> State
+  end;
+check_value(Value, {?ITEMS, Items}, State) ->
+  case jesse_lib:is_array(Value) of
+    true  -> check_items(Value, Items, State);
+    false -> State
+  end;
 %% doesn't really do anything, since this attribute will be handled
 %% by the previous function clause if it's presented in the schema
-check_value( Value
-           , [{?ADDITIONALITEMS, _AdditionalItems} | Attrs]
+check_value( _Value
+           , {?ADDITIONALITEMS, _AdditionalItems}
            , State
            ) ->
-  {Value, Attrs, State};
-check_value(Value, [{?REQUIRED, Required} | Attrs], State) ->
-  NewState = case jesse_lib:is_json_object(Value) of
-               true  -> check_required(Value, Required, State);
-               false -> State
-             end,
-  {Value, Attrs, NewState};
-check_value(Value, [{?DEPENDENCIES, Dependencies} | Attrs], State) ->
-  NewState = case jesse_lib:is_json_object(Value) of
-               true  -> check_dependencies(Value, Dependencies, State);
-               false -> State
-             end,
-  {Value, Attrs, NewState};
-check_value(Value, [{?MINIMUM, Minimum} | Attrs], State) ->
-  NewState = case is_number(Value) of
-               true  ->
-                 ExclusiveMinimum = get_value( ?EXCLUSIVEMINIMUM
-                                             , get_current_schema(State)
-                                             ),
-                 check_minimum(Value, Minimum, ExclusiveMinimum, State);
-               false ->
-                 State
-             end,
-  {Value, Attrs, NewState};
-check_value(Value, [{?MAXIMUM, Maximum} | Attrs], State) ->
-  NewState = case is_number(Value) of
-               true  ->
-                 ExclusiveMaximum = get_value( ?EXCLUSIVEMAXIMUM
-                                             , get_current_schema(State)
-                                             ),
-                 check_maximum(Value, Maximum, ExclusiveMaximum, State);
-               false ->
-                 State
-             end,
-  {Value, Attrs, NewState};
+  State;
+check_value(Value, {?REQUIRED, Required}, State) ->
+  case jesse_lib:is_json_object(Value) of
+    true  -> check_required(Value, Required, State);
+    false -> State
+  end;
+check_value(Value, {?DEPENDENCIES, Dependencies}, State) ->
+  case jesse_lib:is_json_object(Value) of
+    true  -> check_dependencies(Value, Dependencies, State);
+    false -> State
+  end;
+check_value(Value, {?MINIMUM, Minimum}, State) ->
+  case is_number(Value) of
+    true  ->
+      ExclusiveMinimum = get_value( ?EXCLUSIVEMINIMUM
+                                  , get_current_schema(State)
+                                  ),
+      check_minimum(Value, Minimum, ExclusiveMinimum, State);
+    false ->
+      State
+  end;
+check_value(Value, {?MAXIMUM, Maximum}, State) ->
+  case is_number(Value) of
+    true  ->
+      ExclusiveMaximum = get_value( ?EXCLUSIVEMAXIMUM
+                                  , get_current_schema(State)
+                                  ),
+      check_maximum(Value, Maximum, ExclusiveMaximum, State);
+    false ->
+      State
+  end;
 %% doesn't really do anything, since this attribute will be handled
 %% by the previous function clause if it's presented in the schema
-check_value( Value
-           , [{?EXCLUSIVEMINIMUM, _ExclusiveMinimum} | Attrs]
+check_value( _Value
+           , {?EXCLUSIVEMINIMUM, _ExclusiveMinimum}
            , State
            ) ->
-  {Value, Attrs, State};
+  State;
 %% doesn't really do anything, since this attribute will be handled
 %% by the previous function clause if it's presented in the schema
-check_value( Value
-           , [{?EXCLUSIVEMAXIMUM, _ExclusiveMaximum} | Attrs]
+check_value( _Value
+           , {?EXCLUSIVEMAXIMUM, _ExclusiveMaximum}
            , State
            ) ->
-  {Value, Attrs, State};
-check_value(Value, [{?MINITEMS, MinItems} | Attrs], State) ->
-  NewState = case jesse_lib:is_array(Value) of
-               true  -> check_min_items(Value, MinItems, State);
-               false -> State
-             end,
-  {Value, Attrs, NewState};
-check_value(Value, [{?MAXITEMS, MaxItems} | Attrs], State) ->
-  NewState = case jesse_lib:is_array(Value) of
-               true  -> check_max_items(Value, MaxItems, State);
-               false -> State
-             end,
-  {Value, Attrs, NewState};
-check_value(Value, [{?UNIQUEITEMS, Uniqueitems} | Attrs], State) ->
-  NewState = case jesse_lib:is_array(Value) of
-               true  -> check_unique_items(Value, Uniqueitems, State);
-               false -> State
-             end,
-  {Value, Attrs, NewState};
-check_value(Value, [{?PATTERN, Pattern} | Attrs], State) ->
-  NewState = case is_binary(Value) of
-               true  -> check_pattern(Value, Pattern, State);
-               false -> State
-             end,
-  {Value, Attrs, NewState};
-check_value(Value, [{?MINLENGTH, MinLength} | Attrs], State) ->
-  NewState = case is_binary(Value) of
-               true  -> check_min_length(Value, MinLength, State);
-               false -> State
-  end,
-  {Value, Attrs, NewState};
-check_value(Value, [{?MAXLENGTH, MaxLength} | Attrs], State) ->
-  NewState = case is_binary(Value) of
-               true  -> check_max_length(Value, MaxLength, State);
-               false -> State
-             end,
-  {Value, Attrs, NewState};
-check_value(Value, [{?ENUM, Enum} | Attrs], State) ->
-  NewState = check_enum(Value, Enum, State),
-  {Value, Attrs, NewState};
-check_value(Value, [{?FORMAT, Format} | Attrs], State) ->
-  NewState = check_format(Value, Format, State),
-  {Value, Attrs, NewState};
-check_value(Value, [{?MULTIPLEOF, Multiple} | Attrs], State) ->
-  NewState = case is_number(Value) of
-               true  -> check_multiple_of(Value, Multiple, State);
-               false -> State
-             end,
-  {Value, Attrs, NewState};
-check_value(Value, [{?MAXPROPERTIES, MaxProperties} | Attrs], State) ->
-  NewState = case jesse_lib:is_json_object(Value) of
-               true  -> check_max_properties(Value, MaxProperties, State);
-               false -> State
-             end,
-  {Value, Attrs, NewState};
-check_value(Value, [{?MINPROPERTIES, MinProperties} | Attrs], State) ->
-  NewState = case jesse_lib:is_json_object(Value) of
-               true  -> check_min_properties(Value, MinProperties, State);
-               false -> State
-             end,
-  {Value, Attrs, NewState};
-check_value(Value, [{?ALLOF, Schemas} | Attrs], State) ->
-  NewState = check_all_of(Value, Schemas, State),
-  {Value, Attrs, NewState};
-check_value(Value, [{?ANYOF, Schemas} | Attrs], State) ->
-  NewState = check_any_of(Value, Schemas, State),
-  {Value, Attrs, NewState};
-check_value(Value, [{?ONEOF, Schemas} | Attrs], State) ->
-  NewState = check_one_of(Value, Schemas, State),
-  {Value, Attrs, NewState};
-check_value(Value, [{?NOT, Schema} | Attrs], State) ->
-  NewState = check_not(Value, Schema, State),
-  {Value, Attrs, NewState};
-check_value(Value, [], State) ->
-  {Value, [], State};
-check_value(Value, [{?REF, RefSchemaURI} | Attrs], State) ->
-  NewState = validate_ref(Value, RefSchemaURI, State),
-  {Value, Attrs, NewState};
-check_value(Value, [_Attr | Attrs], State) ->
-  {Value, Attrs, State}.
+  State;
+check_value(Value, {?MINITEMS, MinItems}, State) ->
+  case jesse_lib:is_array(Value) of
+    true  -> check_min_items(Value, MinItems, State);
+    false -> State
+  end;
+check_value(Value, {?MAXITEMS, MaxItems}, State) ->
+  case jesse_lib:is_array(Value) of
+    true  -> check_max_items(Value, MaxItems, State);
+    false -> State
+  end;
+check_value(Value, {?UNIQUEITEMS, Uniqueitems}, State) ->
+  case jesse_lib:is_array(Value) of
+    true  -> check_unique_items(Value, Uniqueitems, State);
+    false -> State
+  end;
+check_value(Value, {?PATTERN, Pattern}, State) ->
+  case is_binary(Value) of
+    true  -> check_pattern(Value, Pattern, State);
+    false -> State
+  end;
+check_value(Value, {?MINLENGTH, MinLength}, State) ->
+  case is_binary(Value) of
+    true  -> check_min_length(Value, MinLength, State);
+    false -> State
+  end;
+check_value(Value, {?MAXLENGTH, MaxLength}, State) ->
+  case is_binary(Value) of
+    true  -> check_max_length(Value, MaxLength, State);
+    false -> State
+  end;
+check_value(Value, {?ENUM, Enum}, State) ->
+  check_enum(Value, Enum, State);
+check_value(Value, {?FORMAT, Format}, State) ->
+  check_format(Value, Format, State);
+check_value(Value, {?MULTIPLEOF, Multiple}, State) ->
+  case is_number(Value) of
+    true  -> check_multiple_of(Value, Multiple, State);
+    false -> State
+  end;
+check_value(Value, {?MAXPROPERTIES, MaxProperties}, State) ->
+  case jesse_lib:is_json_object(Value) of
+    true  -> check_max_properties(Value, MaxProperties, State);
+    false -> State
+  end;
+check_value(Value, {?MINPROPERTIES, MinProperties}, State) ->
+  case jesse_lib:is_json_object(Value) of
+    true  -> check_min_properties(Value, MinProperties, State);
+    false -> State
+  end;
+check_value(Value, {?ALLOF, Schemas}, State) ->
+  check_all_of(Value, Schemas, State);
+check_value(Value, {?ANYOF, Schemas}, State) ->
+  check_any_of(Value, Schemas, State);
+check_value(Value, {?ONEOF, Schemas}, State) ->
+  check_one_of(Value, Schemas, State);
+check_value(Value, {?NOT, Schema}, State) ->
+  check_not(Value, Schema, State);
+check_value(Value, {?REF, RefSchemaURI}, State) ->
+  validate_ref(Value, RefSchemaURI, State);
+check_value(_Value, _Attr, State) ->
+  State.
 
 %%% Internal functions
 %% @doc Adds Property to the current path and checks the value
