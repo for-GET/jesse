@@ -53,6 +53,8 @@
 -include("jesse_schema_validator.hrl").
 
 %% Internal datastructures
+-type http_uri() :: string().
+
 -record( state
        , { root_schema        :: jesse:json_term()
          , current_schema     :: jesse:json_term()
@@ -73,7 +75,7 @@
                                           jesse:json_term() |
                                           ?not_found
                                             )
-         , id                 :: http_uri:uri() | 'undefined'
+         , id                 :: http_uri() | 'undefined'
          }
        ).
 
@@ -312,8 +314,8 @@ load_local_schema(Schema, [Key | Keys]) ->
 
 %% @doc Resolve a new id
 %% @private
--spec combine_id(undefined | http_uri:uri(),
-                 undefined | binary()) -> http_uri:uri().
+-spec combine_id(undefined | http_uri(),
+                 undefined | binary()) -> http_uri().
 combine_id(Id, undefined) ->
   Id;
 combine_id(Id, RefBin) ->
