@@ -33,8 +33,8 @@
         , load_schemas/3
         , validate/2
         , validate/3
-        , validate_ref/2
-        , validate_ref/3
+        , validate_definition/3
+        , validate_definition/4
         , validate_with_schema/2
         , validate_with_schema/3
         ]).
@@ -152,30 +152,40 @@ validate(Schema, Data, Options) ->
     throw:Error -> {error, Error}
   end.
 
-%% @doc Equivalent to {@link validate/2} where `Ref' is an absolute $ref
-%% which base Uri is a schema key in the internal storage.
--spec validate_ref( Ref  :: string()
-                  , Data :: json_term() | binary()
-                  ) -> {ok, json_term()}
-                 | jesse_error:error()
-                 | jesse_database:error().
-validate_ref(Ref, Data) ->
-  validate_ref(Ref, Data, []).
+%% @doc Equivalent to {@link validate_definition/4} where `Options' is an empty list.
+-spec validate_definition( Definition :: string()
+                         , Schema     :: json_term() | binary()
+                         , Data       :: json_term() | binary()
+                         ) -> {ok, json_term()}
+                            | jesse_error:error().
+validate_definition(Definition, Schema, Data) ->
+  validate_definition(Definition, Schema, Data, []).
 
-%% @doc Equivalent to {@link validate/3} where `Ref' is an absolute $ref
-%% which base Uri is a schema key in the internal storage.
--spec validate_ref( Ref     :: string()
-                  , Data    :: json_term() | binary()
-                  , Options :: [{Key :: atom(), Data :: any()}]
-                  ) -> {ok, json_term()}
-                 | jesse_error:error()
-                 | jesse_database:error().
-validate_ref(Ref, Data, Options) ->
+%% @doc Validates json `Data' agains the given `Definition' in the given
+%% schema `Schema', using `Options'.
+%% If the given json is valid, then it is returned to the caller, otherwise
+%% an error with an appropriate error reason is returned. If the `parser_fun'
+%% option is provided, then both `Schema' and `Data' are considered to be a
+%% binary string, so `parser_fun' is used to convert both binary strings to a
+%% supported internal representation of json.
+%% If `parser_fun' is not provided, then both `Schema' and `Data' are considered
+%% to already be a supported internal representation of json.
+-spec validate_definition( Definition :: string()
+                         , Schema     :: json_term() | binary()
+                         , Data       :: json_term() | binary()
+                         , Options    :: [{Key :: atom(), Data :: any()}]
+                         ) -> {ok, json_term()}
+                            | jesse_error:error().
+validate_definition(Defintion, Schema, Data, Options) ->
   try
-    ParserFun  = proplists:get_value(parser_fun, Options, fun(X) -> X end),
-    ParsedData = try_parse(data, ParserFun, Data),
-    {JsonSchema, LocalRef} = parse_ref(Ref),
-    jesse_schema_validator:validate_ref(LocalRef, JsonSchema, ParsedData, Options)
+    ParserFun    = proplists:get_value(parser_fun, Options, fun(X) -> X end),
+    ParsedSchema = try_parse(schema, ParserFun, Schema),
+    ParsedData   = try_parse(data, ParserFun, Data),
+    jesse_schema_validator:validate_definition( Defintion
+                                              , ParsedSchema
+                                              , ParsedData
+                                              , Options
+                                              )
   catch
     throw:Error -> {error, Error}
   end.
@@ -225,15 +235,3 @@ try_parse(Type, ParserFun, JsonBin) ->
         schema -> throw({schema_error, {parse_error, Error}})
       end
   end.
-
-%% @doc Loads schema from the internal storage according to the base uri
-%% in `Ref' and prepares local ref.
-%% @private
-parse_ref(Ref) ->
-  [BaseURI, LocalRef] = re:split( Ref
-                                , <<$#>>
-                                , [{return, binary}, unicode]
-                                ),
-  JsonSchema = jesse_database:load(binary_to_list(BaseURI)),
-  LocalRef1  = <<$#, LocalRef/binary>>,
-  {JsonSchema, LocalRef1}.
