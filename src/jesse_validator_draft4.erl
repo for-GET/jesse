@@ -1226,27 +1226,17 @@ validate_schema(Value, Schema, State0) ->
 
 %% @private
 validate_ref(Value, Reference, State) ->
-  case resolve_ref(Reference, State) of
-      {error, NewState} ->
-          undo_resolve_ref(NewState, State);
-      {ok, NewState, Schema} ->
-          ResultState = jesse_schema_validator:validate_with_state(Schema, Value, NewState),
-          undo_resolve_ref(ResultState, State)
-  end.     
+  {NewState, Schema} = resolve_ref(Reference, State),
+  ResultState = jesse_schema_validator:validate_with_state(Schema, Value, NewState),
+  undo_resolve_ref(ResultState, State).
 
 %% @doc Resolve a JSON reference
 %% The "id" keyword is taken care of behind the scenes in jesse_state.
 %% @private
 resolve_ref(Reference, State) ->
-  CurrentErrors = jesse_state:get_error_list(State),
   NewState = jesse_state:resolve_ref(State, Reference),
-  NewErrors = jesse_state:get_error_list(NewState),  
-  case length(CurrentErrors) =:= length(NewErrors) of
-      true ->
-          Schema = get_current_schema(NewState),
-          {ok, NewState, Schema};
-      false -> {error, NewState}
-  end.
+  Schema = get_current_schema(NewState),
+  {NewState, Schema}.
 
 undo_resolve_ref(State, OriginalState) ->
   jesse_state:undo_resolve_ref(State, OriginalState).
@@ -1392,12 +1382,21 @@ check_default_for_type(Default, State) ->
 %% @private
 check_default(PropertyName, PropertySchema, Default, State) ->
     Type = get_value(?TYPE, PropertySchema, ?not_found),
-    case Type =/= ?not_found
-         andalso check_default_for_type(Default, State)
-         andalso is_type_valid(Default, Type) of
-        false -> State;
-        true -> set_default(PropertyName, PropertySchema, Default, State)
+    case is_valid_default(Type, Default, State) of
+        true -> set_default(PropertyName, PropertySchema, Default, State);
+        false -> State
     end.
+
+is_valid_default(?not_found, _Default, _State) -> false;
+is_valid_default(Type, Default, State)
+  when is_binary(Type) ->
+    check_default_for_type(Default, State)
+        andalso is_type_valid(Default, Type);
+is_valid_default(Types, Default, State)
+  when is_list(Types) ->
+    check_default_for_type(Default, State)
+        andalso lists:any(fun(Type) -> is_type_valid(Default, Type) end, Types);
+is_valid_default(_, _Default, _State) -> false.
 
 %% @private
 set_default(PropertyName, PropertySchema, Default, State) ->

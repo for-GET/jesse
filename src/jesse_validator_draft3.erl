@@ -1071,12 +1071,21 @@ check_default_for_type(Default, State) ->
 %% @private
 check_default(PropertyName, PropertySchema, Default, State) ->
     Type = get_value(?TYPE, PropertySchema, ?not_found),
-    case Type =/= ?not_found
-         andalso check_default_for_type(Default, State)
-         andalso is_type_valid(Default, Type, State) of
-        false -> State;
-        true -> set_default(PropertyName, PropertySchema, Default, State)
+    case is_valid_default(Type, Default, State) of
+        true -> set_default(PropertyName, PropertySchema, Default, State);
+        false -> State
     end.
+
+is_valid_default(?not_found, _Default, _State) -> false;
+is_valid_default(Type, Default, State)
+  when is_binary(Type) ->
+    check_default_for_type(Default, State)
+        andalso is_type_valid(Default, Type, State);
+is_valid_default(Types, Default, State)
+  when is_list(Types) ->
+    check_default_for_type(Default, State)
+        andalso lists:any(fun(Type) -> is_type_valid(Default, Type, State) end, Types);
+is_valid_default(_, _Default, _State) -> false.
 
 %% @private
 set_default(PropertyName, PropertySchema, Default, State) ->
