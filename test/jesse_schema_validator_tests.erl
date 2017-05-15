@@ -21,6 +21,76 @@
 -module(jesse_schema_validator_tests).
 -include_lib("eunit/include/eunit.hrl").
 
+setter_test() ->
+  Schema = {[
+    {<<"type">>, <<"object">>},
+    {<<"properties">>, {[
+      {<<"bar">>, {[
+        {<<"type">>, <<"string">>},
+        {<<"minLength">>, 4},
+        {<<"default">>, <<"awesome">>}
+      ]}}
+    ]}}
+   ]},
+
+  Default = {[{<<"bar">>, <<"awesome">>}]},
+  Value = {[]},
+  Fun = fun([K], V, {L1}) ->
+                {[{K, V} | proplists:delete(K, L1)]}
+        end,
+  Options = [ {setter_fun, Fun}
+            , {validator_options, [use_defaults]}
+            ],
+
+  [ ?assertEqual({ok, Value}
+                ,jesse_schema_validator:validate(Schema, Value, [])
+                )
+  , ?assertEqual({ok, Default}
+                ,jesse_schema_validator:validate(Schema, Value, Options)
+                )
+  ].
+
+invalid_default_test() ->
+  BadSchema = {[
+    {<<"type">>, <<"object">>},
+    {<<"properties">>, {[
+      {<<"bar">>, {[
+        {<<"type">>, <<"string">>},
+        {<<"minLength">>, 4},
+        {<<"default">>, <<"bad">>}
+      ]}}
+    ]}}
+   ]},
+
+  GoodSchema = {[
+    {<<"type">>, <<"object">>},
+    {<<"properties">>, {[
+      {<<"bar">>, {[
+        {<<"type">>, <<"string">>},
+        {<<"minLength">>, 4},
+        {<<"default">>, <<"awesome">>}
+      ]}}
+    ]}}
+   ]},
+
+  WithDefault = {[{<<"bar">>, <<"good">>}]},
+  WithoutDefault = {[]},
+
+  ?assertEqual(
+    {ok, WithoutDefault},
+    jesse_schema_validator:validate(BadSchema, WithoutDefault, [])
+  ),
+
+  ?assertEqual(
+    {ok, WithDefault},
+    jesse_schema_validator:validate(BadSchema, WithDefault, [])
+  ),
+
+  ?assertEqual(
+    {ok, WithoutDefault},
+    jesse_schema_validator:validate(GoodSchema, WithoutDefault, [])
+  ).
+
 data_invalid_test() ->
   IntegerSchema = {[{<<"type">>, <<"integer">>}]},
 
@@ -294,14 +364,13 @@ map_data_test_draft(URI) ->
   %% In case of future fails it can be replaced with manual catching and sorting
   %% of throwed error list, then checked using ?assertMatch
   ?assertThrow([{data_invalid,
-                 {[ {<<"type">>, <<"integer">>} ]},
-                 wrong_type, #{},
-                 [<<"baz">>]},
-
-                {data_invalid,
                  {[ {<<"type">>, <<"object">>} | _ ]},
                  wrong_type, 42,
                  [<<"foo">>]}
+               ,{data_invalid,
+                 {[ {<<"type">>, <<"integer">>} ]},
+                 wrong_type, #{},
+                 [<<"baz">>]}
                 ],
                jesse_schema_validator:validate(Schema, InvalidJson,
                                                [{allowed_errors, infinity}])).

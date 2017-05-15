@@ -26,6 +26,8 @@
 %% API
 -export([ add_to_path/2
         , get_allowed_errors/1
+        , get_extra_validator/1
+        , get_current_value/1
         , get_current_path/1
         , get_current_schema/1
         , get_current_schema_id/1
@@ -36,18 +38,29 @@
         , remove_last_from_path/1
         , set_allowed_errors/2
         , set_current_schema/2
+        , set_value/3
         , set_error_list/2
         , resolve_ref/2
         , undo_resolve_ref/2
         , canonical_path/2
         , combine_id/2
+        , validator_options/1
+        , validator_option/2, validator_option/3
         ]).
 
+-type option() :: {Key :: atom(), Data :: any()}.
+-type options() :: [option()].
+
 -export_type([ state/0
+             , option/0
+             , options/0
              ]).
 
 %% Includes
 -include("jesse_schema_validator.hrl").
+
+-type extra_validator() :: fun((jesse:json_term(), state()) -> state()) | undefined.
+-type setter_fun() :: fun((jesse:json_path(), jesse:json_term(), jesse:json_term()) -> jesse:json_term()) | undefined.
 
 %% Internal datastructures
 -record( state
@@ -55,6 +68,7 @@
          , current_schema     :: jesse:json_term()
          , current_path       :: [binary() | non_neg_integer()]
                                  %% current path in reversed order
+         , current_value      :: jesse:json_term()
          , allowed_errors     :: non_neg_integer() | 'infinity'
          , error_list         :: list()
          , error_handler      :: fun(( jesse_error:error_reason()
@@ -68,7 +82,10 @@
                                           jesse:json_term() |
                                           ?not_found
                                             )
+         , extra_validator    :: extra_validator()
+         , setter_fun         :: setter_fun()
          , id                 :: http_uri:uri() | 'undefined'
+         , validator_options  :: options()
          }
        ).
 
@@ -83,7 +100,7 @@ add_to_path(State, Property) ->
   State#state{current_path = [Property | CurrentPath]}.
 
 %% @doc Getter for `allowed_errors'.
--spec get_allowed_errors(State :: state()) -> non_neg_integer().
+-spec get_allowed_errors(State :: state()) -> non_neg_integer() | 'infinity'.
 get_allowed_errors(#state{allowed_errors = AllowedErrors}) ->
   AllowedErrors.
 
@@ -125,7 +142,7 @@ get_error_list(#state{error_list = ErrorList}) ->
 
 %% @doc Returns newly created state.
 -spec new( JsonSchema :: jesse:json_term()
-         , Options    :: [{Key :: atom(), Data :: any()}]
+         , Options    :: options()
          ) -> state().
 new(JsonSchema, Options) ->
   ErrorHandler     = proplists:get_value( error_handler
@@ -148,6 +165,20 @@ new(JsonSchema, Options) ->
                                  , Options
                                  , ?default_schema_loader_fun
                                  ),
+  ExtraValidator = proplists:get_value( extra_validator
+                                      , Options
+                                      ),
+  SetterFun = proplists:get_value( setter_fun
+                                 , Options
+                                 ),
+  Value = proplists:get_value( with_value
+                             , Options
+                             ),
+  ValidatorOptions = proplists:get_value( validator_options
+                                        , Options
+                                        , []
+                                        ),
+  
   NewState = #state{ root_schema        = JsonSchema
                    , current_path       = []
                    , allowed_errors     = AllowedErrors
@@ -155,6 +186,10 @@ new(JsonSchema, Options) ->
                    , error_handler      = ErrorHandler
                    , default_schema_ver = DefaultSchemaVer
                    , schema_loader_fun  = LoaderFun
+                   , extra_validator    = ExtraValidator
+                   , setter_fun         = SetterFun
+                   , current_value      = Value
+                   , validator_options  = ValidatorOptions
                    },
   set_current_schema(NewState, JsonSchema).
 
@@ -165,7 +200,7 @@ remove_last_from_path(State = #state{current_path = [_Property | Path]}) ->
 
 %% @doc Getter for `allowed_errors'.
 -spec set_allowed_errors( State :: state()
-                        , AllowedErrors :: non_neg_integer()
+                        , AllowedErrors :: non_neg_integer() | 'infinity'
                         ) -> state().
 set_allowed_errors(#state{} = State, AllowedErrors) ->
   State#state{allowed_errors = AllowedErrors}.
@@ -385,3 +420,28 @@ load_schema(#state{schema_loader_fun = LoaderFun}, SchemaURI) ->
       %% io:format("load_schema: ~p\n", [{_C, _E, erlang:get_stacktrace()}]),
       ?not_found
   end.
+
+%% @doc Getter for `current_value'.
+-spec get_current_value(State :: state()) -> jesse:json_term().
+get_current_value(#state{current_value = Value}) -> Value.
+
+-spec set_value(State :: state(), jesse:path(), jesse:json_term()) -> state().
+set_value(#state{setter_fun=undefined}=State, _Path, _Value) -> State;
+set_value(#state{current_value=undefined}=State, _Path, _Value) -> State;
+set_value(#state{setter_fun=Setter
+                ,current_value=Value
+                }=State, Path, NewValue) ->
+    State#state{current_value = Setter(Path, NewValue, Value)}.
+
+get_extra_validator(#state{extra_validator=Fun}) -> Fun.
+
+-spec validator_options(State :: state()) -> options().
+validator_options(#state{validator_options=Options}) -> Options.
+
+-spec validator_option(Option :: atom(), State :: state()) -> any().
+validator_option(Option, #state{validator_options=Options}) ->
+    proplists:get_value(Option, Options).
+
+-spec validator_option(Option :: atom(), State :: state(), Default :: any()) -> any().
+validator_option(Option, #state{validator_options=Options}, Default) ->
+    proplists:get_value(Option, Options, Default).

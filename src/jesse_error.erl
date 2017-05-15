@@ -60,12 +60,12 @@
 %% throws an exeption, otherwise adds a new element to the list and returs it.
 -spec default_error_handler( Error         :: error_reason()
                            , ErrorList     :: [error_reason()]
-                           , AllowedErrors :: non_neg_integer()
+                           , AllowedErrors :: non_neg_integer() | 'infinity'
                            ) -> [error_reason()] | no_return().
 default_error_handler(Error, ErrorList, AllowedErrors) ->
   case AllowedErrors > length(ErrorList) orelse AllowedErrors =:= 'infinity' of
-    true  -> [Error | ErrorList];
-    false -> throw([Error | ErrorList])
+    true  -> ErrorList ++ [Error];
+    false -> throw(ErrorList ++ [Error])
   end.
 
 %% @doc Generates a new data error and returns the updated state.

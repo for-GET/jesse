@@ -65,7 +65,9 @@
                     | ?too_many_properties
                     | ?wrong_length
                     | ?wrong_size
-                    | ?wrong_type.
+                    | ?wrong_type
+                    | ?not_in_enum
+                    | ?external_error.
 
 -type data_error_type() :: data_error()
                          | {data_error(), binary()}.
@@ -246,13 +248,13 @@ check_value(Value, [{?ONEOF, Schemas} | Attrs], State) ->
 check_value(Value, [{?NOT, Schema} | Attrs], State) ->
   NewState = check_not(Value, Schema, State),
   check_value(Value, Attrs, NewState);
-check_value(_Value, [], State) ->
-  State;
 check_value(Value, [{?REF, RefSchemaURI} | Attrs], State) ->
   NewState = validate_ref(Value, RefSchemaURI, State),
   check_value(Value, Attrs, NewState);
+check_value(Value, [], State) ->
+  check_external_validation(Value, State);
 check_value(Value, [_Attr | Attrs], State) ->
-  check_value(Value, Attrs, State).
+    check_value(Value, Attrs, State).
 
 %%% Internal functions
 %% @doc Adds Property to the current path and checks the value
@@ -376,17 +378,20 @@ check_properties(Value, Properties, State) ->
   TmpState
     = lists:foldl( fun({PropertyName, PropertySchema}, CurrentState) ->
                        case get_value(PropertyName, Value) of
-                         ?not_found ->
-                           CurrentState;
-                         Property ->
-                           NewState = set_current_schema( CurrentState
-                                                        , PropertySchema
-                                                        ),
-                           check_value( PropertyName
-                                      , Property
-                                      , PropertySchema
-                                      , NewState
-                                      )
+                           ?not_found ->
+                               case get_value(?DEFAULT, PropertySchema) of
+                                   ?not_found -> CurrentState;
+                                   Default -> check_default(PropertyName, PropertySchema, Default, CurrentState)
+                               end;
+                           Property ->
+                               NewState = set_current_schema( CurrentState
+                                                            , PropertySchema
+                                                            ),
+                               check_value( PropertyName
+                                          , Property
+                                          , PropertySchema
+                                          , NewState
+                                          )
                        end
                    end
                  , State
@@ -1303,7 +1308,11 @@ compare_properties(Value1, Value2) ->
 %% Wrappers
 %% @private
 get_value(Key, Schema) ->
-  jesse_json_path:value(Key, Schema, ?not_found).
+  get_value(Key, Schema, ?not_found).
+
+%% @private
+get_value(Key, Schema, Default) ->
+  jesse_json_path:value(Key, Schema, Default).
 
 %% @private
 unwrap(Value) ->
@@ -1352,3 +1361,48 @@ valid_datetime(DateTimeBin) ->
     _ ->
       false
   end.
+
+check_external_validation(Value, State) ->
+    case jesse_state:get_extra_validator(State) of
+        undefined -> State;
+        Fun -> Fun(Value, State)
+    end.
+
+%% @private
+set_value(PropertyName, Value, State) ->
+    Path = lists:reverse([PropertyName] ++ jesse_state:get_current_path(State)),
+    jesse_state:set_value(State, Path, Value).
+
+check_default_for_type(Default, State) ->
+    jesse_state:validator_option('use_defaults', State, false)
+      andalso (not jesse_lib:is_json_object(Default)
+      orelse jesse_state:validator_option('apply_defaults_to_empty_objects', State, false)
+      orelse not jesse_lib:is_json_object_empty(Default)).
+
+%% @private
+check_default(PropertyName, PropertySchema, Default, State) ->
+    Type = get_value(?TYPE, PropertySchema, ?not_found),
+    case is_valid_default(Type, Default, State) of
+        true -> set_default(PropertyName, PropertySchema, Default, State);
+        false -> State
+    end.
+
+is_valid_default(?not_found, _Default, _State) -> false;
+is_valid_default(Type, Default, State)
+  when is_binary(Type) ->
+    check_default_for_type(Default, State)
+        andalso is_type_valid(Default, Type);
+is_valid_default(Types, Default, State)
+  when is_list(Types) ->
+    check_default_for_type(Default, State)
+        andalso lists:any(fun(Type) -> is_type_valid(Default, Type) end, Types);
+is_valid_default(_, _Default, _State) -> false.
+
+%% @private
+set_default(PropertyName, PropertySchema, Default, State) ->
+    State1 = set_value(PropertyName, Default, State),
+    State2 = add_to_path(State1, PropertyName),
+    case validate_schema(Default, PropertySchema, State2) of
+        {true, State4} -> jesse_state:remove_last_from_path(State4);
+        _ -> State
+    end.
