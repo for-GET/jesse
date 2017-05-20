@@ -1222,12 +1222,12 @@ validate_schema(Value, Schema, State0) ->
 %% @private
 validate_ref(Value, Reference, State) ->
   case resolve_ref(Reference, State) of
-      {error, NewState} ->
-          undo_resolve_ref(NewState, State);
-      {ok, NewState, Schema} ->
-          ResultState = jesse_schema_validator:validate_with_state(Schema, Value, NewState),
-          undo_resolve_ref(ResultState, State)
-  end.     
+    {error, NewState} ->
+      undo_resolve_ref(NewState, State);
+    {ok, NewState, Schema} ->
+      ResultState = jesse_schema_validator:validate_with_state(Schema, Value, NewState),
+      undo_resolve_ref(ResultState, State)
+  end.
 
 %% @doc Resolve a JSON reference
 %% The "id" keyword is taken care of behind the scenes in jesse_state.
@@ -1235,12 +1235,12 @@ validate_ref(Value, Reference, State) ->
 resolve_ref(Reference, State) ->
   CurrentErrors = jesse_state:get_error_list(State),
   NewState = jesse_state:resolve_ref(State, Reference),
-  NewErrors = jesse_state:get_error_list(NewState),  
+  NewErrors = jesse_state:get_error_list(NewState),
   case length(CurrentErrors) =:= length(NewErrors) of
-      true ->
-          Schema = get_current_schema(NewState),
-          {ok, NewState, Schema};
-      false -> {error, NewState}
+    true ->
+      Schema = get_current_schema(NewState),
+      {ok, NewState, Schema};
+    false -> {error, NewState}
   end.
 
 undo_resolve_ref(State, OriginalState) ->
