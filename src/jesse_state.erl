@@ -44,6 +44,8 @@
         , undo_resolve_ref/2
         , canonical_path/2
         , combine_id/2
+        , validator_options/1
+        , validator_option/2, validator_option/3
         ]).
 
 -export_type([ state/0
@@ -66,6 +68,7 @@
          , root_schema :: jesse:schema()
          , schema_loader_fun :: jesse:schema_loader_fun()
          , setter_fun :: jesse:setter_fun()
+         , validator_options  :: jesse:options()
          }
        ).
 
@@ -153,6 +156,13 @@ new(JsonSchema, Options) ->
   SetterFun = proplists:get_value( setter_fun
                                  , Options
                                  ),
+  Value = proplists:get_value( with_value
+                             , Options
+                             ),
+  ValidatorOptions = proplists:get_value( validator_options
+                                        , Options
+                                        , []
+                                        ),
   NewState = #state{ root_schema        = JsonSchema
                    , current_path       = []
                    , allowed_errors     = AllowedErrors
@@ -162,6 +172,8 @@ new(JsonSchema, Options) ->
                    , schema_loader_fun  = LoaderFun
                    , external_validator = ExternalValidator
                    , setter_fun         = SetterFun
+                   , current_value      = Value
+                   , validator_options  = ValidatorOptions
                    },
   set_current_schema(NewState, JsonSchema).
 
@@ -213,14 +225,22 @@ resolve_ref(State, Reference) ->
       Path = jesse_json_path:parse(Pointer),
       case load_local_schema(State#state.root_schema, Path) of
         ?not_found ->
-          jesse_error:handle_schema_invalid({?schema_not_found, CanonicalReference}, State);
+          jesse_error:handle_schema_invalid( { ?schema_not_found
+                                             , CanonicalReference
+                                             }
+                                           , State
+                                           );
         Schema ->
           set_current_schema(State, Schema)
       end;
     false ->
       case load_schema(State, BaseURI) of
         ?not_found ->
-          jesse_error:handle_schema_invalid({?schema_not_found, CanonicalReference}, State);
+          jesse_error:handle_schema_invalid( { ?schema_not_found
+                                             , CanonicalReference
+                                             }
+                                           , State
+                                           );
         RemoteSchema ->
           SchemaVer =
             jesse_json_path:value(?SCHEMA, RemoteSchema, ?default_schema_ver),
@@ -231,7 +251,11 @@ resolve_ref(State, Reference) ->
           Path = jesse_json_path:parse(Pointer),
           case load_local_schema(RemoteSchema, Path) of
             ?not_found ->
-              jesse_error:handle_schema_invalid({?schema_not_found, CanonicalReference}, State);
+              jesse_error:handle_schema_invalid( { ?schema_not_found
+                                                 , CanonicalReference
+                                                 }
+                                               , State
+                                               );
             Schema ->
               set_current_schema(NewState, Schema)
           end
@@ -416,3 +440,16 @@ set_value( #state{ setter_fun = Setter
          , NewValue
          ) ->
   State#state{current_value = Setter(Path, NewValue, Value)}.
+
+-spec validator_options(State :: state()) -> jesse:options().
+validator_options(#state{validator_options = Options}) ->
+  Options.
+
+-spec validator_option(Option :: atom(), State :: state()) -> any().
+validator_option(Option, #state{validator_options = Options}) ->
+  proplists:get_value(Option, Options).
+
+-spec validator_option(Option :: atom(), State :: state(), Default :: any()) ->
+                          any().
+validator_option(Option, #state{validator_options = Options}, Default) ->
+  proplists:get_value(Option, Options, Default).

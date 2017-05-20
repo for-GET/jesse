@@ -21,6 +21,76 @@
 -module(jesse_schema_validator_tests).
 -include_lib("eunit/include/eunit.hrl").
 
+setter_test() ->
+  Schema = {[
+    {<<"type">>, <<"object">>},
+    {<<"properties">>, {[
+      {<<"bar">>, {[
+        {<<"type">>, <<"string">>},
+        {<<"minLength">>, 4},
+        {<<"default">>, <<"awesome">>}
+      ]}}
+    ]}}
+   ]},
+
+  Default = {[{<<"bar">>, <<"awesome">>}]},
+  Value = {[]},
+  Fun = fun([K], V, {L1}) ->
+                {[{K, V} | proplists:delete(K, L1)]}
+        end,
+  Options = [ {setter_fun, Fun}
+            , {validator_options, [use_defaults]}
+            ],
+
+  [ ?assertEqual( {ok, Value}
+                , jesse_schema_validator:validate(Schema, Value, [])
+                )
+  , ?assertEqual( {ok, Default}
+                , jesse_schema_validator:validate(Schema, Value, Options)
+                )
+  ].
+
+invalid_default_test() ->
+  BadSchema = {[
+    {<<"type">>, <<"object">>},
+    {<<"properties">>, {[
+      {<<"bar">>, {[
+        {<<"type">>, <<"string">>},
+        {<<"minLength">>, 4},
+        {<<"default">>, <<"bad">>}
+      ]}}
+    ]}}
+   ]},
+
+  GoodSchema = {[
+    {<<"type">>, <<"object">>},
+    {<<"properties">>, {[
+      {<<"bar">>, {[
+        {<<"type">>, <<"string">>},
+        {<<"minLength">>, 4},
+        {<<"default">>, <<"awesome">>}
+      ]}}
+    ]}}
+   ]},
+
+  WithDefault = {[{<<"bar">>, <<"good">>}]},
+  WithoutDefault = {[]},
+
+  ?assertEqual(
+    {ok, WithoutDefault},
+    jesse_schema_validator:validate(BadSchema, WithoutDefault, [])
+  ),
+
+  ?assertEqual(
+    {ok, WithDefault},
+    jesse_schema_validator:validate(BadSchema, WithDefault, [])
+  ),
+
+  ?assertEqual(
+    {ok, WithoutDefault},
+    jesse_schema_validator:validate(GoodSchema, WithoutDefault, [])
+  ).
+
 data_invalid_test() ->
   IntegerSchema = {[{<<"type">>, <<"integer">>}]},
 
