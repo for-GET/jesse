@@ -40,7 +40,8 @@
 -export_type([ json_term/0
              ]).
 
--type json_term() :: term().
+%% Includes
+-include("jesse_schema_validator.hrl").
 
 %%% API
 
@@ -118,7 +119,7 @@ load_schemas(Path, ParserFun, ValidationFun) ->
   jesse_database:add_path(Path, ParserFun, ValidationFun).
 
 %% @doc Equivalent to {@link validate/3} where `Options' is an empty list.
--spec validate( Schema :: any()
+-spec validate( Schema :: schema()
               , Data   :: json_term() | binary()
               ) -> {ok, json_term()}
                  | jesse_error:error()
@@ -134,9 +135,9 @@ validate(Schema, Data) ->
 %% to convert the binary string to a supported internal representation of json.
 %% If `parser_fun' is not provided, then `Data' is considered to already be a
 %% supported internal representation of json.
--spec validate( Schema   :: any()
+-spec validate( Schema   :: schema()
               , Data     :: json_term() | binary()
-              , Options  :: [{Key :: atom(), Data :: any()}]
+              , Options  :: options()
               ) -> {ok, json_term()}
                  | jesse_error:error()
                  | jesse_database:error().
@@ -169,7 +170,7 @@ validate_with_schema(Schema, Data) ->
 %% to already be a supported internal representation of json.
 -spec validate_with_schema( Schema   :: json_term() | binary()
                           , Data     :: json_term() | binary()
-                          , Options  :: [{Key :: atom(), Data :: any()}]
+                          , Options  :: options()
                           ) -> {ok, json_term()}
                              | jesse_error:error().
 validate_with_schema(Schema, Data, Options) ->

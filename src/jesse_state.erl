@@ -53,43 +53,29 @@
 
 %% Internal datastructures
 -record( state
-       , { root_schema        :: jesse:json_term()
-         , current_schema     :: jesse:json_term()
-         , current_path       :: [binary() | non_neg_integer()]
-                                 %% current path in reversed order
+       , { root_schema        :: schema()
+         , current_schema     :: schema()
+         , current_path       :: current_path()
          , allowed_errors     :: allowed_errors()
-         , error_list         :: list()
-         , error_handler      :: fun(( jesse_error:error_reason()
-                                     , [jesse_error:error_reason()]
-                                     , non_neg_integer()
-                                     ) -> list()
-                                        | no_return()
-                                        )
-         , default_schema_ver :: binary()
-         , schema_loader_fun  :: fun((string()) -> {ok, jesse:json_term()}
-                                                 | jesse:json_term()
-                                                 | ?not_found
-                                                 )
+         , error_list         :: error_list()
+         , error_handler      :: error_handler()
+         , default_schema_ver :: schema_ver()
+         , schema_loader_fun  :: schema_loader_fun()
          , external_validator :: external_validator()
-         , id                 :: http_uri:uri() | undefined
+         , id                 :: schema_id()
          }
        ).
-
--type allowed_errors() :: non_neg_integer()
-                        | ?infinity.
-
--type external_validator() :: fun((jesse:json_term(), state()) -> state())
-                           | undefined.
 
 -opaque state() :: #state{}.
 
 %%% API
 %% @doc Adds `Property' to the `current_path' in `State'.
--spec add_to_path(State :: state(),
-                  Property :: binary() | non_neg_integer()) -> state().
-add_to_path(State, Property) ->
+-spec add_to_path( State :: state()
+                 , Item :: current_path_item()
+                 ) -> state().
+add_to_path(State, Item) ->
   CurrentPath = State#state.current_path,
-  State#state{current_path = [Property | CurrentPath]}.
+  State#state{current_path = [Item | CurrentPath]}.
 
 %% @doc Getter for `allowed_errors'.
 -spec get_allowed_errors(State :: state()) -> allowed_errors().
@@ -97,17 +83,17 @@ get_allowed_errors(#state{allowed_errors = AllowedErrors}) ->
   AllowedErrors.
 
 %% @doc Getter for `current_path'.
--spec get_current_path(State :: state()) -> [binary() | non_neg_integer()].
+-spec get_current_path(State :: state()) -> current_path().
 get_current_path(#state{current_path = CurrentPath}) ->
   CurrentPath.
 
 %% @doc Getter for `current_schema'.
--spec get_current_schema(State :: state()) -> jesse:json_term().
+-spec get_current_schema(State :: state()) -> schema().
 get_current_schema(#state{current_schema = CurrentSchema}) ->
   CurrentSchema.
 
 %% @doc Getter for `current_schema_id'.
--spec get_current_schema_id(State :: state()) -> binary() | undefined.
+-spec get_current_schema_id(State :: state()) -> schema_id().
 get_current_schema_id(#state{ current_schema = CurrentSchema
                             , root_schema = RootSchema
                             }) ->
@@ -115,36 +101,29 @@ get_current_schema_id(#state{ current_schema = CurrentSchema
   jesse_json_path:value(?ID, CurrentSchema, Default).
 
 %% @doc Getter for `default_schema_ver'.
--spec get_default_schema_ver(State :: state()) -> binary().
+-spec get_default_schema_ver(State :: state()) -> schema_ver().
 get_default_schema_ver(#state{default_schema_ver = SchemaVer}) ->
   SchemaVer.
 
 %% @doc Getter for `error_handler'.
--spec get_error_handler(State :: state()) -> fun(( jesse_error:error_reason()
-                                                 , [jesse_error:error_reason()]
-                                                 , non_neg_integer()
-                                                 ) -> list() | no_return()).
+-spec get_error_handler(State :: state()) -> error_handler().
 get_error_handler(#state{error_handler = ErrorHandler}) ->
   ErrorHandler.
 
 %% @doc Getter for `error_list'.
--spec get_error_list(State :: state()) -> list().
+-spec get_error_list(State :: state()) -> error_list().
 get_error_list(#state{error_list = ErrorList}) ->
   ErrorList.
 
 %% @doc Returns newly created state.
--spec new( JsonSchema :: jesse:json_term()
-         , Options    :: [{Key :: atom(), Data :: any()}]
+-spec new( JsonSchema :: schema()
+         , Options    :: options()
          ) -> state().
 new(JsonSchema, Options) ->
-  ErrorHandler     = proplists:get_value( error_handler
-                                        , Options
-                                        , ?default_error_handler_fun
-                                        ),
-  AllowedErrors    = proplists:get_value( allowed_errors
-                                        , Options
-                                        , 0
-                                        ),
+  AllowedErrors = proplists:get_value( allowed_errors
+                                     , Options
+                                     , 0
+                                     ),
   MetaSchemaVer = jesse_json_path:value( ?SCHEMA
                                        , JsonSchema
                                        , ?default_schema_ver
@@ -153,13 +132,17 @@ new(JsonSchema, Options) ->
                                         , Options
                                         , MetaSchemaVer
                                         ),
+  ErrorHandler = proplists:get_value( error_handler
+                                    , Options
+                                    , ?default_error_handler_fun
+                                    ),
+  ExternalValidator = proplists:get_value( external_validator
+                                         , Options
+                                         ),
   LoaderFun = proplists:get_value( schema_loader_fun
                                  , Options
                                  , ?default_schema_loader_fun
                                  ),
-  ExternalValidator = proplists:get_value( external_validator
-                                         , Options
-                                         ),
   NewState = #state{ root_schema        = JsonSchema
                    , current_path       = []
                    , allowed_errors     = AllowedErrors
@@ -185,19 +168,19 @@ set_allowed_errors(#state{} = State, AllowedErrors) ->
 
 %% @doc Setter for `current_schema'.
 -spec set_current_schema( State     :: state()
-                        , NewSchema :: jesse:json_term()
+                        , NewSchema :: schema()
                         ) -> state().
 set_current_schema(#state{id = Id} = State, NewSchema) ->
   NewId = combine_id(Id, jesse_json_path:value(?ID, NewSchema, undefined)),
   State#state{current_schema = NewSchema, id = NewId}.
 
 %% @doc Setter for `error_list'.
--spec set_error_list(State :: state(), ErrorList :: list()) -> state().
+-spec set_error_list(State :: state(), ErrorList :: error_list()) -> state().
 set_error_list(State, ErrorList) ->
   State#state{error_list = ErrorList}.
 
 %% @doc Resolve a reference.
--spec resolve_ref(State :: state(), Reference :: binary()) -> state().
+-spec resolve_ref(State :: state(), Reference :: schema_ref()) -> state().
 resolve_ref(State, Reference) ->
   Id = State#state.id,
   CanonicalReference = combine_id(Id, Reference),
@@ -253,7 +236,7 @@ undo_resolve_ref(RefState, OriginalState) ->
 
 %% @doc Retrieve a specific part of a schema
 %% @private
--spec load_local_schema( Schema :: not_found | jesse:json_term()
+-spec load_local_schema( Schema :: ?not_found | schema()
                        , Path :: [binary()]
                        ) -> not_found | jesse:json_term().
 load_local_schema(?not_found, _Path) ->
@@ -378,8 +361,10 @@ raw_canonical_path2([H|T], Acc) ->
   end.
 
 %% @doc Load a schema based on URI
--spec load_schema(State :: state(), SchemaURI :: string() | binary()) ->
-                     jesse:json_term() | ?not_found.
+-spec load_schema( State :: state()
+                 , SchemaURI :: string() | binary()
+                 ) -> schema()
+                    | ?not_found.
 load_schema(State, SchemaURI) when is_binary(SchemaURI) ->
   load_schema(State, unicode:characters_to_list(SchemaURI));
 load_schema(#state{schema_loader_fun = LoaderFun}, SchemaURI) ->
