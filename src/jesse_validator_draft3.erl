@@ -48,7 +48,8 @@
                     | ?not_in_range
                     | ?wrong_length
                     | ?wrong_size
-                    | ?wrong_type.
+                    | ?wrong_type
+                    | ?external.
 
 -type data_error_type() :: data_error()
                          | {data_error(), binary()}.
@@ -209,11 +210,11 @@ check_value(Value, [{?DISALLOW, Disallow} | Attrs], State) ->
 check_value(Value, [{?EXTENDS, Extends} | Attrs], State) ->
   NewState = check_extends(Value, Extends, State),
   check_value(Value, Attrs, NewState);
-check_value(_Value, [], State) ->
-  State;
 check_value(Value, [{?REF, RefSchemaURI} | Attrs], State) ->
   NewState = validate_ref(Value, RefSchemaURI, State),
   check_value(Value, Attrs, NewState);
+check_value(Value, [], State) ->
+  maybe_external_check_value(Value, State);
 check_value(Value, [_Attr | Attrs], State) ->
   check_value(Value, Attrs, State).
 
@@ -1031,3 +1032,12 @@ add_to_path(State, Property) ->
 %% @private
 remove_last_from_path(State) ->
   jesse_state:remove_last_from_path(State).
+
+%% @private
+maybe_external_check_value(Value, State) ->
+  case jesse_state:get_external_validator(State) of
+    undefined ->
+      State;
+    Fun ->
+      Fun(Value, State)
+  end.
