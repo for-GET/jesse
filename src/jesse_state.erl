@@ -47,6 +47,7 @@
         ]).
 
 -export_type([ state/0
+             , validator_opts/0
              ]).
 
 %% Includes
@@ -80,6 +81,8 @@
        ).
 
 -opaque state() :: #state{}.
+
+-type validator_opts() :: any().
 
 %%% API
 %% @doc Adds `Property' to the `current_path' in `State'.
@@ -165,7 +168,13 @@ new(JsonSchema, Options) ->
                                         , Options
                                         , undefined
                                         ),
-  ValidatorState   = init_validator_state(Validator),
+  ValidatorOpts    = proplists:get_value( validator_opts
+                                        , Options
+                                        , undefined
+                                        ),
+  ValidatorState   = init_validator_state( Validator
+                                         , ValidatorOpts
+                                         ),
   LoaderFun        = proplists:get_value( schema_loader_fun
                                         , Options
                                         , ?default_schema_loader_fun
@@ -269,11 +278,13 @@ undo_resolve_ref(RefState, OriginalState) ->
 
 %% @doc Init custom validator state.
 %% @private
--spec init_validator_state(Validator :: module() | undefined) -> any() | undefined.
-init_validator_state(undefined) ->
+-spec init_validator_state( Validator :: module() | undefined
+                          , Opts :: validator_opts()
+                          ) -> jesse_schema_validator:validator_state().
+init_validator_state(undefined, _) ->
   undefined;
-init_validator_state(Validator) ->
-  Validator:init_state().
+init_validator_state(Validator, Opts) ->
+  Validator:init_state(Opts).
 
 %% @doc Retrieve a specific part of a schema
 %% @private

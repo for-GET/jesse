@@ -56,7 +56,7 @@ init_per_suite(Config) ->
 end_per_suite(_Config) ->
   inets:stop().
 
-init_state() ->
+init_state(_) ->
   0.
 
 check_value(Value, {<<"customDef">>, Property}, State0) ->

@@ -40,7 +40,13 @@
     Attr  :: {binary(), jesse:json_term()},
     State :: jesse_state:state().
 
--callback init_state() -> any() | undefined.
+-callback init_state(Opts :: jesse_state:validator_opts()) ->
+    validator_state().
+
+-type validator_state() :: any().
+
+-export_type([ validator_state/0
+             ]).
 
 %%% API
 %% @doc Validates json `Data' against `JsonSchema' with `Options'.

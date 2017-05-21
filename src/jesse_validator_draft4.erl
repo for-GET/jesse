@@ -25,7 +25,7 @@
 -behaviour(jesse_schema_validator).
 
 %% API
--export([ init_state/0
+-export([ init_state/1
         , check_value/3
         ]).
 
@@ -74,8 +74,8 @@
 
 %%% API
 %% @doc Behaviour callback. Custom state is not used by this validator.
--spec init_state() -> undefined.
-init_state() ->
+-spec init_state(_) -> undefined.
+init_state(_) ->
   undefined.
 
 %% @doc Validates the value `Value' against the attributes
