@@ -117,7 +117,8 @@
 -define(external,                    'external').
 
 %%
--define(not_found, not_found).
+-define(not_found,                   'not_found').
+-define(infinity,                    'infinity').
 
 %% Maps conditional compilation
 -ifdef(erlang_deprecated_types).

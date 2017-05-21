@@ -45,6 +45,7 @@
         ]).
 
 -export_type([ state/0
+             , allowed_errors/0
              ]).
 
 %% Includes
@@ -56,7 +57,7 @@
          , current_schema     :: jesse:json_term()
          , current_path       :: [binary() | non_neg_integer()]
                                  %% current path in reversed order
-         , allowed_errors     :: non_neg_integer() | 'infinity'
+         , allowed_errors     :: allowed_errors()
          , error_list         :: list()
          , error_handler      :: fun(( jesse_error:error_reason()
                                      , [jesse_error:error_reason()]
@@ -70,9 +71,12 @@
                                                  | ?not_found
                                                  )
          , external_validator :: external_validator()
-         , id                 :: http_uri:uri() | 'undefined'
+         , id                 :: http_uri:uri() | undefined
          }
        ).
+
+-type allowed_errors() :: non_neg_integer()
+                        | ?infinity.
 
 -type external_validator() :: fun((jesse:json_term(), state()) -> state())
                            | undefined.
@@ -88,7 +92,7 @@ add_to_path(State, Property) ->
   State#state{current_path = [Property | CurrentPath]}.
 
 %% @doc Getter for `allowed_errors'.
--spec get_allowed_errors(State :: state()) -> non_neg_integer().
+-spec get_allowed_errors(State :: state()) -> allowed_errors().
 get_allowed_errors(#state{allowed_errors = AllowedErrors}) ->
   AllowedErrors.
 
@@ -172,9 +176,9 @@ new(JsonSchema, Options) ->
 remove_last_from_path(State = #state{current_path = [_Property | Path]}) ->
   State#state{current_path = Path}.
 
-%% @doc Getter for `allowed_errors'.
+%% @doc Setter for `allowed_errors'.
 -spec set_allowed_errors( State :: state()
-                        , AllowedErrors :: non_neg_integer()
+                        , AllowedErrors :: allowed_errors()
                         ) -> state().
 set_allowed_errors(#state{} = State, AllowedErrors) ->
   State#state{allowed_errors = AllowedErrors}.
