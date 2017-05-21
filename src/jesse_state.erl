@@ -61,14 +61,14 @@
          , error_handler      :: fun(( jesse_error:error_reason()
                                      , [jesse_error:error_reason()]
                                      , non_neg_integer()
-                                     ) -> list() | no_return()
-                                            )
+                                     ) -> list()
+                                        | no_return()
+                                        )
          , default_schema_ver :: binary()
-         , schema_loader_fun  :: fun(( string()
-                                     ) -> {ok, jesse:json_term()} |
-                                          jesse:json_term() |
-                                          ?not_found
-                                            )
+         , schema_loader_fun  :: fun((string()) -> {ok, jesse:json_term()}
+                                                 | jesse:json_term()
+                                                 | ?not_found
+                                                 )
          , external_validator :: external_validator()
          , id                 :: http_uri:uri() | 'undefined'
          }
