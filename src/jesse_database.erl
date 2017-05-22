@@ -106,16 +106,17 @@ add_path(Path0, ParseFun, ValidationFun) ->
 %% from the internal storage. If there is no such key in the storage, an
 %% exception will be thrown.
 -spec load(Key :: string()) -> jesse:json_term() | no_return().
-load(Key) ->
+load(Key) when is_list(Key) ->
   Table = create_table(table_name()),
-  case ets:match_object(Table, {'_', Key, '_', '_'}) of
-    %% ID
-    [{_SourceKey, Key, _Mtime, Schema}] ->
+  %% ID
+  Id = Key,
+  case ets:match_object(Table, {'_', Id, '_', '_'}) of
+    [{_SourceKey, Id, _Mtime, Schema}] ->
       Schema;
     [] ->
+      %% SourceKey (URI)
       SourceKey = jesse_state:canonical_path(Key, Key),
       case ets:match_object(Table, {SourceKey, '_', '_', '_'}) of
-        %% Source (URI)
         [{SourceKey, _Key, _Mtime, Schema}] ->
           Schema;
         _ ->
@@ -129,7 +130,7 @@ load(Key) ->
 %% http: or https: URI scheme. If this fails as well, an exception will be
 %% thrown.
 -spec load_uri(Key :: string()) -> jesse:json_term() | no_return().
-load_uri(Key) ->
+load_uri(Key) when is_list(Key) ->
   try
     load(Key)
   catch
@@ -147,12 +148,14 @@ load_all() ->
 %% @doc Deletes a schema definition from the internal storage associated with,
 %% or sourced with the key `Key'.
 -spec delete(Key :: string()) -> ok.
-delete(Key0) ->
-  Key = jesse_state:canonical_path(Key0, Key0),
+delete(Key) when is_list(Key) ->
   Table = create_table(table_name()),
-  SourceKey = Key,
+  %% ID
+  Id = Key,
+  ets:match_delete(Table, {'_', Id, '_', '_'}),
+  %% SourceKey (URI)
+  SourceKey = jesse_state:canonical_path(Key, Key),
   ets:match_delete(Table, {SourceKey, '_', '_', '_'}),
-  ets:match_delete(Table, {'_', Key, '_', '_'}),
   ok.
 
 %%% Internal functions
