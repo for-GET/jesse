@@ -106,15 +106,14 @@ add_path(Path0, ParseFun, ValidationFun) ->
 %% from the internal storage. If there is no such key in the storage, an
 %% exception will be thrown.
 -spec load(Key :: string()) -> jesse:json_term() | no_return().
-load(Key0) ->
-  Key = jesse_state:canonical_path(Key0, Key0),
+load(Key) ->
   Table = create_table(table_name()),
   case ets:match_object(Table, {'_', Key, '_', '_'}) of
     %% ID
     [{_SourceKey, Key, _Mtime, Schema}] ->
       Schema;
     [] ->
-      SourceKey = Key,
+      SourceKey = jesse_state:canonical_path(Key, Key),
       case ets:match_object(Table, {SourceKey, '_', '_', '_'}) of
         %% Source (URI)
         [{SourceKey, _Key, _Mtime, Schema}] ->
