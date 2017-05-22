@@ -121,7 +121,6 @@
 -define(not_one_schema_valid,        'not_one_schema_valid').
 -define(not_schema_valid,            'not_schema_valid').
 -define(wrong_not_schema,            'wrong_not_schema').
--define(external,                    'external').
 
 %%
 -define(not_found,                   'not_found').

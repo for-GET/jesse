@@ -40,7 +40,6 @@
 -export_type([ allowed_errors/0
              , error_handler/0
              , error_list/0
-             , external_validator/0
              , json_term/0
              , schema/0
              , schema_id/0
@@ -67,10 +66,6 @@
 
 -type error_list() :: list().
 
-%% -type external_validator() :: fun((json_term(), state()) -> state())
--type external_validator() :: fun((json_term(), any()) -> any())
-                           | undefined.
-
 -type json_term() :: term().
 
 -type parser_fun() :: fun((json_term() | binary()) -> json_term()).
@@ -91,7 +86,6 @@
 -type option() :: {allowed_errors, allowed_errors()}
                 | {default_schema_ver, schema_ver()}
                 | {error_handler, error_handler()}
-                | {external_validator, external_validator()}
                 | {meta_schema_ver, schema_ver()}
                 | {parser_fun, parser_fun()}
                 | {schema_loader_fun, schema_loader_fun()}.

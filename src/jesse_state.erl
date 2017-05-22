@@ -26,7 +26,6 @@
 %% API
 -export([ add_to_path/2
         , get_allowed_errors/1
-        , get_external_validator/1
         , get_current_path/1
         , get_current_schema/1
         , get_current_schema_id/1
@@ -58,7 +57,7 @@
          , default_schema_ver :: jesse:schema_ver()
          , error_handler :: jesse:error_handler()
          , error_list :: jesse:error_list()
-         , external_validator :: jesse:external_validator()
+
          , id :: jesse:schema_id()
          , root_schema :: jesse:schema()
          , schema_loader_fun :: jesse:schema_loader_fun()
@@ -139,9 +138,6 @@ new(JsonSchema, Options) ->
                                     , Options
                                     , ?default_error_handler_fun
                                     ),
-  ExternalValidator = proplists:get_value( external_validator
-                                         , Options
-                                         ),
   LoaderFun = proplists:get_value( schema_loader_fun
                                  , Options
                                  , ?default_schema_loader_fun
@@ -153,7 +149,6 @@ new(JsonSchema, Options) ->
                    , error_handler      = ErrorHandler
                    , default_schema_ver = DefaultSchemaVer
                    , schema_loader_fun  = LoaderFun
-                   , external_validator = ExternalValidator
                    },
   set_current_schema(NewState, JsonSchema).
 
@@ -388,7 +383,3 @@ load_schema(#state{schema_loader_fun = LoaderFun}, SchemaURI) ->
       %% io:format("load_schema: ~p\n", [{_C, _E, erlang:get_stacktrace()}]),
       ?not_found
   end.
-
-%% @private
-get_external_validator(#state{external_validator = Fun}) ->
-  Fun.
