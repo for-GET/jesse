@@ -57,9 +57,9 @@
 %%% API
 %% @doc Goes through attributes of the given schema `JsonSchema' and
 %% validates the value `Value' against them.
--spec check_value( Value      :: any()
-                 , JsonSchema :: jesse:json_term()
-                 , State      :: jesse_state:state()
+-spec check_value( Value :: jesse:json_term()
+                 , JsonSchema :: jesse:schema()
+                 , State :: jesse_state:state()
                  ) -> jesse_state:state() | no_return().
 check_value(Value, [{?REF, RefSchemaURI} | _Attrs], State) ->
   validate_ref(Value, RefSchemaURI, State);
