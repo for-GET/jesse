@@ -245,6 +245,11 @@ the given schema), one should use 'default_schema_ver' option when call
 a binary consisting a schema path,
  i.e. <<"http://json-schema.org/draft-03/schema#">>.
 
+It is also possible to specify a validator module to use via `validator` option.
+This option supersedes the mechanism with the $schema property described above.
+Custom validator module can be specified as well. Such module should implement
+`jesse_schema_validator` behaviour.
+
 ## Validation errors
 
 The validation functions `jesse:validate/2` and `jesse:validate_with_schema/2,3`
