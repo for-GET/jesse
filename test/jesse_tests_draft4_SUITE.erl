@@ -23,6 +23,7 @@
 -module(jesse_tests_draft4_SUITE).
 
 -compile([ export_all
+         , nowarn_export_all
          ]).
 
 -define(EXCLUDED_FUNS, [ module_info
