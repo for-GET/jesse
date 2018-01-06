@@ -291,9 +291,9 @@ get_schema_id(Schema) ->
 add_file_uri(Key0) ->
   Key = jesse_state:canonical_path(Key0, Key0),
   "file://" ++ File = Key,
-  {ok, Body} = file:read_file(File),
+  {ok, SchemaBin} = file:read_file(File),
   {ok, #file_info{mtime = Mtime}} = file:read_file_info(File),
-  Schema = jsx:decode(Body),
+  Schema = jsx:decode(SchemaBin),
   SchemaInfos = [{Key, Mtime, Schema}],
   ValidationFun = fun jesse_lib:is_json_object/1,
   store_schemas(SchemaInfos, ValidationFun).
@@ -302,8 +302,8 @@ add_file_uri(Key0) ->
 add_http_uri(Key0) ->
   Key = jesse_state:canonical_path(Key0, Key0),
   {ok, Response} = httpc:request(get, {Key, []}, [], [{body_format, binary}]),
-  {{_Line, 200, _}, Headers, Body} = Response,
-  Schema = jsx:decode(Body),
+  {{_Line, 200, _}, Headers, SchemaBin} = Response,
+  Schema = jsx:decode(SchemaBin),
   SchemaInfos = [{Key, get_http_mtime(Headers), Schema}],
   ValidationFun = fun jesse_lib:is_json_object/1,
   store_schemas(SchemaInfos, ValidationFun).
