@@ -88,13 +88,20 @@
                                              | ?not_found
                                              ).
 
+-type setter_fun() :: fun(( jesse_json_path:path()
+                          , json_term()
+                          , json_term()
+                          ) -> json_term())
+                    | undefined.
+
 -type option() :: {allowed_errors, allowed_errors()}
                 | {default_schema_ver, schema_ver()}
                 | {error_handler, error_handler()}
                 | {external_validator, external_validator()}
                 | {meta_schema_ver, schema_ver()}
                 | {parser_fun, parser_fun()}
-                | {schema_loader_fun, schema_loader_fun()}.
+                | {schema_loader_fun, schema_loader_fun()}
+                | {setter_fun, setter_fun()}.
 
 -type options() :: [option()].
 

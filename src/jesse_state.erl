@@ -27,6 +27,7 @@
 -export([ add_to_path/2
         , get_allowed_errors/1
         , get_external_validator/1
+        , get_current_value/1
         , get_current_path/1
         , get_current_schema/1
         , get_current_schema_id/1
@@ -37,11 +38,14 @@
         , remove_last_from_path/1
         , set_allowed_errors/2
         , set_current_schema/2
+        , set_value/3
         , set_error_list/2
         , resolve_ref/2
         , undo_resolve_ref/2
         , canonical_path/2
         , combine_id/2
+        , validator_options/1
+        , validator_option/2, validator_option/3
         ]).
 
 -export_type([ state/0
@@ -55,6 +59,7 @@
        , { allowed_errors :: jesse:allowed_errors()
          , current_path :: current_path()
          , current_schema :: jesse:schema()
+         , current_value :: jesse:json_term()
          , default_schema_ver :: jesse:schema_ver()
          , error_handler :: jesse:error_handler()
          , error_list :: jesse:error_list()
@@ -62,6 +67,8 @@
          , id :: jesse:schema_id()
          , root_schema :: jesse:schema()
          , schema_loader_fun :: jesse:schema_loader_fun()
+         , setter_fun :: jesse:setter_fun()
+         , validator_options  :: jesse:options()
          }
        ).
 
@@ -146,6 +153,16 @@ new(JsonSchema, Options) ->
                                  , Options
                                  , ?default_schema_loader_fun
                                  ),
+  SetterFun = proplists:get_value( setter_fun
+                                 , Options
+                                 ),
+  Value = proplists:get_value( with_value
+                             , Options
+                             ),
+  ValidatorOptions = proplists:get_value( validator_options
+                                        , Options
+                                        , []
+                                        ),
   NewState = #state{ root_schema        = JsonSchema
                    , current_path       = []
                    , allowed_errors     = AllowedErrors
@@ -154,6 +171,9 @@ new(JsonSchema, Options) ->
                    , default_schema_ver = DefaultSchemaVer
                    , schema_loader_fun  = LoaderFun
                    , external_validator = ExternalValidator
+                   , setter_fun         = SetterFun
+                   , current_value      = Value
+                   , validator_options  = ValidatorOptions
                    },
   set_current_schema(NewState, JsonSchema).
 
@@ -205,14 +225,22 @@ resolve_ref(State, Reference) ->
       Path = jesse_json_path:parse(Pointer),
       case load_local_schema(State#state.root_schema, Path) of
         ?not_found ->
-          jesse_error:handle_schema_invalid({?schema_not_found, CanonicalReference}, State);
+          jesse_error:handle_schema_invalid( { ?schema_not_found
+                                             , CanonicalReference
+                                             }
+                                           , State
+                                           );
         Schema ->
           set_current_schema(State, Schema)
       end;
     false ->
       case load_schema(State, BaseURI) of
         ?not_found ->
-          jesse_error:handle_schema_invalid({?schema_not_found, CanonicalReference}, State);
+          jesse_error:handle_schema_invalid( { ?schema_not_found
+                                             , CanonicalReference
+                                             }
+                                           , State
+                                           );
         RemoteSchema ->
           SchemaVer =
             jesse_json_path:value(?SCHEMA, RemoteSchema, ?default_schema_ver),
@@ -223,7 +251,11 @@ resolve_ref(State, Reference) ->
           Path = jesse_json_path:parse(Pointer),
           case load_local_schema(RemoteSchema, Path) of
             ?not_found ->
-              jesse_error:handle_schema_invalid({?schema_not_found, CanonicalReference}, State);
+              jesse_error:handle_schema_invalid( { ?schema_not_found
+                                                 , CanonicalReference
+                                                 }
+                                               , State
+                                               );
             Schema ->
               set_current_schema(NewState, Schema)
           end
@@ -392,3 +424,32 @@ load_schema(#state{schema_loader_fun = LoaderFun}, SchemaURI) ->
 %% @private
 get_external_validator(#state{external_validator = Fun}) ->
   Fun.
+
+%% @doc Getter for `current_value'.
+-spec get_current_value(State :: state()) -> jesse:json_term().
+get_current_value(#state{current_value = Value}) ->
+  Value.
+
+-spec set_value(State :: state(), jesse:path(), jesse:json_term()) -> state().
+set_value(#state{setter_fun = undefined}=State, _Path, _Value) -> State;
+set_value(#state{current_value = undefined}=State, _Path, _Value) -> State;
+set_value( #state{ setter_fun = Setter
+                 , current_value = Value
+                 } = State
+         , Path
+         , NewValue
+         ) ->
+  State#state{current_value = Setter(Path, NewValue, Value)}.
+
+-spec validator_options(State :: state()) -> jesse:options().
+validator_options(#state{validator_options = Options}) ->
+  Options.
+
+-spec validator_option(Option :: atom(), State :: state()) -> any().
+validator_option(Option, #state{validator_options = Options}) ->
+  proplists:get_value(Option, Options).
+
+-spec validator_option(Option :: atom(), State :: state(), Default :: any()) ->
+                          any().
+validator_option(Option, #state{validator_options = Options}, Default) ->
+  proplists:get_value(Option, Options, Default).

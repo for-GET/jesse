@@ -27,6 +27,7 @@
 -export([ empty_if_not_found/1
         , is_array/1
         , is_json_object/1
+        , is_json_object_empty/1
         , is_null/1
         ]).
 
@@ -86,3 +87,22 @@ is_null(null) ->
 is_null(_Value) ->
   false.
 
+%% @doc check if json object is_empty.
+-spec is_json_object_empty(Value :: any()) -> boolean().
+is_json_object_empty({struct, Value})
+  when is_list(Value) andalso Value =:= [] ->
+  true;
+is_json_object_empty({Value})
+  when is_list(Value)
+       andalso Value =:= [] ->
+  true;
+%% handle `jsx' empty objects
+is_json_object_empty([{}]) ->
+  true;
+?IF_MAPS(
+is_json_object_empty(Map)
+  when erlang:is_map(Map) ->
+  maps:size(Map) =:= 0;
+)
+is_json_object_empty(_) ->
+  false.

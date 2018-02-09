@@ -62,6 +62,7 @@
 -define(MULTIPLEOF,           <<"multipleOf">>).
 -define(MAXPROPERTIES,        <<"maxProperties">>).
 -define(MINPROPERTIES,        <<"minProperties">>).
+-define(DEFAULT,              <<"default">>).
 
 %% Constant definitions for Json types
 -define(ANY,                  <<"any">>).
