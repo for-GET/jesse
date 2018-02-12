@@ -196,11 +196,20 @@ store_schemas(SchemaInfos, ValidationFun) ->
 
 %% @private
 store_schema(SchemaInfo, {Acc, ValidationFun}) ->
-  {SourceKey, Mtime, Schema} = SchemaInfo,
-  case ValidationFun(Schema) of
+  {SourceKey, Mtime, Schema0} = SchemaInfo,
+  case ValidationFun(Schema0) of
     true ->
+      Id = case get_schema_id(Schema0) of
+             undefined ->
+               SourceKey;
+             Id0 ->
+               jesse_state:combine_id(SourceKey, Id0)
+           end,
+      Schema = [ {<<"id">>, unicode:characters_to_binary(Id)}
+                 | lists:keydelete(<<"id">>, 1, Schema0)
+               ],
       Object = { SourceKey
-               , get_schema_id(Schema)
+               , Id
                , Mtime
                , Schema
                },
@@ -263,16 +272,8 @@ get_schema_infos(Files, ParseFun) ->
 get_schema_info(File, {Acc, ParseFun}) ->
   SourceKey = "file://" ++ filename:absname(File),
   {ok, SchemaBin} = file:read_file(File),
-  Schema0 = try_parse(ParseFun, SchemaBin),
-  Schema = case jesse_json_path:value(<<"id">>, Schema0, undefined) of
-             undefined ->
-               [ {<<"id">>, unicode:characters_to_binary(SourceKey)}
-                 | Schema0
-               ];
-             _ ->
-               Schema0
-           end,
   {ok, #file_info{mtime = Mtime}} = file:read_file_info(File),
+  Schema = try_parse(ParseFun, SchemaBin),
   {[{SourceKey, Mtime, Schema} | Acc], ParseFun}.
 
 %% @doc Returns value of "id" field from json object `Schema', assuming that
