@@ -62,10 +62,11 @@
                            , ErrorList     :: [error_reason()]
                            , AllowedErrors :: jesse_state:allowed_errors()
                            ) -> [error_reason()] | no_return().
-default_error_handler(Error, ErrorList, AllowedErrors) ->
+default_error_handler(Error, ErrorList0, AllowedErrors) ->
+  ErrorList = ErrorList0 ++ [Error],
   case AllowedErrors > length(ErrorList) orelse AllowedErrors =:= ?infinity of
-    true  -> ErrorList ++ [Error];
-    false -> throw(ErrorList ++ [Error])
+    true  -> ErrorList;
+    false -> throw(ErrorList)
   end.
 
 %% @doc Generates a new data error and returns the updated state.
