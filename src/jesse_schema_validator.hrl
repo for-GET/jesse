@@ -82,6 +82,7 @@
 
 %% Constant definitions for schema errors
 -define(invalid_dependency,          'invalid_dependency').
+-define(only_ref_allowed,            'only_ref_allowed').
 -define(schema_invalid,              'schema_invalid').
 -define(schema_not_found,            'schema_not_found').
 -define(schema_unsupported,          'schema_unsupported').
