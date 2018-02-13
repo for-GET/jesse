@@ -205,9 +205,7 @@ store_schema(SchemaInfo, {Acc, ValidationFun}) ->
              Id0 ->
                jesse_state:combine_id(SourceKey, Id0)
            end,
-      Schema = [ {<<"id">>, unicode:characters_to_binary(Id)}
-                 | lists:keydelete(<<"id">>, 1, Schema0)
-               ],
+      Schema = replace_schema_id(Schema0, Id),
       Object = { SourceKey
                , Id
                , Mtime
@@ -219,6 +217,32 @@ store_schema(SchemaInfo, {Acc, ValidationFun}) ->
     false ->
       {[SchemaInfo | Acc], ValidationFun}
   end.
+
+%% @private
+%% Should support whatever jesse_lib:is_json_object/1 does
+?IF_MAPS(
+replace_schema_id(M0, Id)
+  when erlang:is_map(M0) ->
+  maps:put(<<"id">>, unicode:characters_to_binary(Id), M0);
+)
+replace_schema_id({struct, P0}, Id)
+  when is_list(P0) ->
+  P = [ {<<"id">>, unicode:characters_to_binary(Id)}
+           | lists:keydelete(<<"id">>, 1, P0)
+         ],
+  {struct, P};
+replace_schema_id({P0}, Id)
+  when is_list(P0) ->
+  P = [ {<<"id">>, unicode:characters_to_binary(Id)}
+           | lists:keydelete(<<"id">>, 1, P0)
+         ],
+  {P};
+replace_schema_id(P0, Id)
+  when is_list(P0) ->
+  P = [ {<<"id">>, unicode:characters_to_binary(Id)}
+           | lists:keydelete(<<"id">>, 1, P0)
+         ],
+  P.
 
 %% @doc Returns a list of schema files in `Path' which have outdated
 %% cache entries.
