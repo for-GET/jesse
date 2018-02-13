@@ -57,6 +57,13 @@ path([K | Rest], P, Default) ->
 -spec value(kvc_key(), kvc_obj(), term()) -> term().
 value(K, P, Default) ->
   case proplist_type(P) of
+    ?IF_MAPS({{map, Map}, Type} ->
+                case maps:find(normalize(K, Type), Map) of
+                  error ->
+                    Default;
+                  {ok, V} ->
+                    V
+                end;)
     {Nested, list} ->
       R = make_ref(),
       case get_nested_values(K, Nested, R) of
@@ -72,13 +79,6 @@ value(K, P, Default) ->
         {value, V} ->
           V
       end;
-    ?IF_MAPS({{map, Map}, Type} ->
-                case maps:find(normalize(K, Type), Map) of
-                  error ->
-                    Default;
-                  {ok, V} ->
-                    V
-                end;)
     {Proplist, Type} ->
       case lists:keyfind(normalize(K, Type), 1, Proplist) of
         false ->
@@ -125,12 +125,12 @@ to_proplist(T) ->
 %% @doc Unwrap data (remove mochijson2 and jiffy specific constructions,
 %% and also handle `jsx' empty objects)
 -spec unwrap_value(kvc_obj()) -> kvc_obj().
+?IF_MAPS(unwrap_value(Map) when erlang:is_map(Map) -> maps:to_list(Map);)
 unwrap_value({struct, L}) -> L;
 unwrap_value({L}) -> L;
 unwrap_value({}) -> [];
 unwrap_value([]) -> [];
 unwrap_value([{}]) -> [];
-?IF_MAPS(unwrap_value(Map) when erlang:is_map(Map) -> maps:to_list(Map);)
 unwrap_value(L) -> L.
 
 %% Internal API
