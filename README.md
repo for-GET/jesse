@@ -164,13 +164,13 @@ works as expected, but let's change the value of the field "c" as well
 
 still works as expected, jesse stops validating as soon as finds an error.
 
-Let's use the `allowed_errors` option, and set it to 2
+Let's use the `allowed_errors` option, and set it to 1
 
 ```erlang
 5> jesse:validate_with_schema(Schema,
 5>                            <<"{\"a\": 1, \"b\": 2, \"c\": 3}">>,
 5>                            [{parser_fun, fun jiffy:decode/1},
-5>                             {allowed_errors, 2}]).
+5>                             {allowed_errors, 1}]).
 {error,[{data_invalid,{[{<<"type">>,<<"boolean">>}]},
                       wrong_type,3,
                       [<<"c">>]},
@@ -187,7 +187,7 @@ Let's now change the value of the field "a" to a boolean
 6> jesse:validate_with_schema(Schema,
 6>                            <<"{\"a\": true, \"b\": 2, \"c\": 3}">>,
 6>                            [{parser_fun, fun jiffy:decode/1},
-6>                             {allowed_errors, 2}]).
+6>                             {allowed_errors, 1}]).
 {error,[{data_invalid,{[{<<"type">>,<<"string">>}]},
                       wrong_type,2,
                       [<<"b">>]},
