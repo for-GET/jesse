@@ -32,7 +32,6 @@
 
 
 -type schema_error() :: ?invalid_dependency
-                      | ?not_multiple_of
                       | ?only_ref_allowed
                       | ?schema_invalid
                       | ?wrong_all_of_schema_array
