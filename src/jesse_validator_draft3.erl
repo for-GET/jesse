@@ -30,7 +30,8 @@
 %% Includes
 -include("jesse_schema_validator.hrl").
 
--type schema_error() :: ?wrong_type_dependency
+-type schema_error() :: ?only_ref_allowed
+                      | ?wrong_type_dependency
                       | ?wrong_type_items.
 
 -type schema_error_type() :: schema_error()
