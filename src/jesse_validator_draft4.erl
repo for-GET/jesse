@@ -1020,7 +1020,6 @@ check_multiple_of(_Value, _MultipleOf, State) ->
 %%
 %% @private
 check_required(Value, [_ | _] = Required, State) ->
-  io:fwrite("~p\n", [Required]),
   check_required_values(Value, Required, State);
 check_required(_Value, _InvalidRequired, State) ->
   handle_schema_invalid(?wrong_required_array, State).
