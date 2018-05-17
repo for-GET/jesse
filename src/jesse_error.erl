@@ -109,20 +109,24 @@ to_json({error, Reasons}, JsxOptions) ->
 
 %% @doc Convert an error reason to jsx structs
 -spec reason_to_jsx(Reason :: error_reason()) -> jesse:json_term().
-reason_to_jsx({?schema_invalid, Schema, {Error, _}}) ->
+reason_to_jsx({?schema_invalid, Schema, {Error, Value}}) ->
   [ {invalid, schema}
   , {schema, Schema}
-  , {error, Error}
+  , {error, [ {<<"type">>, Error}
+            , {<<"value">>, Value}
+            ]}
   ];
 reason_to_jsx({?schema_invalid, Schema, Error}) ->
   [ {invalid, schema}
   , {schema, Schema}
   , {error, Error}
   ];
-reason_to_jsx({?data_invalid, Schema, {Error, _}, Data, Path}) ->
+reason_to_jsx({?data_invalid, Schema, {Error, Value}, Data, Path}) ->
   [ {invalid, data}
   , {schema, Schema}
-  , {error, Error}
+  , {error, [ {<<"type">>, Error}
+            , {<<"value">>, Value}
+            ]}
   , {data, Data}
   , {path, Path}
   ];
