@@ -361,10 +361,13 @@ check_properties(Value, Properties, State) ->
 %% @end
                            case get_value(?REQUIRED, PropertySchema) of
                              true ->
+                               NewState = set_current_schema( CurrentState
+                                                            , PropertySchema
+                                                            ),
                                handle_data_invalid( {?missing_required_property
                                                      , PropertyName}
                                                    , Value
-                                                   , CurrentState);
+                                                   , NewState);
                              _    ->
                                CurrentState
                            end;
