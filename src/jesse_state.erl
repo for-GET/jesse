@@ -385,7 +385,6 @@ load_schema(#state{schema_loader_fun = LoaderFun}, SchemaURI) ->
         end
   catch
     _C:_E ->
-      %% io:format("load_schema: ~p\n", [{_C, _E, erlang:get_stacktrace()}]),
       ?not_found
   end.
 
