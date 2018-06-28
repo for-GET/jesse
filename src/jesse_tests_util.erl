@@ -35,6 +35,12 @@
 -define(TESTS,       <<"tests">>).
 -define(VALID,       <<"valid">>).
 
+-ifdef(erlang_deprecated_stacktrace).
+-define(WITH_STACKTRACE(C, E, Stacktrace), C:E -> Stacktrace = erlang:get_stacktrace(),).
+-else.
+-define(WITH_STACKTRACE(C, E, Stacktrace), C:E:Stacktrace ->).
+-endif.
+
 %%% API
 
 get_tests(RelativeTestsDir, DefaultSchema) ->
@@ -90,10 +96,10 @@ test_schema(DefaultSchema, Opts0, Schema, SchemaTests) ->
                            false ->
                              {error, _} = Result
                          end
-                     catch C:E ->
+                     catch ?WITH_STACKTRACE(C, E, Stacktrace)
                          ct:pal( "Error: ~p:~p~n"
                                  "Stacktrace: ~p~n"
-                               , [C, E, erlang:get_stacktrace()]
+                               , [C, E, Stacktrace]
                                )
                      end
                  end
