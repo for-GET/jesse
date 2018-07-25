@@ -14,6 +14,7 @@ otp_release:
   - 18.1
   - 18.0
 script:
-  - "[[ ${TRAVIS_OTP_RELEASE} != 18.2 ]] || make elvis"
+  - LATEST_OTP_RELEASE=21.0
+  - "[[ ${TRAVIS_OTP_RELEASE} != ${LATEST_OTP_RELEASE} ]] || make elvis"
   - make
   - make test
