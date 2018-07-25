@@ -35,10 +35,10 @@
 -define(TESTS,       <<"tests">>).
 -define(VALID,       <<"valid">>).
 
--ifdef(erlang_deprecated_stacktrace).
--define(WITH_STACKTRACE(C, E, Stacktrace), C:E -> Stacktrace = erlang:get_stacktrace(),).
--else.
+-ifdef('OTP_RELEASE').
 -define(WITH_STACKTRACE(C, E, Stacktrace), C:E:Stacktrace ->).
+-else.
+-define(WITH_STACKTRACE(C, E, Stacktrace), C:E -> Stacktrace = erlang:get_stacktrace(),).
 -endif.
 
 %%% API
