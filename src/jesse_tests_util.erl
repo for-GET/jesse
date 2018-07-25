@@ -35,6 +35,12 @@
 -define(TESTS,       <<"tests">>).
 -define(VALID,       <<"valid">>).
 
+-ifdef(OTP_RELEASE). %% OTP 21+
+-define(EXCEPTION(C, R, Stacktrace), C:R:Stacktrace ->).
+-else.
+-define(EXCEPTION(C, R, Stacktrace), C:R -> Stacktrace = erlang:get_stacktrace(),).
+-endif.
+
 %%% API
 
 get_tests(RelativeTestsDir, DefaultSchema) ->
@@ -90,10 +96,10 @@ test_schema(DefaultSchema, Opts0, Schema, SchemaTests) ->
                            false ->
                              {error, _} = Result
                          end
-                     catch C:E ->
+                     catch ?EXCEPTION(C,R,Stacktrace)
                          ct:pal( "Error: ~p:~p~n"
                                  "Stacktrace: ~p~n"
-                               , [C, E, erlang:get_stacktrace()]
+                               , [C, R, Stacktrace]
                                )
                      end
                  end
