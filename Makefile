@@ -1,6 +1,6 @@
 # See LICENSE for licensing information.
 
-REBAR ?= $(shell command -v rebar >/dev/null 2>&1 && echo "rebar" || echo "$(CURDIR)/rebar")
+REBAR3 ?= $(shell command -v rebar >/dev/null 2>&1 && echo "rebar3" || echo "$(CURDIR)/rebar3")
 
 ELVIS ?= $(shell command -v elvis >/dev/null 2>&1 && echo "elvis" || echo "$(CURDIR)/elvis")
 
@@ -26,15 +26,15 @@ endif
 
 SRCS := $(wildcard src/* include/* rebar.config)
 
-SRC_BEAMS := $(patsubst src/%.erl, ebin/%.beam, $(wildcard src/*.erl))
+SRC_BEAMS := $(patsubst src/%.erl, _build/default/lib/jesse/ebin/%.beam, $(wildcard src/*.erl))
 
 .PHONY: all
-all: maybe_dev deps ebin/jesse.app bin/jesse
+all: maybe_dev deps _build/default/lib/jesse/ebin/jesse.app bin/jesse
 
 .PHONY: maybe_dev
 maybe_dev:
 ifdef CI
-	$(MAKE) --no-print-directory .rebar/DEV_MODE
+	$(MAKE) --no-print-directory _build/DEV_MODE
 else
 	@:
 endif
@@ -43,36 +43,25 @@ endif
 
 .PHONY: clean
 clean:
-	$(REBAR) clean
+	$(REBAR3) clean
 	$(RM) -r .rebar
 	$(RM) -r bin
 	$(RM) doc/*.html
 	$(RM) doc/edoc-info
 	$(RM) doc/erlang.png
 	$(RM) doc/stylesheet.css
-	$(RM) -r ebin
-	$(RM) -r logs
+	$(RM) $(DEPS_PLT)
 
 .PHONY: distclean
-distclean:
-	$(RM) $(DEPS_PLT)
-	$(RM) -r deps
-	$(MAKE) clean
+distclean: clean
+	$(RM) -r _build
 
 # Deps
 
 .PHONY: get-deps
 get-deps:
-	$(REBAR) get-deps
-	[ -f .rebar/DEV_MODE ] && git submodule update --init --recursive || true
-
-.PHONY: update-deps
-update-deps:
-	$(REBAR) update-deps
-
-.PHONY: delete-deps
-delete-deps:
-	$(REBAR) delete-deps
+	$(REBAR3) get-deps
+	[ -f _build/DEV_MODE ] && git submodule update --init --recursive || true
 
 .PHONY: deps
 deps: get-deps
@@ -81,46 +70,50 @@ deps: get-deps
 
 .PHONY: docs
 docs:
-	$(REBAR) doc skip_deps=true
+	$(REBAR3) doc
 
 # Compile
 
-ebin/jesse.app: compile
+_build/default/lib/jesse/ebin/jesse.app: compile
 
-bin/jesse: ebin/jesse.app $(SRC_BEAMS)
-	$(REBAR) escriptize
+_build/default/bin/jesse: _build/default/lib/jesse/ebin/jesse.app $(SRC_BEAMS)
+	$(REBAR3) escriptize
+
+bin/jesse: _build/default/bin/jesse
+	mkdir -p bin
+	cp -a _build/default/bin/jesse bin/jesse
 	bin/jesse --help
 
 .PHONY: compile
 compile: $(SRCS)
-	$(REBAR) compile
+	$(REBAR3) compile
 
 # Tests.
 
 .PHONY: test
-test: .rebar/DEV_MODE deps eunit ct xref dialyzer
+test: _build/DEV_MODE deps eunit ct xref dialyzer
 
-.rebar/DEV_MODE:
-	mkdir -p .rebar
-	touch .rebar/DEV_MODE
+_build/DEV_MODE:
+	mkdir -p _build
+	touch _build/DEV_MODE
 
 .PHONY: eunit
 eunit:
-	$(REBAR) eunit skip_deps=true
+	$(REBAR3) eunit
 
 .PHONY: ct
 ct:
-	$(REBAR) ct skip_deps=true suites="jesse_tests_draft3,jesse_tests_draft4"
+	TEST_DIR=_build/default/test/lib/jesse/test $(REBAR3) ct
 
 .PHONY: xref
 xref:
-	$(REBAR) xref skip_deps=true
+	$(REBAR3) xref
 
 $(DEPS_PLT):
-	$(DIALYZER) --build_plt --apps $(ERLANG_DIALYZER_APPS) -r deps --output_plt $(DEPS_PLT)
+	$(DIALYZER) --build_plt --apps $(ERLANG_DIALYZER_APPS) -r _build/default/lib --output_plt $(DEPS_PLT)
 
 .PHONY: dialyzer
-dialyzer: $(DEPS_PLT) ebin/jesse.app
+dialyzer: $(DEPS_PLT) _build/default/lib/jesse/ebin/jesse.app
 	$(DIALYZER) -q --plt $(DEPS_PLT) -Wno_return ebin > test/dialyzer_warnings || true
 	diff -U0 test/known_dialyzer_warnings test/dialyzer_warnings
 

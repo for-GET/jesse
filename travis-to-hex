@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+mkdir -p ~/.hex
+mkdir -p ~/.config/rebar3
+
+cat <<EOF > ~/.hex/hex.config
+{username, <<"'${HEX_USERNAME}'">>}.
+{key, <<"'${HEX_KEY}'">>}.
+EOF
+
+cat <<EOF > ~/.config/rebar3/rebar.config
+{plugins, [rebar3_hex]}.
+EOF
+
+./rebar3 hex publish <<EOF
+y
+EOF
+
+rm ~/.hex/hex.config
+rm ~/.config/rebar3/rebar.config

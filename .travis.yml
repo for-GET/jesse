@@ -27,3 +27,11 @@ script:
   - "[[ ${TRAVIS_OTP_RELEASE} != ${LATEST_OTP_RELEASE} ]] || make elvis"
   - make
   - make test
+deploy:
+  provider: script
+  script: ./travis-to-hex
+  skip_cleanup: true
+  on:
+    otp_release: 21.0
+    repo: for-GET/jesse
+    tags: true
