@@ -254,8 +254,8 @@ try_parse(Type, ParserFun, JsonBin) ->
     _:Error ->
       case Type of
         data ->
-          throw({data_error, {parse_error, Error}});
+          throw([{data_error, {parse_error, Error}}]);
         schema ->
-          throw({schema_error, {parse_error, Error}})
+          throw([{schema_error, {parse_error, Error}}])
       end
   end.
