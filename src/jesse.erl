@@ -43,6 +43,7 @@
              , external_validator/0
              , json_term/0
              , schema/0
+             , http_uri_uri/0
              , schema_id/0
              , schema_ref/0
              , schema_ver/0
@@ -77,7 +78,13 @@
 
 -type schema() :: json_term().
 
--type schema_id() :: http_uri:uri() | undefined.
+-ifdef(post19).
+-type http_uri_uri() :: http_uri:uri().
+-else.
+-type http_uri_uri() :: string() | binary().
+-endif.
+
+-type schema_id() :: undefined | http_uri_uri().
 
 -type schema_ref() :: binary().
 

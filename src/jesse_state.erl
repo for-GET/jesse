@@ -278,8 +278,8 @@ load_local_schema(Schema, [Key | Keys]) ->
 
 %% @doc Resolve a new id
 %% @private
--spec combine_id(undefined | http_uri:uri(),
-                 undefined | string() | binary()) -> http_uri:uri().
+-spec combine_id(undefined | jesse:http_uri_uri(),
+                 undefined | string() | binary()) -> jesse:http_uri_uri().
 combine_id(Id, undefined) ->
   Id;
 combine_id(Id, RefBin) ->
