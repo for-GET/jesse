@@ -824,6 +824,8 @@ check_max_items(Value, _MaxItems, State) ->
 %%   false.
 %%
 %% @private
+check_unique_items(_, false, State) ->
+  State;
 check_unique_items([], true, State) ->
   State;
 check_unique_items(Value, true, State) ->
