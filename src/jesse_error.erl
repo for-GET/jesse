@@ -46,7 +46,9 @@
                         , Error  :: error_type()
                         , Data   :: jesse:json_term()
                         , Path   :: [binary()]
-                        }.
+                        }
+                      | { data_error, {parse_error, _}}
+                      | { schema_error, {parse_error, _}}.
 
 -type error_type() :: atom()
                     | {atom(), jesse:json_term()}
