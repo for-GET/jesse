@@ -37,18 +37,22 @@
 
 -type error() :: {error, [error_reason()]}.
 
--type error_reason() :: { 'schema_invalid'
+-type error_reason() :: { schema_invalid
                         , Schema :: jesse:json_term()
                         , Error  :: error_type()
                         }
-                      | { 'data_invalid'
+                      | { data_invalid
                         , Schema :: jesse:json_term()
                         , Error  :: error_type()
                         , Data   :: jesse:json_term()
                         , Path   :: [binary()]
                         }
-                      | { data_error, {parse_error, _}}
-                      | { schema_error, {parse_error, _}}.
+                      | { data_error
+                        , {parse_error, _}
+                        }
+                      | { schema_error
+                        , {parse_error, _}
+                        }.
 
 -type error_type() :: atom()
                     | {atom(), jesse:json_term()}
