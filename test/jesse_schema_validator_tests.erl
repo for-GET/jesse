@@ -224,87 +224,106 @@ schema_unsupported_test() ->
 -ifndef(erlang_deprecated_types).
 -ifndef(COMMON_TEST).  % see Emakefile
 map_schema_test() ->
-  [map_schema_test_draft(URI)
-   || URI <- [<<"http://json-schema.org/draft-03/schema#">>,
-              <<"http://json-schema.org/draft-04/schema#">>]].
+  [ map_schema_test_draft(URI)
+    || URI <- [ <<"http://json-schema.org/draft-03/schema#">>
+              , <<"http://json-schema.org/draft-04/schema#">>
+              ]].
 
 map_schema_test_draft(URI) ->
-  Schema = #{<<"$schema">> => URI,
-             <<"type">> => <<"object">>,
-             <<"properties">> =>
-               #{
-               <<"foo">> =>
-                 #{<<"type">> => <<"object">>,
-                   <<"properties">> =>
-                     #{<<"subfoo">> => #{<<"type">> => <<"integer">>}}
-                   }
-               },
-             <<"patternProperties">> =>
-               #{<<"^b">> => #{<<"type">> => <<"integer">>}}
+  Schema = #{ <<"$schema">> => URI
+            , <<"type">> => <<"object">>
+            , <<"properties">> =>
+                #{ <<"foo">> =>
+                     #{ <<"type">> => <<"object">>
+                      , <<"properties">> =>
+                          #{ <<"subfoo">> => #{ <<"type">> => <<"integer">>
+                                              }
+                           }
+                      }
+                 }
+            , <<"patternProperties">> =>
+                #{ <<"^b">> => #{ <<"type">> => <<"integer">>
+                                }
+                 }
             },
-  ValidJson = {[ {<<"foo">>, {[ {<<"subfoo">>, 42} ]}},
-            {<<"bar">>, 42},
-            {<<"baz">>, 42}
-          ]},
+  ValidJson = {[ {<<"foo">>, {[ {<<"subfoo">>, 42} ]}}
+               , {<<"bar">>, 42}
+               , {<<"baz">>, 42}
+               ]},
   ?assertEqual({ok, ValidJson} ,
                jesse_schema_validator:validate(Schema, ValidJson, [])),
 
   InvalidJson = {[ {<<"bar">>, <<"str expect int">>} ]},
-  ?assertThrow([{data_invalid,
-                 #{<<"type">> := <<"integer">>},
-                 wrong_type,
-                 <<"str expect int">>,
-                 [<<"bar">>]}],
+  ?assertThrow([{ data_invalid
+                , #{<<"type">> := <<"integer">>}
+                , wrong_type
+                , <<"str expect int">>
+                , [<<"bar">>]
+                }],
                jesse_schema_validator:validate(Schema, InvalidJson, [])).
 
 
 map_data_test() ->
-  [map_data_test_draft(URI)
-   || URI <- [<<"http://json-schema.org/draft-03/schema#">>,
-              <<"http://json-schema.org/draft-04/schema#">>]].
+  [ map_data_test_draft(URI)
+    || URI <- [ <<"http://json-schema.org/draft-03/schema#">>
+              , <<"http://json-schema.org/draft-04/schema#">>
+              ]
+  ].
 
 
 map_data_test_draft(URI) ->
-  Schema = {[ {<<"$schema">>, URI},
-              {<<"type">>, <<"object">>},
-              {<<"properties">>,
-               {[
-                 {<<"foo">>,
-                  {[ {<<"type">>, <<"object">>},
-                     {<<"properties">>,
-                      {[ {<<"subfoo">>, {[ {<<"type">>, <<"integer">>} ]}} ]}
-                     }
-                   ]}
-                 }
-                ]}
-              },
-             {<<"patternProperties">>,
-              {[ {<<"^b">>, {[ {<<"type">>, <<"integer">>} ]}} ]}}
+  Schema = {[ {<<"$schema">>, URI}
+            , {<<"type">>, <<"object">>}
+            , {<<"properties">>
+              , {[{ <<"foo">>
+                  , {[ {<<"type">>, <<"object">>}
+                     , { <<"properties">>
+                       , {[{ <<"subfoo">>
+                           , {[{ <<"type">>
+                               , <<"integer">>
+                               }]}
+                           }]}
+                       }
+                     ]}
+                  }
+                 ]}
+              }
+            , { <<"patternProperties">>
+              , {[{ <<"^b">>
+                  , {[{<<"type">>, <<"integer">>}]}
+                  }]}}
             ]},
-  ValidJson = #{<<"foo">> => #{<<"subfoo">> => 42},
-           <<"bar">> => 42,
-           <<"baz">> => 42
-          },
-  ?assertEqual({ok, ValidJson} ,
-               jesse_schema_validator:validate(Schema, ValidJson, [])),
+  ValidJson = #{ <<"foo">> => #{<<"subfoo">> => 42}
+               , <<"bar">> => 42
+               , <<"baz">> => 42
+               },
+  ?assertEqual( {ok, ValidJson}
+              , jesse_schema_validator:validate(Schema, ValidJson, [])
+              ),
 
-  InvalidJson = #{<<"foo">> => 42,
-                  <<"baz">> => #{}},
+  InvalidJson = #{ <<"foo">> => 42
+                 , <<"baz">> => #{}
+                 },
   %% XXX: order of errors isn't guaranteed
   %% In case of future fails it can be replaced with manual catching and sorting
   %% of throwed error list, then checked using ?assertMatch
-  ?assertThrow([{data_invalid,
-                 {[ {<<"type">>, <<"integer">>} ]},
-                 wrong_type, #{},
-                 [<<"baz">>]},
-
-                {data_invalid,
-                 {[ {<<"type">>, <<"object">>} | _ ]},
-                 wrong_type, 42,
-                 [<<"foo">>]}
-                ],
-               jesse_schema_validator:validate(Schema, InvalidJson,
-                                               [{allowed_errors, infinity}])).
+  ?assertThrow([ { data_invalid
+                 , {[{<<"type">>, <<"object">>} | _ ]}
+                 , wrong_type
+                 , 42
+                 , [<<"foo">>]
+                 }
+               , { data_invalid
+                 , {[{<<"type">>, <<"integer">>}]}
+                 , wrong_type
+                 , #{}
+                 , [<<"baz">>]
+                 }
+               ],
+               jesse_schema_validator:validate( Schema
+                                              , InvalidJson
+                                              , [{allowed_errors, infinity}]
+                                              )).
 
 -endif.
 -endif.

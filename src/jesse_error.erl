@@ -37,15 +37,21 @@
 
 -type error() :: {error, [error_reason()]}.
 
--type error_reason() :: { 'schema_invalid'
+-type error_reason() :: { schema_invalid
                         , Schema :: jesse:json_term()
                         , Error  :: error_type()
                         }
-                      | { 'data_invalid'
+                      | { data_invalid
                         , Schema :: jesse:json_term()
                         , Error  :: error_type()
                         , Data   :: jesse:json_term()
                         , Path   :: [binary()]
+                        }
+                      | { data_error
+                        , {parse_error, _}
+                        }
+                      | { schema_error
+                        , {parse_error, _}
                         }.
 
 -type error_type() :: atom()
@@ -60,12 +66,15 @@
 %% throws an exeption, otherwise adds a new element to the list and returs it.
 -spec default_error_handler( Error         :: error_reason()
                            , ErrorList     :: [error_reason()]
-                           , AllowedErrors :: non_neg_integer()
+                           , AllowedErrors :: jesse_state:allowed_errors()
                            ) -> [error_reason()] | no_return().
-default_error_handler(Error, ErrorList, AllowedErrors) ->
-  case AllowedErrors > length(ErrorList) orelse AllowedErrors =:= 'infinity' of
-    true  -> [Error | ErrorList];
-    false -> throw([Error | ErrorList])
+default_error_handler(Error, ErrorList0, AllowedErrors) ->
+  ErrorList = ErrorList0 ++ [Error],
+  case AllowedErrors > length(ErrorList0) orelse AllowedErrors =:= ?infinity of
+    true  ->
+      ErrorList;
+    false ->
+      throw(ErrorList)
   end.
 
 %% @doc Generates a new data error and returns the updated state.
@@ -106,20 +115,22 @@ to_json({error, Reasons}, JsxOptions) ->
 
 %% @doc Convert an error reason to jsx structs
 -spec reason_to_jsx(Reason :: error_reason()) -> jesse:json_term().
-reason_to_jsx({?schema_invalid, Schema, {Error, _}}) ->
+reason_to_jsx({?schema_invalid, Schema, {Error, ErrorDetails}}) ->
   [ {invalid, schema}
   , {schema, Schema}
   , {error, Error}
+  , {error_details, ErrorDetails}
   ];
 reason_to_jsx({?schema_invalid, Schema, Error}) ->
   [ {invalid, schema}
   , {schema, Schema}
   , {error, Error}
   ];
-reason_to_jsx({?data_invalid, Schema, {Error, _}, Data, Path}) ->
+reason_to_jsx({?data_invalid, Schema, {Error, ErrorDetails}, Data, Path}) ->
   [ {invalid, data}
   , {schema, Schema}
   , {error, Error}
+  , {error_details, ErrorDetails}
   , {data, Data}
   , {path, Path}
   ];

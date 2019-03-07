@@ -106,17 +106,17 @@ add_path(Path0, ParseFun, ValidationFun) ->
 %% from the internal storage. If there is no such key in the storage, an
 %% exception will be thrown.
 -spec load(Key :: string()) -> jesse:json_term() | no_return().
-load(Key0) ->
-  Key = jesse_state:canonical_path(Key0, Key0),
+load(Key) when is_list(Key) ->
   Table = create_table(table_name()),
-  case ets:match_object(Table, {'_', Key, '_', '_'}) of
-    %% ID
-    [{_SourceKey, Key, _Mtime, Schema}] ->
+  %% ID
+  Id = Key,
+  case ets:match_object(Table, {'_', Id, '_', '_'}) of
+    [{_SourceKey, Id, _Mtime, Schema}] ->
       Schema;
     [] ->
-      SourceKey = Key,
+      %% SourceKey (URI)
+      SourceKey = jesse_state:canonical_path(Key, Key),
       case ets:match_object(Table, {SourceKey, '_', '_', '_'}) of
-        %% Source (URI)
         [{SourceKey, _Key, _Mtime, Schema}] ->
           Schema;
         _ ->
@@ -130,7 +130,7 @@ load(Key0) ->
 %% http: or https: URI scheme. If this fails as well, an exception will be
 %% thrown.
 -spec load_uri(Key :: string()) -> jesse:json_term() | no_return().
-load_uri(Key) ->
+load_uri(Key) when is_list(Key) ->
   try
     load(Key)
   catch
@@ -148,12 +148,14 @@ load_all() ->
 %% @doc Deletes a schema definition from the internal storage associated with,
 %% or sourced with the key `Key'.
 -spec delete(Key :: string()) -> ok.
-delete(Key0) ->
-  Key = jesse_state:canonical_path(Key0, Key0),
+delete(Key) when is_list(Key) ->
   Table = create_table(table_name()),
-  SourceKey = Key,
+  %% ID
+  Id = Key,
+  ets:match_delete(Table, {'_', Id, '_', '_'}),
+  %% SourceKey (URI)
+  SourceKey = jesse_state:canonical_path(Key, Key),
   ets:match_delete(Table, {SourceKey, '_', '_', '_'}),
-  ets:match_delete(Table, {'_', Key, '_', '_'}),
   ok.
 
 %%% Internal functions
@@ -194,11 +196,18 @@ store_schemas(SchemaInfos, ValidationFun) ->
 
 %% @private
 store_schema(SchemaInfo, {Acc, ValidationFun}) ->
-  {SourceKey, Mtime, Schema} = SchemaInfo,
-  case ValidationFun(Schema) of
+  {SourceKey, Mtime, Schema0} = SchemaInfo,
+  case ValidationFun(Schema0) of
     true ->
+      Id = case get_schema_id(Schema0) of
+             undefined ->
+               SourceKey;
+             Id0 ->
+               jesse_state:combine_id(SourceKey, Id0)
+           end,
+      Schema = replace_schema_id(Schema0, Id),
       Object = { SourceKey
-               , get_schema_id(Schema)
+               , Id
                , Mtime
                , Schema
                },
@@ -208,6 +217,32 @@ store_schema(SchemaInfo, {Acc, ValidationFun}) ->
     false ->
       {[SchemaInfo | Acc], ValidationFun}
   end.
+
+%% @private
+%% Should support whatever jesse_lib:is_json_object/1 does
+?IF_MAPS(
+replace_schema_id(M0, Id)
+  when erlang:is_map(M0) ->
+  maps:put(<<"id">>, unicode:characters_to_binary(Id), M0);
+)
+replace_schema_id({struct, P0}, Id)
+  when is_list(P0) ->
+  P = [ {<<"id">>, unicode:characters_to_binary(Id)}
+           | lists:keydelete(<<"id">>, 1, P0)
+         ],
+  {struct, P};
+replace_schema_id({P0}, Id)
+  when is_list(P0) ->
+  P = [ {<<"id">>, unicode:characters_to_binary(Id)}
+           | lists:keydelete(<<"id">>, 1, P0)
+         ],
+  {P};
+replace_schema_id(P0, Id)
+  when is_list(P0) ->
+  P = [ {<<"id">>, unicode:characters_to_binary(Id)}
+           | lists:keydelete(<<"id">>, 1, P0)
+         ],
+  P.
 
 %% @doc Returns a list of schema files in `Path' which have outdated
 %% cache entries.
@@ -261,37 +296,29 @@ get_schema_infos(Files, ParseFun) ->
 get_schema_info(File, {Acc, ParseFun}) ->
   SourceKey = "file://" ++ filename:absname(File),
   {ok, SchemaBin} = file:read_file(File),
-  Schema0 = try_parse(ParseFun, SchemaBin),
-  Schema = case jesse_json_path:value(<<"id">>, Schema0, undefined) of
-             undefined ->
-               [ {<<"id">>, unicode:characters_to_binary(SourceKey)}
-                 | Schema0
-               ];
-             _ ->
-               Schema0
-           end,
   {ok, #file_info{mtime = Mtime}} = file:read_file_info(File),
+  Schema = try_parse(ParseFun, SchemaBin),
   {[{SourceKey, Mtime, Schema} | Acc], ParseFun}.
 
 %% @doc Returns value of "id" field from json object `Schema', assuming that
 %% the given json object has such a field, otherwise returns undefined.
 %% @private
--spec get_schema_id(Schema :: jesse:json_term()) -> string() | undefined.
+-spec get_schema_id(Schema :: jesse:json_term()) -> binary() | undefined.
 get_schema_id(Schema) ->
   case jesse_json_path:value(?ID, Schema, undefined) of
     undefined ->
       undefined;
     Id ->
-      erlang:binary_to_list(Id)
+      Id
   end.
 
 %% @private
 add_file_uri(Key0) ->
   Key = jesse_state:canonical_path(Key0, Key0),
   "file://" ++ File = Key,
-  {ok, Body} = file:read_file(File),
+  {ok, SchemaBin} = file:read_file(File),
   {ok, #file_info{mtime = Mtime}} = file:read_file_info(File),
-  Schema = jsx:decode(Body),
+  Schema = jsx:decode(SchemaBin),
   SchemaInfos = [{Key, Mtime, Schema}],
   ValidationFun = fun jesse_lib:is_json_object/1,
   store_schemas(SchemaInfos, ValidationFun).
@@ -300,8 +327,8 @@ add_file_uri(Key0) ->
 add_http_uri(Key0) ->
   Key = jesse_state:canonical_path(Key0, Key0),
   {ok, Response} = httpc:request(get, {Key, []}, [], [{body_format, binary}]),
-  {{_Line, 200, _}, Headers, Body} = Response,
-  Schema = jsx:decode(Body),
+  {{_Line, 200, _}, Headers, SchemaBin} = Response,
+  Schema = jsx:decode(SchemaBin),
   SchemaInfos = [{Key, get_http_mtime(Headers), Schema}],
   ValidationFun = fun jesse_lib:is_json_object/1,
   store_schemas(SchemaInfos, ValidationFun).

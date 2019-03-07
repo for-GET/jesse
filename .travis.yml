@@ -2,24 +2,19 @@ sudo: false
 language:
   - erlang
 otp_release:
+  - 21.0
+  - 20.1
+  - 20.0
+  - 19.3
+  - 19.2
+  - 19.1
   - 19.0
   - 18.3
   - 18.2
   - 18.1
-  - 18.0 #  - 17.5
-  - 17.4
-  - 17.3
-  - 17.1
-  - 17.0
-  - R16B03-1
-  - R16B03
-  - R16B02
-  - R16B01
-  - R15B03
-  - R15B02
-  - R15B01
-  - R15B
+  - 18.0
 script:
-  - "[[ ${TRAVIS_OTP_RELEASE} != 18.2 ]] || make elvis"
+  - LATEST_OTP_RELEASE=21.0
+  - "[[ ${TRAVIS_OTP_RELEASE} != ${LATEST_OTP_RELEASE} ]] || make elvis"
   - make
   - make test

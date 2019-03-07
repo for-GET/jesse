@@ -21,6 +21,13 @@
 %% @end
 %%%=============================================================================
 
+%% Maps conditional compilation
+-ifdef(erlang_deprecated_types).
+-define(IF_MAPS(Exp), ).
+-else.
+-define(IF_MAPS(Exp), Exp).
+-endif.
+
 %% Constant definitions for Json schema keywords
 -define(SCHEMA,               <<"$schema">>).
 -define(TYPE,                 <<"type">>).
@@ -75,6 +82,8 @@
 
 %% Constant definitions for schema errors
 -define(invalid_dependency,          'invalid_dependency').
+-define(only_ref_allowed,            'only_ref_allowed').
+-define(schema_error,                'schema_error').
 -define(schema_invalid,              'schema_invalid').
 -define(schema_not_found,            'schema_not_found').
 -define(schema_unsupported,          'schema_unsupported').
@@ -90,6 +99,7 @@
 -define(wrong_type_specification,    'wrong_type_specification').
 
 %% Constant definitions for data errors
+-define(data_error,                  'data_error').
 -define(data_invalid,                'data_invalid').
 -define(missing_id_field,            'missing_id_field').
 -define(missing_required_property,   'missing_required_property').
@@ -114,14 +124,8 @@
 -define(not_one_schema_valid,        'not_one_schema_valid').
 -define(not_schema_valid,            'not_schema_valid').
 -define(wrong_not_schema,            'wrong_not_schema').
--define(external_error,              'external_error').
+-define(external,                    'external').
 
 %%
--define(not_found, not_found).
-
-%% Maps conditional compilation
--ifdef(erlang_deprecated_types).
--define(IF_MAPS(Exp), ).
--else.
--define(IF_MAPS(Exp), Exp).
--endif.
+-define(not_found,                   'not_found').
+-define(infinity,                    'infinity').

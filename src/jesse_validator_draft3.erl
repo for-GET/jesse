@@ -32,7 +32,8 @@
 %% Includes
 -include("jesse_schema_validator.hrl").
 
--type schema_error() :: ?wrong_type_dependency
+-type schema_error() :: ?only_ref_allowed
+                      | ?wrong_type_dependency
                       | ?wrong_type_items.
 
 -type schema_error_type() :: schema_error()
@@ -50,7 +51,8 @@
                     | ?not_in_range
                     | ?wrong_length
                     | ?wrong_size
-                    | ?wrong_type.
+                    | ?wrong_type
+                    | ?external.
 
 -type data_error_type() :: data_error()
                          | {data_error(), binary()}.
@@ -342,10 +344,13 @@ check_properties(Value, Properties, State) ->
 %% @end
                            case get_value(?REQUIRED, PropertySchema) of
                              true ->
+                               NewState = set_current_schema( CurrentState
+                                                            , PropertySchema
+                                                            ),
                                handle_data_invalid( {?missing_required_property
                                                      , PropertyName}
                                                    , Value
-                                                   , CurrentState);
+                                                   , NewState);
                              _    ->
                                CurrentState
                            end;
@@ -728,6 +733,8 @@ check_max_items(Value, _MaxItems, State) ->
 %%       object.</li>
 %% </ul>
 %% @private
+check_unique_items(_, false, State) ->
+  State;
 check_unique_items([], true, State) ->
     State;
 check_unique_items(Value, true, State) ->
@@ -890,15 +897,27 @@ check_extends_array(Value, Extends, State) ->
 
 %% @private
 validate_ref(Value, Reference, State) ->
-  {NewState, Schema} = resolve_ref(Reference, State),
-  ResultState = jesse_schema_validator:validate_with_state(Schema, Value, NewState),
-  undo_resolve_ref(ResultState, State).
+  case resolve_ref(Reference, State) of
+    {error, NewState} ->
+      undo_resolve_ref(NewState, State);
+    {ok, NewState, Schema} ->
+      ResultState = jesse_schema_validator:validate_with_state(Schema, Value, NewState),
+      undo_resolve_ref(ResultState, State)
+  end.
 
+%% @doc Resolve a JSON reference
+%% The "id" keyword is taken care of behind the scenes in jesse_state.
 %% @private
 resolve_ref(Reference, State) ->
+  CurrentErrors = jesse_state:get_error_list(State),
   NewState = jesse_state:resolve_ref(State, Reference),
-  Schema = get_current_schema(NewState),
-  {NewState, Schema}.
+  NewErrors = jesse_state:get_error_list(NewState),
+  case length(CurrentErrors) =:= length(NewErrors) of
+    true ->
+      Schema = get_current_schema(NewState),
+      {ok, NewState, Schema};
+    false -> {error, NewState}
+  end.
 
 undo_resolve_ref(State, OriginalState) ->
   jesse_state:undo_resolve_ref(State, OriginalState).
@@ -1010,3 +1029,5 @@ add_to_path(State, Property) ->
 %% @private
 remove_last_from_path(State) ->
   jesse_state:remove_last_from_path(State).
+
+
