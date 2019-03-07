@@ -89,6 +89,7 @@ jesse_run(JsonInstance, Schema, Schemata) ->
   %% nor application:ensure_started(_)
   %% in order to maintain compatibility with R16B01 and lower
   ok = ensure_started(jsx),
+  ok = ensure_started(rfc3339),
   ok = ensure_started(jesse),
   ok = add_schemata(Schemata),
   {ok, JsonInstanceBinary} = file:read_file(JsonInstance),
@@ -107,20 +108,20 @@ ensure_started(App) ->
 
 add_schemata([]) ->
   ok;
-add_schemata([Schema|Rest]) ->
-  {ok, SchemaBinary} = file:read_file(Schema),
-  SchemaJsx0 = jsx:decode(SchemaBinary),
-  SchemaJsx = maybe_fill_schema_id(Schema, SchemaJsx0),
-  ok = jesse:add_schema(Schema, SchemaJsx),
+add_schemata([SchemaFile|Rest]) ->
+  {ok, SchemaBin} = file:read_file(SchemaFile),
+  Schema0 = jsx:decode(SchemaBin),
+  Schema = maybe_fill_schema_id(SchemaFile, Schema0),
+  ok = jesse:add_schema(SchemaFile, Schema),
   add_schemata(Rest).
 
-maybe_fill_schema_id(Schema, SchemaJsx) ->
-  SchemaFqdn = "file://" ++ filename:absname(Schema),
-  case jesse_json_path:value(<<"id">>, SchemaJsx, undefined) of
+maybe_fill_schema_id(SchemaFile, Schema) ->
+  SchemaFqdn = "file://" ++ filename:absname(SchemaFile),
+  case jesse_json_path:value(<<"id">>, Schema, undefined) of
     undefined ->
       [ {<<"id">>, unicode:characters_to_binary(SchemaFqdn)}
-        | SchemaJsx
+        | Schema
       ];
     _ ->
-      SchemaJsx
+      Schema
   end.

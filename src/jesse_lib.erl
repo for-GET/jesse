@@ -36,14 +36,19 @@
 %%% API
 %% @doc Returns an empty list if the given value is ?not_found.
 -spec empty_if_not_found(Value :: any()) -> any().
-empty_if_not_found(?not_found) -> [];
-empty_if_not_found(Value)      -> Value.
+empty_if_not_found(?not_found) ->
+  [];
+empty_if_not_found(Value) ->
+  Value.
 
 %% @doc Checks if the given value is json `array'.
 %% This check is needed since objects in `jsx' are lists (proplists).
 -spec is_array(Value :: any()) -> boolean().
-is_array(Value) when is_list(Value) -> not is_json_object(Value);
-is_array(_)                         -> false.
+is_array(Value)
+  when is_list(Value) ->
+  not is_json_object(Value);
+is_array(_) ->
+  false.
 
 %% @doc A naive check if the given data is a json object.
 %% Supports two main formats of json representation:
@@ -52,18 +57,32 @@ is_array(_)                         -> false.
 %% 3) jsx format (`[{binary() | atom(), any()}]')
 %% Returns `true' if the given data is an object, otherwise `false' is returned.
 -spec is_json_object(Value :: any()) -> boolean().
-is_json_object({struct, Value}) when is_list(Value) -> true;
-is_json_object({Value}) when is_list(Value)         -> true;
+?IF_MAPS(
+is_json_object(Map)
+  when erlang:is_map(Map) ->
+  true;
+)
+is_json_object({struct, Value})
+  when is_list(Value) ->
+  true;
+is_json_object({Value})
+  when is_list(Value) ->
+  true;
 %% handle `jsx' empty objects
-is_json_object([{}])                                -> true;
+is_json_object([{}]) ->
+  true;
 %% very naive check. checks only the first element.
 is_json_object([{Key, _Value} | _])
   when is_binary(Key) orelse is_atom(Key)
-       andalso Key =/= struct                       -> true;
-?IF_MAPS(is_json_object(Map) when erlang:is_map(Map) -> true;)
-is_json_object(_)                                   -> false.
+       andalso Key =/= struct ->
+  true;
+is_json_object(_) ->
+  false.
 
 %% @doc Checks if the given value is json `null'.
 -spec is_null(Value :: any()) -> boolean().
-is_null(null)   -> true;
-is_null(_Value) -> false.
+is_null(null) ->
+  true;
+is_null(_Value) ->
+  false.
+

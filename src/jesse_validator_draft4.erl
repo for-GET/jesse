@@ -34,7 +34,7 @@
 
 
 -type schema_error() :: ?invalid_dependency
-                      | ?not_multiple_of
+                      | ?only_ref_allowed
                       | ?schema_invalid
                       | ?wrong_all_of_schema_array
                       | ?wrong_any_of_schema_array
@@ -67,7 +67,8 @@
                     | ?too_many_properties
                     | ?wrong_length
                     | ?wrong_size
-                    | ?wrong_type.
+                    | ?wrong_type
+                    | ?external.
 
 -type data_error_type() :: data_error()
                          | {data_error(), binary()}.
@@ -801,6 +802,8 @@ check_max_items(Value, _MaxItems, State) ->
 %%   false.
 %%
 %% @private
+check_unique_items(_, false, State) ->
+  State;
 check_unique_items([], true, State) ->
   State;
 check_unique_items(Value, true, State) ->
@@ -1203,17 +1206,27 @@ validate_schema(Value, Schema, State0) ->
 
 %% @private
 validate_ref(Value, Reference, State) ->
-  {NewState, Schema} = resolve_ref(Reference, State),
-  ResultState = jesse_schema_validator:validate_with_state(Schema, Value, NewState),
-  undo_resolve_ref(ResultState, State).
+  case resolve_ref(Reference, State) of
+    {error, NewState} ->
+      undo_resolve_ref(NewState, State);
+    {ok, NewState, Schema} ->
+      ResultState = jesse_schema_validator:validate_with_state(Schema, Value, NewState),
+      undo_resolve_ref(ResultState, State)
+  end.
 
 %% @doc Resolve a JSON reference
 %% The "id" keyword is taken care of behind the scenes in jesse_state.
 %% @private
 resolve_ref(Reference, State) ->
+  CurrentErrors = jesse_state:get_error_list(State),
   NewState = jesse_state:resolve_ref(State, Reference),
-  Schema = get_current_schema(NewState),
-  {NewState, Schema}.
+  NewErrors = jesse_state:get_error_list(NewState),
+  case length(CurrentErrors) =:= length(NewErrors) of
+    true ->
+      Schema = get_current_schema(NewState),
+      {ok, NewState, Schema};
+    false -> {error, NewState}
+  end.
 
 undo_resolve_ref(State, OriginalState) ->
   jesse_state:undo_resolve_ref(State, OriginalState).
