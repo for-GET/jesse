@@ -166,6 +166,9 @@ anyOfOneOfAllowedErrorsOneExtra(Config) ->
 anyOfOneOfAllowedErrorsInfinityExtra(Config) ->
   do_test("anyOfOneOfAllowedErrorsInfinityExtra", Config).
 
+anyOfOneOfAllowedErrorsInfinityPrevError(Config) ->
+  do_test("anyOfOneOfAllowedErrorsInfinityPrevError", Config).
+
 unicodePatternProperties(Config) ->
   do_test("unicodePatternProperties", Config).
 

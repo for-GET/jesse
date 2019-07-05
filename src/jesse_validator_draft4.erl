@@ -1139,10 +1139,11 @@ check_any_of(_Value, _InvalidSchemas, State) ->
 check_any_of_(Value, [], State) ->
   handle_data_invalid(?any_schemas_not_valid, Value, State);
 check_any_of_(Value, [Schema | Schemas], State) ->
+  NumErrsBefore = length(jesse_state:get_error_list(State)),
   case validate_schema(Value, Schema, State) of
     {true, NewState} ->
-        case jesse_state:get_error_list(NewState) of
-            [] -> NewState;
+        case length(jesse_state:get_error_list(NewState)) of
+            NumErrsBefore -> NewState;
             _  -> check_any_of_(Value, Schemas, State)
         end;
     {false, _} -> check_any_of_(Value, Schemas, State)
@@ -1176,10 +1177,11 @@ check_one_of_(Value, [], State, 0) ->
 check_one_of_(Value, _Schemas, State, Valid) when Valid > 1 ->
   handle_data_invalid(?not_one_schema_valid, Value, State);
 check_one_of_(Value, [Schema | Schemas], State, Valid) ->
+  NumErrsBefore = length(jesse_state:get_error_list(State)),
   case validate_schema(Value, Schema, State) of
     {true, NewState} ->
-        case jesse_state:get_error_list(NewState) of
-            [] -> check_one_of_(Value, Schemas, NewState, Valid + 1);
+        case length(jesse_state:get_error_list(NewState)) of
+            NumErrsBefore -> check_one_of_(Value, Schemas, NewState, Valid + 1);
             _  -> check_one_of_(Value, Schemas, State, Valid)
         end;
     {false, _} ->
