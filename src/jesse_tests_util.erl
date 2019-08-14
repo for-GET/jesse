@@ -94,7 +94,14 @@ test_schema(DefaultSchema, Opts0, Schema, SchemaTests) ->
                            true ->
                              {ok, Instance} = Result;
                            false ->
-                             {error, _} = Result
+                             {error, _} = Result;
+                           ExpectedErrors ->
+                             {error, Errors} = Result,
+                             GotErrors =
+                               [atom_to_binary(E, utf8)
+                                || {data_invalid, _, E, _, _} <- Errors],
+                             (ExpectedErrors == GotErrors)
+                               orelse error({unexpected_error, GotErrors})
                          end
                      catch ?EXCEPTION(C,R,Stacktrace)
                          ct:pal( "Error: ~p:~p~n"
