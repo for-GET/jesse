@@ -152,7 +152,7 @@ del_schema(Key) ->
 %% where `ValidationFun' is `fun jesse_json:is_json_object/1'.
 -spec load_schemas( Path :: string()
                   , ParserFun :: fun((binary()) -> json_term())
-                  ) -> jesse_database:update_result().
+                  ) -> jesse_database:store_result().
 load_schemas(Path, ParserFun) ->
   load_schemas( Path
               , ParserFun
@@ -177,7 +177,7 @@ load_schemas(Path, ParserFun) ->
 -spec load_schemas( Path :: string()
                   , ParserFun :: parser_fun()
                   , ValidationFun :: validation_fun()
-                  ) -> jesse_database:update_result().
+                  ) -> jesse_database:store_result().
 load_schemas(Path, ParserFun, ValidationFun) ->
   jesse_database:add_path(Path, ParserFun, ValidationFun).
 
