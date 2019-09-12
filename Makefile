@@ -4,8 +4,6 @@ REBAR3 ?= $(shell command -v rebar >/dev/null 2>&1 && echo "rebar3" || echo "$(C
 
 ELVIS ?= $(shell command -v elvis >/dev/null 2>&1 && echo "elvis" || echo "$(CURDIR)/elvis")
 
-DEPS_PLT := $(CURDIR)/.deps_plt
-
 ERLANG_DIALYZER_APPS := erts \
 						kernel \
 						stdlib \
@@ -50,7 +48,6 @@ clean:
 	$(RM) doc/edoc-info
 	$(RM) doc/erlang.png
 	$(RM) doc/stylesheet.css
-	$(RM) $(DEPS_PLT)
 
 .PHONY: distclean
 distclean: clean
@@ -109,13 +106,9 @@ ct:
 xref:
 	$(REBAR3) xref
 
-$(DEPS_PLT):
-	$(DIALYZER) --build_plt --apps $(ERLANG_DIALYZER_APPS) -r _build/default/lib --output_plt $(DEPS_PLT)
-
 .PHONY: dialyzer
-dialyzer: $(DEPS_PLT) _build/default/lib/jesse/ebin/jesse.app
-	$(DIALYZER) -q --plt $(DEPS_PLT) -Wno_return ebin > test/dialyzer_warnings || true
-	diff -U0 test/known_dialyzer_warnings test/dialyzer_warnings
+dialyzer:
+	$(REBAR3) dialyzer
 
 .PHONY: elvis
 elvis:
