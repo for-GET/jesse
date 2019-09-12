@@ -33,6 +33,6 @@ deploy:
   script: ./travis-to-hex
   skip_cleanup: true
   on:
-    otp_release: 21.0
+    otp_release: 22.0
     repo: for-GET/jesse
     tags: true
