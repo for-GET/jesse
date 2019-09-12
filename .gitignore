@@ -13,3 +13,4 @@
 /test/dialyzer_warnings
 /test/elvis
 /test/elvis_warnings
+/TEST-*.xml
