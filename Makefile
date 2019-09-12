@@ -103,7 +103,7 @@ eunit:
 
 .PHONY: ct
 ct:
-	TEST_DIR=_build/default/test/lib/jesse/test $(REBAR3) ct
+	TEST_DIR=$(CURDIR)/_build/test/lib/jesse/test $(REBAR3) ct
 
 .PHONY: xref
 xref:
