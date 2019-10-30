@@ -837,8 +837,8 @@ check_enum(Value, Enum, State) ->
       handle_data_invalid(?not_in_enum, Value, State)
   end.
 
-check_format(_Value, _Format, State) ->
-  State.
+check_format(Value, Format, State) ->
+  maybe_external_check_format(Value, Format, State).
 
 %% @doc 5.24.  divisibleBy
 %%
@@ -1051,3 +1051,14 @@ maybe_external_check_value(Value, State) ->
     Fun ->
       Fun(Value, State)
   end.
+
+maybe_external_check_format(Value, Format, State) ->
+    case jesse_state:get_external_format_validator(Format, State) of
+        undefined -> State;
+        Fun when is_function(Fun, 1) ->
+            case Fun(Value) of
+                ok -> State;
+                error ->
+                    handle_data_invalid(?wrong_format, Value, State)
+            end
+    end.
