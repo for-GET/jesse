@@ -85,26 +85,13 @@ run(Options, [Schema|_] = Schemata, [JsonInstance|JsonInstances]) ->
   end.
 
 jesse_run(JsonInstance, Schema, Schemata) ->
-  %% Don't use application:ensure_all_started(jesse)
-  %% nor application:ensure_started(_)
-  %% in order to maintain compatibility with R16B01 and lower
-  ok = ensure_started(jsx),
-  ok = ensure_started(rfc3339),
-  ok = ensure_started(jesse),
+  {ok, _} = application:ensure_all_started(jesse),
   ok = add_schemata(Schemata),
   {ok, JsonInstanceBinary} = file:read_file(JsonInstance),
   JsonInstanceJsx = jsx:decode(JsonInstanceBinary),
   jesse:validate( Schema
                 , JsonInstanceJsx
                 ).
-
-ensure_started(App) ->
-  case application:start(App) of
-    ok ->
-      ok;
-    {error, {already_started, App}} ->
-      ok
-  end.
 
 add_schemata([]) ->
   ok;

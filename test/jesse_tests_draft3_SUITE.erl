@@ -43,7 +43,7 @@ all() ->
   [F || {F, _} <- Exports, not lists:member(F, ?EXCLUDED_FUNS)].
 
 init_per_suite(Config) ->
-  inets:start(),
+  {ok, _} = application:ensure_all_started(jesse),
   get_tests( "JSON-Schema-Test-Suite/tests/draft3"
            , <<"http://json-schema.org/draft-03/schema#">>
            )
@@ -53,7 +53,7 @@ init_per_suite(Config) ->
     ++ Config.
 
 end_per_suite(_Config) ->
-  inets:stop().
+  ok.
 
 %%% Testcases
 
