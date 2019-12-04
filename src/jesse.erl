@@ -71,7 +71,7 @@
 -type external_validator() :: fun((json_term(), any()) -> any())
                             | undefined.
 
-%% From https://github.com/erlang/otp/blob/OTP-20.2.3/lib/inets/doc/src/http_uri.xml#L57
+%% github.com/erlang/otp/blob/OTP-20.2.3/lib/inets/doc/src/http_uri.xml#L57
 -type http_uri_uri() :: string() | unicode:unicode_binary().
 
 -type json_term() :: term().

@@ -38,7 +38,8 @@
 -ifdef(OTP_RELEASE). %% OTP 21+
 -define(EXCEPTION(C, R, Stacktrace), C:R:Stacktrace ->).
 -else.
--define(EXCEPTION(C, R, Stacktrace), C:R -> Stacktrace = erlang:get_stacktrace(),).
+-define(EXCEPTION(C, R, Stacktrace),
+   C:R -> Stacktrace = erlang:get_stacktrace(), ).
 -endif.
 
 %%% API
@@ -103,7 +104,7 @@ test_schema(DefaultSchema, Opts0, Schema, SchemaTests) ->
                              (ExpectedErrors == GotErrors)
                                orelse error({unexpected_error, GotErrors})
                          end
-                     catch ?EXCEPTION(C,R,Stacktrace)
+                     catch ?EXCEPTION(C, R, Stacktrace)
                          ct:pal( "Error: ~p:~p~n"
                                  "Stacktrace: ~p~n"
                                , [C, R, Stacktrace]

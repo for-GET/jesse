@@ -1234,7 +1234,8 @@ validate_ref(Value, Reference, State) ->
     {error, NewState} ->
       undo_resolve_ref(NewState, State);
     {ok, NewState, Schema} ->
-      ResultState = jesse_schema_validator:validate_with_state(Schema, Value, NewState),
+      ResultState =
+        jesse_schema_validator:validate_with_state(Schema, Value, NewState),
       undo_resolve_ref(ResultState, State)
   end.
 
