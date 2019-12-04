@@ -13,6 +13,7 @@
 /ebin
 /erl_crash.dump
 /logs
+/rebar.lock
 /test/*.beam
 /test/dialyzer_warnings
 /test/elvis
