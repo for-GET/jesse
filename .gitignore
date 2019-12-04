@@ -1,3 +1,4 @@
+.#*
 /*.plt
 /.deps_plt
 /.eunit
@@ -11,8 +12,7 @@
 /ebin
 /erl_crash.dump
 /logs
+/test/*.beam
 /test/dialyzer_warnings
 /test/elvis
 /test/elvis_warnings
-/test/*.beam
-.#*
