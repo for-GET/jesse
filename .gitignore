@@ -3,6 +3,7 @@
 /.deps_plt
 /.eunit
 /.rebar
+/_build/
 /bin
 /deps
 /doc/*.html
