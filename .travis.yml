@@ -4,7 +4,15 @@ language:
 
 matrix:
   include:
-  - otp_release: 21.0
+  - otp_release: 22.1
+  - otp_release: 22.0
+  - otp_release: 21.3
+  - otp_release: 21.2
+  - otp_release: 21.1
+#  - otp_release: 21.0
+  - otp_release: 20.3
+  - otp_release: 20.2
+    dist: trusty
   - otp_release: 20.1
   - otp_release: 20.0
   - otp_release: 19.3
@@ -13,17 +21,12 @@ matrix:
   - otp_release: 19.1
     dist: trusty
   - otp_release: 19.0
-    dist: trusty
   - otp_release: 18.3
-    dist: trusty
   - otp_release: 18.2
-    dist: trusty
   - otp_release: 18.1
-    dist: trusty
   - otp_release: 18.0
-    dist: trusty
 script:
-  - LATEST_OTP_RELEASE=21.0
+  - LATEST_OTP_RELEASE=22.1
   - "[[ ${TRAVIS_OTP_RELEASE} != ${LATEST_OTP_RELEASE} ]] || make elvis"
   - make
   - make test
