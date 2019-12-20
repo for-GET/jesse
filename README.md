@@ -128,6 +128,38 @@ ok
                       [<<"foo">>]}]}
 ```
 
+* Validate an instanse against a particular definition from schema definitions
+
+```erlang
+1> Schema = <<"{\"definitions\": {\"Foo\": {\"properties\": {\"foo\": {\"type\": \"integer\"}}}, \"Bar\": {\"properties\": {\"bar\": {\"type\": \"boolean\"}}}}}">>.
+<<"{\"definitions\": {\"Foo\": {\"properties\": {\"foo\": {\"type\": \"integer\"}}}, \"Bar\": {\"properties\": {\"bar\": {\"type\": \"boolea"...>>
+2> jesse:validate_definition("Foo",
+2>                            Schema,
+2>                            <<"{\"foo\": 1}">>,
+2>                            [{parser_fun, fun jiffy:decode/1}]).
+{ok,[{<<"foo">>,1}]}
+3> jesse:validate_definition("Bar",
+3>                            Schema,
+3>                            <<"{\"bar\": 2}">>,
+3>                            [{parser_fun, fun jiffy:decode/1}]).
+{error,[{data_invalid,[{<<"type">>,<<"boolean">>}],
+                      wrong_type,2,
+                      [<<"bar">>]}]}
+4> jesse:validate_definition("FooBar",
+4>                            Schema,
+4>                            <<"{\"bar\": 2}">>,
+4>                            [{parser_fun, fun jiffy:decode/1}]).
+{error,[{schema_invalid,[{<<"definitions">>,
+                          [{<<"Foo">>,
+                            [{<<"properties">>,
+                              [{<<"foo">>,[{<<"type">>,<<"integer">>}]}]}]},
+                           {<<"Bar">>,
+                            [{<<"properties">>,
+                              [{<<"bar">>,[{<<"type">>,<<"boolean">>}]}]}]}]}],
+                        {schema_not_found,"#/definitions/FooBar"}}]}
+```
+
+
 * Since 0.4.0 it's possible to instruct jesse to collect errors, and not stop
   immediately when it finds an error in the given JSON instance:
 
@@ -244,6 +276,11 @@ the given schema), one should use 'default_schema_ver' option when call
 `jesse:validate/3` or `jesse:validate_with_schema/3`, the value should be
 a binary consisting a schema path,
  i.e. <<"http://json-schema.org/draft-03/schema#">>.
+
+It is also possible to specify a validator module to use via `validator` option.
+This option supersedes the mechanism with the $schema property described above.
+Custom validator module can be specified as well. Such module should implement
+`jesse_schema_validator` behaviour.
 
 ## Validation errors
 
