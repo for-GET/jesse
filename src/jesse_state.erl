@@ -410,7 +410,6 @@ parse_ref(RefBin) ->
     %% Absolute file:
     {error, {no_default_port, file, Ref}} ->
       {absolute, Ref};
-    %% Relative
     _ ->
       {relative, Ref}
   end.
@@ -418,10 +417,8 @@ parse_ref(RefBin) ->
 parse_ref(RefBin) ->
   Ref = unicode:characters_to_list(RefBin),
   case uri_string:parse(Ref) of
-    %% Absolute
     #{scheme := _} ->
       {absolute, Ref};
-    %% Relative
     _ ->
       {relative, Ref}
   end.
