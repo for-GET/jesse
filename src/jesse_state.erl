@@ -430,7 +430,16 @@ load_schema(#state{schema_loader_fun = LoaderFun}, SchemaURI) ->
   end.
 
 %% @private
--ifdef(http_uri_depricated_functions).
+-ifdef(OTP_RELEASE). %% OTP 21+
+parse_ref(RefBin) ->
+  Ref = unicode:characters_to_list(RefBin),
+  case uri_string:parse(Ref) of
+    #{scheme := _} ->
+      {absolute, Ref};
+    _ ->
+      {relative, Ref}
+  end.
+-else.
 parse_ref(RefBin) ->
   Ref = unicode:characters_to_list(RefBin),
   case http_uri:parse(Ref) of
@@ -439,15 +448,6 @@ parse_ref(RefBin) ->
       {absolute, Ref};
     %% Absolute file:
     {error, {no_default_port, file, Ref}} ->
-      {absolute, Ref};
-    _ ->
-      {relative, Ref}
-  end.
--else.
-parse_ref(RefBin) ->
-  Ref = unicode:characters_to_list(RefBin),
-  case uri_string:parse(Ref) of
-    #{scheme := _} ->
       {absolute, Ref};
     _ ->
       {relative, Ref}
