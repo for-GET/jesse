@@ -26,7 +26,5 @@ matrix:
   - otp_release: 18.1
   - otp_release: 18.0
 script:
-  - LATEST_OTP_RELEASE=22.1
-  - "[[ ${TRAVIS_OTP_RELEASE} != ${LATEST_OTP_RELEASE} ]] || make elvis"
   - make
   - make test

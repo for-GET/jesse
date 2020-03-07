@@ -259,7 +259,7 @@ list_outdated(Path) ->
       lists:filter(fun is_outdated/1, Files)
   end.
 
-%% @doc Recursively lists all regular files from a directory `Dir`.
+%% @doc Recursively lists all regular files from a directory `Dir'.
 %% @private
 list_dir(Dir) ->
   filelib:fold_files( Dir
