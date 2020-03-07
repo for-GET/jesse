@@ -1,8 +1,7 @@
-sudo: false
-language:
-  - erlang
+language: erlang
+os: linux
 
-matrix:
+jobs:
   include:
   - otp_release: 22.2
   - otp_release: 22.1

@@ -69,7 +69,7 @@ dialyzer:
 
 .PHONY: elvis
 elvis:
-	$(REBAR) as test lint
+	$(REBAR) as lint lint
 
 .PHONY: cover
 cover:
