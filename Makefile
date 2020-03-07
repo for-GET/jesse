@@ -47,8 +47,9 @@ test/JSON-Schema-Test-Suite/tests:
 	git submodule init
 	git submodule update
 
+# Would be nice to include elvis to test, but it fails on OTP-18
 .PHONY: test
-test: elvis eunit ct xref dialyzer cover
+test: eunit ct xref dialyzer cover
 
 .PHONY: eunit
 eunit:
