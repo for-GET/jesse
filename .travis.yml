@@ -1,9 +1,9 @@
-sudo: false
-language:
-  - erlang
+language: erlang
+os: linux
 
-matrix:
+jobs:
   include:
+  - otp_release: 22.2
   - otp_release: 22.1
   - otp_release: 22.0
   - otp_release: 21.3
@@ -26,7 +26,7 @@ matrix:
   - otp_release: 18.1
   - otp_release: 18.0
 script:
-  - LATEST_OTP_RELEASE=22.1
-  - "[[ ${TRAVIS_OTP_RELEASE} != ${LATEST_OTP_RELEASE} ]] || make elvis"
+  - LATEST_OTP_RELEASE=22.2
+  - "[[ ${TRAVIS_OTP_RELEASE} != ${LATEST_OTP_RELEASE} ]] || make elvis docs"
   - make
   - make test

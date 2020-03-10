@@ -21,7 +21,7 @@
 -module(jesse_tests_util).
 
 %% API
--export([ get_tests/2
+-export([ get_tests/3
         , do_test/2
         ]).
 
@@ -45,8 +45,8 @@
 
 %%% API
 
-get_tests(RelativeTestsDir, DefaultSchema) ->
-  TestsDir = filename:join( os:getenv("TEST_DIR")
+get_tests(RelativeTestsDir, DefaultSchema, Config) ->
+  TestsDir = filename:join( ?config(data_dir, Config)
                           , RelativeTestsDir
                           ),
   TestFiles = filelib:wildcard(TestsDir ++ "/*.json"),
@@ -54,8 +54,8 @@ get_tests(RelativeTestsDir, DefaultSchema) ->
                  {ok, Bin} = file:read_file(TestFile),
                  Tests = jsx:decode(Bin),
                  Key = testfile_to_key(TestFile),
-                 Config = {Tests, DefaultSchema},
-                 {Key, Config}
+                 CaseConfig = {Tests, DefaultSchema},
+                 {Key, CaseConfig}
              end
            , TestFiles
            ).
