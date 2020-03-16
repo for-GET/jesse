@@ -768,7 +768,7 @@ check_unique_items(Value, true, State) ->
 %% specification from ECMA 262/Perl 5
 %% @private
 check_pattern(Value, Pattern, State) ->
-  case re:run(Value, Pattern, [{capture, none}, unicode]) of
+  case re:run(Value, Pattern, [{capture, none}, unicode, ucp]) of
     match   -> State;
     nomatch ->
       handle_data_invalid(?no_match, Value, State)
