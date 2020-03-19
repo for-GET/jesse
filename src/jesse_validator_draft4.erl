@@ -1341,9 +1341,11 @@ remove_last_from_path(State) ->
 
 %% @private
 valid_datetime(DateTimeBin) ->
-  case rfc3339:parse(DateTimeBin) of
-    {ok, _} ->
-      true;
-    _ ->
+  DateTimeStr = erlang:binary_to_list(DateTimeBin),
+  try calendar:rfc3339_to_system_time(DateTimeStr) of
+    Seconds when is_integer(Seconds) ->
+      true
+  catch
+    error:_ ->
       false
   end.

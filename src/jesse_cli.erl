@@ -89,7 +89,6 @@ jesse_run(JsonInstance, Schema, Schemata) ->
   %% nor application:ensure_started(_)
   %% in order to maintain compatibility with R16B01 and lower
   ok = ensure_started(jsx),
-  ok = ensure_started(rfc3339),
   ok = ensure_started(jesse),
   ok = add_schemata(Schemata),
   {ok, JsonInstanceBinary} = file:read_file(JsonInstance),

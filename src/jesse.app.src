@@ -6,7 +6,6 @@
                       , {applications, [ kernel
                                        , stdlib
                                        , jsx
-                                       , rfc3339
                                        ]}
                       , {maintainers, [ "for-GET/jesse"
                                       ]}
