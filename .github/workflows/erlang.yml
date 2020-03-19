@@ -1,0 +1,41 @@
+name: Erlang CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  ERLANG_VERSION: 22.3
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    container:
+      image: erlang:22.3
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v1
+      with:
+        submodules: recursive
+    - name: Restore rebar3 chache
+      uses: actions/cache@v1
+      with:
+        path: ~/.cache/rebar3
+        key: rebar3-${{ env.ERLANG_VERSION }}
+    - name: Get deps
+      run: rebar3 get-deps
+    - name: Compile
+      run: rebar3 compile
+    - name: Xref
+      run: rebar3 xref
+    - name: Dialyzer
+      run: rebar3 dialyzer
+    - name: Run tests
+      # rebar3 doesn't set TEST_DIR env var used in tests
+      run: TEST_DIR=`readlink -f test` rebar3 do eunit, ct
