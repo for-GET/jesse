@@ -1382,7 +1382,7 @@ maybe_external_check_value(Value, State) ->
   end.
 
 maybe_external_check_format(Value, Format, State) ->
-  case jesse_state:get_external_format_validator(Format, State) of
+  case jesse_state:get_ext_format_validator(Format, State) of
     undefined -> State;
     Fun when is_function(Fun, 1) ->
       case Fun(Value) of
