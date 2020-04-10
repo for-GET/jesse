@@ -150,5 +150,3 @@ handle_error(Error, State) ->
   AllowedErrors = jesse_state:get_allowed_errors(State),
   NewErrorList  = ErrorHandler(Error, ErrorList, AllowedErrors),
   jesse_state:set_error_list(State, NewErrorList).
-
-%% @private

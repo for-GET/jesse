@@ -1,5 +1,31 @@
 # CHANGELOG
 
+## 1.5.4
+
+* Specify build matrix "dist" for old OTP releases #83
+* Fix anyOf / OneOf returns unexpected error with allowed_errors=infinity #81
+* Fixes for dialyzer #77
+* Ensure correct dependencies in app.src
+* Avoid deprecated http_uri functions for OTP 21+ #86
+* Migrate to rebar3 #87
+
+## 1.5.3
+
+* Drop support for OTP versions below OTP-18
+* Work around unexported `http_uri:uri()` type #75
+* Add validator draft3/draft4 schema unique check missed case #74
+* Add missing error types to handle json parser exceptions #73
+
+## 1.5.2
+
+* Upgrade jsx dependency #67
+* Stacktrace compatibility macro updated #70
+
+## 1.5.1
+
+* Correct schema on error #65
+* OTP-21 compatibility #66
+
 ## 1.5.0 - 2018-01-14
 
 ### Breaking changes
