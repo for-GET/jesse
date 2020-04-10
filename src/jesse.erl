@@ -42,7 +42,7 @@
              , error_list/0
              , external_validator/0
              , external_format_validator/0
-             , external_format_validators_map/0
+             , external_format_validators/0
              , json_term/0
              , schema/0
              , schema_id/0
@@ -74,7 +74,13 @@
                             | undefined.
 
 -type external_format_validator() :: fun((json_term()) -> ok | error).
--type external_format_validators_map() :: #{binary() => external_format_validator()}.
+
+-ifndef(erlang_deprecated_types).
+-type external_format_validators() :: [{binary(), external_format_validator()}]
+                                    | #{binary() => external_format_validator()}.
+-else.
+-type external_format_validators() :: [{binary(), external_format_validator()}].
+-endif.
 
 %% From https://github.com/erlang/otp/blob/OTP-20.2.3/lib/inets/doc/src/http_uri.xml#L57
 -type http_uri_uri() :: string() | unicode:unicode_binary().
@@ -100,7 +106,7 @@
                 | {default_schema_ver, schema_ver()}
                 | {error_handler, error_handler()}
                 | {external_validator, external_validator()}
-                | {external_format_validators, external_format_validators_map()}
+                | {external_format_validators, external_format_validators()}
                 | {meta_schema_ver, schema_ver()}
                 | {parser_fun, parser_fun()}
                 | {schema_loader_fun, schema_loader_fun()}.

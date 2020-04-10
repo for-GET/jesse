@@ -60,7 +60,7 @@
          , error_handler :: jesse:error_handler()
          , error_list :: jesse:error_list()
          , external_validator :: jesse:external_validator()
-         , external_format_validators :: jesse:external_format_validators_map()
+         , external_format_validators :: jesse:external_format_validators()
          , id :: jesse:schema_id()
          , root_schema :: jesse:schema()
          , schema_loader_fun :: jesse:schema_loader_fun()
@@ -407,8 +407,15 @@ get_external_validator(#state{external_validator = Fun}) ->
   Fun.
 
 -spec get_external_format_validator(binary(), state()) -> jesse:external_format_validator() | undefined.
-get_external_format_validator(Format, #state{external_format_validators = Validators}) ->
-  maps:get(Format, Validators, undefined).
+-ifndef(erlang_deprecated_types).
+get_external_format_validator(Format, #state{external_format_validators = Validators}) when is_map(Validators) ->
+  maps:get(Format, Validators, undefined);
+get_external_format_validator(Format, #state{external_format_validators = Validators}) when is_list(Validators) ->
+  proplists:get_value(Format, Validators, undefined).
+-else.
+get_external_format_validator(Format, #state{external_format_validators = Validators}) when is_list(Validators) ->
+  proplists:get_value(Format, Validators, undefined).
+-endif.
 
 %% @private
 -ifdef(OTP_RELEASE). %% OTP 21+
