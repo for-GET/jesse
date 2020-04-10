@@ -1,11 +1,17 @@
 # CHANGELOG
 
+## 1.5.5
+
+* Fix rebar3 and rebar3_hex versions incompatibility #88
+* OTP-22.3 added to Travis
+
 ## 1.5.4
 
 * Specify build matrix "dist" for old OTP releases #83
 * Fix anyOf / OneOf returns unexpected error with allowed_errors=infinity #81
 * Fixes for dialyzer #77
 * Ensure correct dependencies in app.src
+* OTP-22 added to Travis
 * Avoid deprecated http_uri functions for OTP 21+ #86
 * Migrate to rebar3 #87
 

@@ -3,6 +3,7 @@ os: linux
 
 jobs:
   include:
+  - otp_release: 22.3
   - otp_release: 22.2
   - otp_release: 22.1
   - otp_release: 22.0
@@ -26,7 +27,7 @@ jobs:
   - otp_release: 18.1
   - otp_release: 18.0
 script:
-  - LATEST_OTP_RELEASE=22.2
+  - LATEST_OTP_RELEASE=22.3
   - "[[ ${TRAVIS_OTP_RELEASE} != ${LATEST_OTP_RELEASE} ]] || make elvis docs"
   - make
   - make test
