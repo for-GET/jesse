@@ -27,6 +27,7 @@
 -export([ add_to_path/2
         , get_allowed_errors/1
         , get_external_validator/1
+        , get_ext_format_validator/2
         , get_current_path/1
         , get_current_schema/1
         , get_current_schema_id/1
@@ -59,6 +60,7 @@
          , error_handler :: jesse:error_handler()
          , error_list :: jesse:error_list()
          , external_validator :: jesse:external_validator()
+         , ext_format_validators :: jesse:ext_format_validators()
          , id :: jesse:schema_id()
          , root_schema :: jesse:schema()
          , schema_loader_fun :: jesse:schema_loader_fun()
@@ -142,18 +144,23 @@ new(JsonSchema, Options) ->
   ExternalValidator = proplists:get_value( external_validator
                                          , Options
                                          ),
+  ExtFormatValidators = proplists:get_value( ext_format_validators
+                                           , Options
+                                           , #{}
+                                           ),
   LoaderFun = proplists:get_value( schema_loader_fun
                                  , Options
                                  , ?default_schema_loader_fun
                                  ),
-  NewState = #state{ root_schema        = JsonSchema
-                   , current_path       = []
-                   , allowed_errors     = AllowedErrors
-                   , error_list         = []
-                   , error_handler      = ErrorHandler
-                   , default_schema_ver = DefaultSchemaVer
-                   , schema_loader_fun  = LoaderFun
-                   , external_validator = ExternalValidator
+  NewState = #state{ root_schema           = JsonSchema
+                   , current_path          = []
+                   , allowed_errors        = AllowedErrors
+                   , error_list            = []
+                   , error_handler         = ErrorHandler
+                   , default_schema_ver    = DefaultSchemaVer
+                   , schema_loader_fun     = LoaderFun
+                   , external_validator    = ExternalValidator
+                   , ext_format_validators = ExtFormatValidators
                    },
   set_current_schema(NewState, JsonSchema).
 
@@ -398,6 +405,21 @@ load_schema(#state{schema_loader_fun = LoaderFun}, SchemaURI) ->
 %% @private
 get_external_validator(#state{external_validator = Fun}) ->
   Fun.
+
+-spec get_ext_format_validator(binary(), state()) ->
+  jesse:external_format_validator() | undefined.
+-ifndef(erlang_deprecated_types).
+get_ext_format_validator(Format, #state{ext_format_validators = Validators})
+  when is_map(Validators) ->
+    maps:get(Format, Validators, undefined);
+get_ext_format_validator(Format, #state{ext_format_validators = Validators})
+  when is_list(Validators) ->
+    proplists:get_value(Format, Validators, undefined).
+-else.
+get_ext_format_validator(Format, #state{ext_format_validators = Validators})
+  when is_list(Validators) ->
+    proplists:get_value(Format, Validators, undefined).
+-endif.
 
 %% @private
 -ifdef(OTP_RELEASE). %% OTP 21+
