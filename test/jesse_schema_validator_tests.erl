@@ -243,7 +243,7 @@ external_format_validator_test_draft(URI) ->
   ]},
 
   Options = [{
-    external_format_validators,
+    ext_format_validators,
     [{
       <<"ipv4_and_port">>,
       fun(<<"127.0.0.1:1234">>) -> ok; (_Else) -> error end
@@ -397,7 +397,7 @@ map_external_format_validator_test_draft(URI) ->
   },
 
   Options = [{
-    external_format_validators,
+    ext_format_validators,
     #{
       <<"ipv4_and_port">> =>
         fun(<<"127.0.0.1:1234">>) -> ok; (_Else) -> error end

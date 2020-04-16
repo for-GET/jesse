@@ -274,7 +274,7 @@ ErrorType}` where
 Built-in format validators, like `ipv4`, `date-time` are often not enough for `string` type 
 and usage of pattern (regexps) is not convenient.
 
-Custom string format validator could be used with `{external_format_validators, Validators}` option.
+Custom string format validator could be used with `{ext_format_validators, Validators}` option.
 * `Validators` is a map of `CustomFormatName => ValidationFunction` pairs (`proplists` are also supported)
 * `CustomFormatName` is a string that must be used in schema as a `format` value for `string` type
 * `ValidationFunction` takes `string` value and must return `ok` or `error` atom indicating validation result
@@ -293,7 +293,7 @@ Simple example:
 1>   Validators = #{
 1>     <<"ipv4_and_port">> => fun(<<"127.0.0.1:1234">>) -> ok; (_Else) -> error end
 1>   },
-1>   Options = [{external_format_validators, Validators}],
+1>   Options = [{ext_format_validators, Validators}],
 1> jesse:validate_with_schema(Schema, #{<<"foo">> => <<"127.0.0.1:1234">>}, Options).
 {ok,#{<<"foo">> => <<"127.0.0.1:1234">>}}
 2> jesse:validate_with_schema(Schema, #{<<"foo">> => <<"Hello, Joe!">>}, Options).

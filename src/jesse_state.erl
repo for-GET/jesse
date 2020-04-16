@@ -144,23 +144,23 @@ new(JsonSchema, Options) ->
   ExternalValidator = proplists:get_value( external_validator
                                          , Options
                                          ),
-  ExternalFormatValidators = proplists:get_value( external_format_validators
-                                                , Options
-                                                , #{}
-                                                ),
+  ExtFormatValidators = proplists:get_value( ext_format_validators
+                                           , Options
+                                           , #{}
+                                           ),
   LoaderFun = proplists:get_value( schema_loader_fun
                                  , Options
                                  , ?default_schema_loader_fun
                                  ),
-  NewState = #state{ root_schema        = JsonSchema
-                   , current_path       = []
-                   , allowed_errors     = AllowedErrors
-                   , error_list         = []
-                   , error_handler      = ErrorHandler
-                   , default_schema_ver = DefaultSchemaVer
-                   , schema_loader_fun  = LoaderFun
-                   , external_validator = ExternalValidator
-                   , ext_format_validators = ExternalFormatValidators
+  NewState = #state{ root_schema           = JsonSchema
+                   , current_path          = []
+                   , allowed_errors        = AllowedErrors
+                   , error_list            = []
+                   , error_handler         = ErrorHandler
+                   , default_schema_ver    = DefaultSchemaVer
+                   , schema_loader_fun     = LoaderFun
+                   , external_validator    = ExternalValidator
+                   , ext_format_validators = ExtFormatValidators
                    },
   set_current_schema(NewState, JsonSchema).
 
