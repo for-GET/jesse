@@ -35,6 +35,8 @@
         , validate/3
         , validate_definition/3
         , validate_definition/4
+        , validate_local_ref/3
+        , validate_local_ref/4
         , validate_with_schema/2
         , validate_with_schema/3
         ]).
@@ -247,6 +249,44 @@ validate_definition(Defintion, Schema, Data, Options) ->
     ParsedSchema = try_parse(schema, ParserFun, Schema),
     ParsedData   = try_parse(data, ParserFun, Data),
     jesse_schema_validator:validate_definition( Defintion
+                                              , ParsedSchema
+                                              , ParsedData
+                                              , Options
+                                              )
+  catch
+    throw:Error -> {error, Error}
+  end.
+
+%% @doc Equivalent to {@link validate_local_ref/4} where `Options' is an empty list.
+-spec validate_local_ref( RefPath :: string()
+                         , Schema     :: json_term() | binary()
+                         , Data       :: json_term() | binary()
+                         ) -> {ok, json_term()}
+                            | jesse_error:error().
+validate_local_ref(RefPath, Schema, Data) ->
+  validate_local_ref(RefPath, Schema, Data, []).
+
+%% @doc Validates json `Data' agains the given definition path 'RefPath' in the given
+%% schema `Schema', using `Options'.
+%% If the given json is valid, then it is returned to the caller, otherwise
+%% an error with an appropriate error reason is returned. If the `parser_fun'
+%% option is provided, then both `Schema' and `Data' are considered to be a
+%% binary string, so `parser_fun' is used to convert both binary strings to a
+%% supported internal representation of json.
+%% If `parser_fun' is not provided, then both `Schema' and `Data' are considered
+%% to already be a supported internal representation of json.
+-spec validate_local_ref( RefPath :: string()
+                         , Schema     :: json_term() | binary()
+                         , Data       :: json_term() | binary()
+                         , Options    :: [{Key :: atom(), Data :: any()}]
+                         ) -> {ok, json_term()}
+                            | jesse_error:error().
+validate_local_ref(RefPath, Schema, Data, Options) ->
+  try
+    ParserFun    = proplists:get_value(parser_fun, Options, fun(X) -> X end),
+    ParsedSchema = try_parse(schema, ParserFun, Schema),
+    ParsedData   = try_parse(data, ParserFun, Data),
+    jesse_schema_validator:validate_local_ref( RefPath
                                               , ParsedSchema
                                               , ParsedData
                                               , Options

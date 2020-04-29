@@ -26,6 +26,7 @@
 %% API
 -export([ validate/3
         , validate_definition/4
+        , validate_local_ref/4
         , validate_with_state/3
         ]).
 
@@ -62,7 +63,7 @@ validate(JsonSchema, Value, Options) ->
   NewState = validate_with_state(JsonSchema, Value, State),
   {result(NewState), Value}.
 
-%% @doc Validates json `Data' against `Definition' in `JsonSchema' with `Options'.
+%% @doc Validates json `Data' against a given $ref path in `JsonSchema' with `Options'.
 %% If the given json is valid, then it is returned to the caller as is,
 %% otherwise an exception will be thrown.
 -spec validate_definition( Definition :: string()
@@ -71,10 +72,23 @@ validate(JsonSchema, Value, Options) ->
                          , Options    :: [{Key :: atom(), Data :: any()}]
                          ) -> {ok, jesse:json_term()}
                             | no_return().
-validate_definition(Defintion, JsonSchema, Value, Options) ->
-  State    = jesse_state:new(JsonSchema, Options),
-  Schema   = make_definition_ref(Defintion),
-  NewState = validate_with_state(Schema, Value, State),
+validate_definition(Definition, JsonSchema, Value, Options) ->
+  RefPath = "#/definitions/" ++ Definition,
+  validate_local_ref(RefPath, JsonSchema, Value, Options).
+
+%% @doc Validates json `Data' against `Definition' in `JsonSchema' with `Options'.
+%% If the given json is valid, then it is returned to the caller as is,
+%% otherwise an exception will be thrown.
+-spec validate_local_ref( RefPath :: string()
+                         , JsonSchema :: jesse:json_term()
+                         , Data       :: jesse:json_term()
+                         , Options    :: [{Key :: atom(), Data :: any()}]
+                         ) -> {ok, jesse:json_term()}
+                            | no_return().
+validate_local_ref(RefPath, JsonSchema, Value, Options) ->
+  State = jesse_state:new(JsonSchema, Options),
+  Ref   = make_ref(RefPath),
+  NewState = validate_with_state(Ref, Value, State),
   {result(NewState), Value}.
 
 %% @doc Validates json `Data' against `JsonSchema' with `State'.
@@ -140,9 +154,9 @@ run_validator(Validator, Value, [Attr | Attrs], State0) ->
                                ),
   run_validator(Validator, Value, Attrs, State).
 
-%% @doc Makes a $ref schema object pointing to the given `Definition'
+%% @doc Makes a $ref schema object pointing to the given path
 %% in schema defintions.
 %% @private
-make_definition_ref(Definition) ->
-  Definition1 = list_to_binary(Definition),
-  [{<<"$ref">>, <<"#/definitions/", Definition1/binary>>}].
+make_ref(RefPath) ->
+  RefPath1 = list_to_binary(RefPath),
+  [{<<"$ref">>, RefPath1}].
