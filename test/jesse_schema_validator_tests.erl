@@ -245,7 +245,10 @@ data_invalid_one_of_test() ->
      [ { data_invalid
        , Schema
        , { not_one_schema_valid
-         , [{data_invalid, IntegerSchema, wrong_type, Json, []}]
+         , [ {data_invalid, IntegerSchema, wrong_type, Json, []}
+           , {data_invalid, StringSchema, wrong_type, Json, []}
+           , {data_invalid, StringSchema, wrong_type, 42, [<<"name">>]}
+           ]
          }
        , Json
        , []

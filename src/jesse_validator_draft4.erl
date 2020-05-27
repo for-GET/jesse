@@ -1177,7 +1177,7 @@ check_any_of_(Value, [Schema | Schemas], State, Errors) ->
 %%
 %% @private
 check_one_of(Value, [_ | _] = Schemas, State) ->
-  check_one_of_(Value, Schemas, State, 0, empty);
+  check_one_of_(Value, Schemas, State, 0, []);
 check_one_of(_Value, _InvalidSchemas, State) ->
   handle_schema_invalid(?wrong_one_of_schema_array, State).
 
@@ -1197,12 +1197,11 @@ check_one_of_(Value, [Schema | Schemas], State, Valid, Errors) ->
         NumErrsBefore ->
           check_one_of_(Value, Schemas, NewState, Valid + 1, Errors);
         _  ->
-          NewErrors0 = ErrorsAfter -- ErrorsBefore,
-          NewErrors = shortest(NewErrors0, Errors),
-          check_one_of_(Value, Schemas, State, Valid, NewErrors)
+          NewErrors = ErrorsAfter -- ErrorsBefore,
+          check_one_of_(Value, Schemas, State, Valid, Errors ++ NewErrors)
       end;
     {false, NewErrors} ->
-      check_one_of_(Value, Schemas, State, Valid, shortest(NewErrors, Errors))
+      check_one_of_(Value, Schemas, State, Valid, Errors ++ NewErrors)
   end.
 
 %% @doc 5.5.6. not
