@@ -1136,26 +1136,28 @@ check_all_of_(Value, [Schema | Schemas], State) ->
 %%
 %% @private
 check_any_of(Value, [_ | _] = Schemas, State) ->
-  check_any_of_(Value, Schemas, State, []);
+  check_any_of_(Value, Schemas, State, empty);
 check_any_of(_Value, _InvalidSchemas, State) ->
   handle_schema_invalid(?wrong_any_of_schema_array, State).
 
 check_any_of_(Value, [], State, []) ->
   handle_data_invalid(?any_schemas_not_valid, Value, State);
-check_any_of_(Value, [], State, SchemaErrors) ->
-  [Errors | _] = lists:sort(fun by_length/2, SchemaErrors),
+check_any_of_(Value, [], State, Errors) ->
   handle_data_invalid({?any_schemas_not_valid, Errors}, Value, State);
-check_any_of_(Value, [Schema | Schemas], State, SchemaErrors) ->
-  NumErrsBefore = length(jesse_state:get_error_list(State)),
+check_any_of_(Value, [Schema | Schemas], State, Errors) ->
+  ErrorsBefore = jesse_state:get_error_list(State),
+  NumErrsBefore = length(ErrorsBefore),
   case validate_schema(Value, Schema, State) of
     {true, NewState} ->
-      Errors = jesse_state:get_error_list(NewState),
-      case length(Errors) of
+      ErrorsAfter = jesse_state:get_error_list(NewState),
+      case length(ErrorsAfter) of
         NumErrsBefore -> NewState;
-        _  -> check_any_of_(Value, Schemas, State, [Errors | SchemaErrors])
+        _  ->
+          NewErrors = ErrorsAfter -- ErrorsBefore,
+          check_any_of_(Value, Schemas, State, shortest(NewErrors, Errors))
       end;
-    {false, Errors} ->
-      check_any_of_(Value, Schemas, State, [Errors | SchemaErrors])
+    {false, NewErrors} ->
+      check_any_of_(Value, Schemas, State, shortest(NewErrors, Errors))
   end.
 
 %% @doc 5.5.5. oneOf
@@ -1175,30 +1177,32 @@ check_any_of_(Value, [Schema | Schemas], State, SchemaErrors) ->
 %%
 %% @private
 check_one_of(Value, [_ | _] = Schemas, State) ->
-  check_one_of_(Value, Schemas, State, 0, []);
+  check_one_of_(Value, Schemas, State, 0, empty);
 check_one_of(_Value, _InvalidSchemas, State) ->
   handle_schema_invalid(?wrong_one_of_schema_array, State).
 
-check_one_of_(_Value, [], State, 1, _SchemaErrors) ->
+check_one_of_(_Value, [], State, 1, _Errors) ->
   State;
-check_one_of_(Value, [], State, 0, SchemaErrors) ->
-  [Errors | _] = lists:sort(fun by_length/2, SchemaErrors),
+check_one_of_(Value, [], State, 0, Errors) ->
   handle_data_invalid({?not_one_schema_valid, Errors}, Value, State);
-check_one_of_(Value, _Schemas, State, Valid, _SchemaErrors) when Valid > 1 ->
+check_one_of_(Value, _Schemas, State, Valid, _Errors) when Valid > 1 ->
   handle_data_invalid(?more_than_one_schema_valid, Value, State);
-check_one_of_(Value, [Schema | Schemas], State, Valid, SchemaErrors) ->
-  NumErrsBefore = length(jesse_state:get_error_list(State)),
+check_one_of_(Value, [Schema | Schemas], State, Valid, Errors) ->
+  ErrorsBefore = jesse_state:get_error_list(State),
+  NumErrsBefore = length(ErrorsBefore),
   case validate_schema(Value, Schema, State) of
     {true, NewState} ->
-      Errors = jesse_state:get_error_list(NewState),
-      case length(Errors) of
+      ErrorsAfter = jesse_state:get_error_list(NewState),
+      case length(ErrorsAfter) of
         NumErrsBefore ->
-          check_one_of_(Value, Schemas, NewState, Valid + 1, SchemaErrors);
+          check_one_of_(Value, Schemas, NewState, Valid + 1, Errors);
         _  ->
-          check_one_of_(Value, Schemas, State, Valid, [Errors | SchemaErrors])
+          NewErrors0 = ErrorsAfter -- ErrorsBefore,
+          NewErrors = shortest(NewErrors0, Errors),
+          check_one_of_(Value, Schemas, State, Valid, NewErrors)
       end;
-    {false, Errors} ->
-      check_one_of_(Value, Schemas, State, Valid, [Errors | SchemaErrors])
+    {false, NewErrors} ->
+      check_one_of_(Value, Schemas, State, Valid, shortest(NewErrors, Errors))
   end.
 
 %% @doc 5.5.6. not
@@ -1394,5 +1398,12 @@ maybe_external_check_value(Value, State) ->
   end.
 
 %% @private
--spec by_length(list(), list()) -> boolean().
-by_length(X, Y) -> length(X) < length(Y).
+-spec shortest(list() | empty, list() | empty) -> list() | empty.
+shortest(X, empty) ->
+  X;
+shortest(empty, Y) ->
+  Y;
+shortest(X, Y) when length(X) < length(Y) ->
+  X;
+shortest(_, Y) ->
+  Y.
