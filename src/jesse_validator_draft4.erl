@@ -60,6 +60,7 @@
                     | ?not_in_range
                     | ?not_multiple_of
                     | ?not_one_schema_valid
+                    | ?more_than_one_schema_valid
                     | ?not_schema_valid
                     | ?too_few_properties
                     | ?too_many_properties
@@ -69,7 +70,8 @@
                     | ?external.
 
 -type data_error_type() :: data_error()
-                         | {data_error(), binary()}.
+                         | {data_error(), binary()}
+                         | {data_error(), [jesse_error:error_reason()]}.
 
 %%% API
 %% @doc Goes through attributes of the given schema `JsonSchema' and
@@ -1111,8 +1113,10 @@ check_all_of_(_Value, [], State) ->
   State;
 check_all_of_(Value, [Schema | Schemas], State) ->
   case validate_schema(Value, Schema, State) of
-    {true, NewState} -> check_all_of_(Value, Schemas, NewState);
-    {false, _} -> handle_data_invalid(?all_schemas_not_valid, Value, State)
+    {true, NewState} ->
+      check_all_of_(Value, Schemas, NewState);
+    {false, Errors} ->
+      handle_data_invalid({?all_schemas_not_valid, Errors}, Value, State)
   end.
 
 %% @doc 5.5.4. anyOf
@@ -1132,21 +1136,28 @@ check_all_of_(Value, [Schema | Schemas], State) ->
 %%
 %% @private
 check_any_of(Value, [_ | _] = Schemas, State) ->
-  check_any_of_(Value, Schemas, State);
+  check_any_of_(Value, Schemas, State, empty);
 check_any_of(_Value, _InvalidSchemas, State) ->
   handle_schema_invalid(?wrong_any_of_schema_array, State).
 
-check_any_of_(Value, [], State) ->
+check_any_of_(Value, [], State, []) ->
   handle_data_invalid(?any_schemas_not_valid, Value, State);
-check_any_of_(Value, [Schema | Schemas], State) ->
-  NumErrsBefore = length(jesse_state:get_error_list(State)),
+check_any_of_(Value, [], State, Errors) ->
+  handle_data_invalid({?any_schemas_not_valid, Errors}, Value, State);
+check_any_of_(Value, [Schema | Schemas], State, Errors) ->
+  ErrorsBefore = jesse_state:get_error_list(State),
+  NumErrsBefore = length(ErrorsBefore),
   case validate_schema(Value, Schema, State) of
     {true, NewState} ->
-        case length(jesse_state:get_error_list(NewState)) of
-            NumErrsBefore -> NewState;
-            _  -> check_any_of_(Value, Schemas, State)
-        end;
-    {false, _} -> check_any_of_(Value, Schemas, State)
+      ErrorsAfter = jesse_state:get_error_list(NewState),
+      case length(ErrorsAfter) of
+        NumErrsBefore -> NewState;
+        _  ->
+          NewErrors = ErrorsAfter -- ErrorsBefore,
+          check_any_of_(Value, Schemas, State, shortest(NewErrors, Errors))
+      end;
+    {false, NewErrors} ->
+      check_any_of_(Value, Schemas, State, shortest(NewErrors, Errors))
   end.
 
 %% @doc 5.5.5. oneOf
@@ -1166,28 +1177,32 @@ check_any_of_(Value, [Schema | Schemas], State) ->
 %%
 %% @private
 check_one_of(Value, [_ | _] = Schemas, State) ->
-  check_one_of_(Value, Schemas, State, 0);
+  check_one_of_(Value, Schemas, State, 0, []);
 check_one_of(_Value, _InvalidSchemas, State) ->
   handle_schema_invalid(?wrong_one_of_schema_array, State).
 
-check_one_of_(_Value, [], State, 1) ->
+check_one_of_(_Value, [], State, 1, _Errors) ->
   State;
-check_one_of_(Value, [], State, 0) ->
-  handle_data_invalid(?not_one_schema_valid, Value, State);
-check_one_of_(Value, _Schemas, State, Valid) when Valid > 1 ->
-  handle_data_invalid(?not_one_schema_valid, Value, State);
-check_one_of_(Value, [Schema | Schemas], State, Valid) ->
-  NumErrsBefore = length(jesse_state:get_error_list(State)),
+check_one_of_(Value, [], State, 0, Errors) ->
+  handle_data_invalid({?not_one_schema_valid, Errors}, Value, State);
+check_one_of_(Value, _Schemas, State, Valid, _Errors) when Valid > 1 ->
+  handle_data_invalid(?more_than_one_schema_valid, Value, State);
+check_one_of_(Value, [Schema | Schemas], State, Valid, Errors) ->
+  ErrorsBefore = jesse_state:get_error_list(State),
+  NumErrsBefore = length(ErrorsBefore),
   case validate_schema(Value, Schema, State) of
     {true, NewState} ->
-        case length(jesse_state:get_error_list(NewState)) of
-            NumErrsBefore -> check_one_of_(Value, Schemas, NewState, Valid + 1);
-            _  -> check_one_of_(Value, Schemas, State, Valid)
-        end;
-    {false, _} ->
-      check_one_of_(Value, Schemas, State, Valid)
+      ErrorsAfter = jesse_state:get_error_list(NewState),
+      case length(ErrorsAfter) of
+        NumErrsBefore ->
+          check_one_of_(Value, Schemas, NewState, Valid + 1, Errors);
+        _  ->
+          NewErrors = ErrorsAfter -- ErrorsBefore,
+          check_one_of_(Value, Schemas, State, Valid, Errors ++ NewErrors)
+      end;
+    {false, NewErrors} ->
+      check_one_of_(Value, Schemas, State, Valid, Errors ++ NewErrors)
   end.
-
 
 %% @doc 5.5.6. not
 %%
@@ -1380,3 +1395,14 @@ maybe_external_check_value(Value, State) ->
     Fun ->
       Fun(Value, State)
   end.
+
+%% @private
+-spec shortest(list() | empty, list() | empty) -> list() | empty.
+shortest(X, empty) ->
+  X;
+shortest(empty, Y) ->
+  Y;
+shortest(X, Y) when length(X) < length(Y) ->
+  X;
+shortest(_, Y) ->
+  Y.

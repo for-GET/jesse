@@ -23,6 +23,9 @@ distclean:
 	$(RM) doc/stylesheet.css
 	$(RM) -r logs
 
+.PHONY: clean-tests
+clean-tests:
+	@ rm -rf _build/test/lib
 # Docs
 
 .PHONY: docs
@@ -53,10 +56,14 @@ test: eunit ct xref dialyzer cover
 
 .PHONY: eunit
 eunit:
+	@ $(MAKE) clean-tests
 	$(REBAR) eunit
+
+# @ rm -rf _build
 
 .PHONY: ct
 ct: test/JSON-Schema-Test-Suite/tests
+	@ $(MAKE) clean-tests
 	$(REBAR) ct
 
 .PHONY: xref
@@ -73,4 +80,5 @@ elvis:
 
 .PHONY: cover
 cover:
+	@ $(MAKE) clean-tests
 	$(REBAR) cover -v

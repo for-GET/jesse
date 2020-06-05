@@ -56,7 +56,8 @@
 
 -type error_type() :: atom()
                     | {atom(), jesse:json_term()}
-                    | {atom(), binary()}.
+                    | {atom(), binary()}
+                    | {atom(), [error_reason()]}.
 
 %% Includes
 -include("jesse_schema_validator.hrl").
