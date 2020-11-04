@@ -221,7 +221,10 @@ resolve_ref(State, Reference) ->
                                            );
         RemoteSchema ->
           SchemaVer =
-            jesse_json_path:value(?SCHEMA, RemoteSchema, ?default_schema_ver),
+            jesse_json_path:value( ?SCHEMA
+                                 , RemoteSchema
+                                 , State#state.default_schema_ver
+                                 ),
           NewState = State#state{ root_schema = RemoteSchema
                                 , id = BaseURI
                                 , default_schema_ver = SchemaVer
