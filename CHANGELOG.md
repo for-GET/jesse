@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 1.5.6
+
+* Improving the error messages from jesse when using oneOf/anyOf
+* Make it compatible with jsx 3.0
+
 ## 1.5.5
 
 * Fix rebar3 and rebar3_hex versions incompatibility #88
