@@ -295,5 +295,5 @@ If you see something missing or incorrect, a pull request is most welcome!
 [Apache 2.0](LICENSE)
 
 
-  [1]: https://travis-ci.org/for-GET/jesse
-  [2]: https://travis-ci.org/for-GET/jesse.png
+  [1]: https://github.com/for-GET/jesse
+  [2]: https://github.com/for-GET/jesse/workflows/build/badge.svg
