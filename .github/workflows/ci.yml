@@ -13,7 +13,9 @@ on:
     - cron: 0 0 * * *
 jobs:
   ci:
+    timeout-minutes: 30
     strategy:
+      fail-fast: false
       matrix:
         otp_vsn:
           - 18.0
@@ -37,9 +39,10 @@ jobs:
           - 22.3
           - 23.0
           - 23.1
+    name: 'ci-${{ matrix.otp_vsn }}'
     runs-on: ubuntu-latest
     container:
-      image: erlang:${{matrix.otp_vsn}}
+      image: 'erlang:${{ matrix.otp_vsn }}'
     env:
       LATEST_OTP_RELEASE: 23.1
     steps:
