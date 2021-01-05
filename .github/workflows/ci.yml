@@ -48,6 +48,9 @@ jobs:
       LATEST_OTP_RELEASE: 23.1
     steps:
       - uses: actions/checkout@v2
-      - run: '[[ "${{ matrix.otp_vsn }}" != "${{ env.LATEST_OTP_RELEASE }}" ]] || make elvis docs'
-      - run: make
-      - run: make test
+      - shell: bash
+        run: '[[ "${{ matrix.otp_vsn }}" != "${{ env.LATEST_OTP_RELEASE }}" ]] || make elvis docs'
+      - shell: bash
+        run: make
+      - shell: bash
+        run: make test
