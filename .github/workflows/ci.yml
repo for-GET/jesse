@@ -40,7 +40,7 @@ jobs:
           - 22.3
           - 23.0
           - 23.1
-    name: 'ci-${{ matrix.otp_vsn }}'
+    name: 'ci-erl:${{ matrix.otp_vsn }}'
     runs-on: ubuntu-latest
     container:
       image: 'erlang:${{ matrix.otp_vsn }}'
