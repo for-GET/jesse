@@ -296,4 +296,4 @@ If you see something missing or incorrect, a pull request is most welcome!
 
 
   [1]: https://github.com/for-GET/jesse
-  [2]: https://github.com/for-GET/jesse/workflows/build/badge.svg?branch=master
+  [2]: https://github.com/for-GET/jesse/workflows/CI/badge.svg?branch=master
