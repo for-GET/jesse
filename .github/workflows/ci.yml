@@ -19,19 +19,15 @@ jobs:
       fail-fast: false
       matrix:
         otp_vsn:
-          - '18'
-          # - '18.1 # git : Depends: libpcre2-8-0 but it is not installable
-          # - '18.2' # git : Depends: libpcre2-8-0 but it is not installable
-          - '18.3'
           - '19'
-          # - '19.1' # git : Depends: libpcre2-8-0 but it is not installable
-          # - '19.2' # git : Depends: libpcre2-8-0 but it is not installable
+          - '19.1'
+          - '19.2'
           - '19.3'
           - '20'
-          # - '20.1' # git : Depends: libpcre2-8-0 but it is not installable
+          - '20.1'
           - '20.2'
           - '20.3'
-          # - '21'
+          - '21'
           - '21.1'
           - '21.2'
           - '21.3'
@@ -47,28 +43,22 @@ jobs:
       image: 'erlang:${{ matrix.otp_vsn }}'
     env:
       LATEST_OTP_RELEASE: 23.1
+      RUNNING_ON_CI: true
     steps:
-      - shell: bash
-        run: |
-          # upgrade git to 2.18+ for actions/checkout@v2
-          set -euo pipefail
-          set -x
-          # some erlang containers are based on jesse, some or stretch, etc
-          # NOTE jesse has no VERSION_CODENAME in /etc/os-release
-          # NOTE lsb_release is not installed
-          # see https://unix.stackexchange.com/questions/180776/how-to-get-debian-codename-without-lsb-release
-          VERSION_CODENAME=$(dpkg --status tzdata|grep Provides|cut -f2 -d'-')
-          VCB=${VERSION_CODENAME}-backports
-          echo "deb http://cloudfront.debian.net/debian ${VCB} main" >>/etc/apt/sources.list.d/${VCB}.list
-          echo "deb-src http://cloudfront.debian.net/debian ${VCB} main" >>/etc/apt/sources.list.d/${VCB}.list
-          apt-get update -y --fix-missing -o Acquire::Check-Valid-Until=false
-          apt-get -t ${VCB} install -y git
+      - run: |
+          apt-get update
+          apt-get -y install tcl tcl-dev gettext
+          wget https://github.com/git/git/archive/v2.18.0.tar.gz -O git.tar.gz
+          tar -xf git.tar.gz
+          cd git-*
+          make prefix=/usr/local all
+          make prefix=/usr/local install
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
       - shell: bash
         run: |
           # run linter and docs if latest otp release
           [[ "${{ matrix.otp_vsn }}" != "${{ env.LATEST_OTP_RELEASE }}" ]] || make elvis docs
-      - shell: bash
-        run: make
-      - shell: bash
-        run: make test
+      - run: make
+      - run: make test
