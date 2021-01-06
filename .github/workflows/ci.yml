@@ -53,10 +53,16 @@ jobs:
           # upgrade git to 2.18+ for actions/checkout@v2
           set -euo pipefail
           set -x
-          echo "deb http://cloudfront.debian.net/debian stretch-backports main" >>/etc/apt/sources.list
-          echo "deb-src http://cloudfront.debian.net/debian stretch-backports main" >>/etc/apt/sources.list
-          apt-get update -y -o Acquire::Check-Valid-Until=false
-          apt-get -t stretch-backports install -y git
+          # some erlang containers are based on jesse, some or stretch, etc
+          # NOTE jesse has no VERSION_CODENAME in /etc/os-release
+          # NOTE lsb_release is not installed
+          # see https://unix.stackexchange.com/questions/180776/how-to-get-debian-codename-without-lsb-release
+          VERSION_CODENAME=$(dpkg --status tzdata|grep Provides|cut -f2 -d'-')
+          VCB=${VERSION_CODENAME}-backports
+          echo "deb http://cloudfront.debian.net/debian ${VCB} main" >>/etc/apt/sources.list.d/${VCB}.list
+          echo "deb-src http://cloudfront.debian.net/debian ${VCB} main" >>/etc/apt/sources.list.d/${VCB}.list
+          apt-get update -y --fix-missing -o Acquire::Check-Valid-Until=false
+          apt-get -t ${VCB} install -y git
       - uses: actions/checkout@v2
       - shell: bash
         run: |
