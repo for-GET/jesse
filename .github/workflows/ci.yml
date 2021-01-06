@@ -20,15 +20,15 @@ jobs:
       matrix:
         otp_vsn:
           - 18.0
-          # - 18.1 # git : Depends: libpcre2-8-0 but it is not installable
-          # - 18.2 # git : Depends: libpcre2-8-0 but it is not installable
+          - 18.1
+          - 18.2
           - 18.3
           - 19.0
-          # - 19.1 # git : Depends: libpcre2-8-0 but it is not installable
-          # - 19.2 # git : Depends: libpcre2-8-0 but it is not installable
+          - 19.1
+          - 19.2
           - 19.3
           - 20.0
-          # - 20.1 # git : Depends: libpcre2-8-0 but it is not installable
+          - 20.1
           - 20.2
           - 20.3
           - 21.1
