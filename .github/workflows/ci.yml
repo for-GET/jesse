@@ -47,6 +47,15 @@ jobs:
     env:
       LATEST_OTP_RELEASE: 23.1
     steps:
+      - shell: bash
+        run: |
+          # upgrade git to 2.18+ for actions/checkout@v2
+          set -euo pipefail
+          set -x
+          echo "deb http://cloudfront.debian.net/debian stretch-backports main" >>/etc/apt/sources.list
+          echo "deb-src http://cloudfront.debian.net/debian stretch-backports main" >>/etc/apt/sources.list
+          apt-get update -y -o Acquire::Check-Valid-Until=false
+          apt-get -t stretch-backports install -y git
       - uses: actions/checkout@v2
       - shell: bash
         run: '[[ "${{ matrix.otp_vsn }}" != "${{ env.LATEST_OTP_RELEASE }}" ]] || make elvis docs'
