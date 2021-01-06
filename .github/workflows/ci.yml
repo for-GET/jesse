@@ -38,14 +38,15 @@ jobs:
           - 22.1
           - 22.2
           - 22.3
-          - 23.0
-          - 23.1
+          # - 23.0
+          # - 23.1
     name: 'ci-erl:${{ matrix.otp_vsn }}'
     runs-on: ubuntu-latest
     container:
       image: 'erlang:${{ matrix.otp_vsn }}'
     env:
-      LATEST_OTP_RELEASE: 23.1
+      # LATEST_OTP_RELEASE: 23.1
+      LATEST_OTP_RELEASE: 22.3
     steps:
       - shell: bash
         run: |
