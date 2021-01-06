@@ -58,7 +58,9 @@ jobs:
           apt-get -t stretch-backports install -y git
       - uses: actions/checkout@v2
       - shell: bash
-        run: '[[ "${{ matrix.otp_vsn }}" != "${{ env.LATEST_OTP_RELEASE }}" ]] || make elvis docs'
+        run: |
+          # run linter and docs if latest otp release
+          [[ "${{ matrix.otp_vsn }}" != "${{ env.LATEST_OTP_RELEASE }}" ]] || make elvis docs
       - shell: bash
         run: make
       - shell: bash
