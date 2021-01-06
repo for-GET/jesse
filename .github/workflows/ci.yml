@@ -19,62 +19,56 @@ jobs:
       fail-fast: false
       matrix:
         otp_vsn:
-          - '18.0'
+          - '18'
           # - '18.1 # git : Depends: libpcre2-8-0 but it is not installable
           # - '18.2' # git : Depends: libpcre2-8-0 but it is not installable
           - '18.3'
-          - '19.0'
+          - '19'
           # - '19.1' # git : Depends: libpcre2-8-0 but it is not installable
           # - '19.2' # git : Depends: libpcre2-8-0 but it is not installable
           - '19.3'
-          - '20.0'
+          - '20'
           # - '20.1' # git : Depends: libpcre2-8-0 but it is not installable
           - '20.2'
           - '20.3'
-          # - '21.0'
+          # - '21'
           - '21.1'
           - '21.2'
           - '21.3'
-          - '22.0'
+          - '22'
           - '22.1'
           - '22.2'
           - '22.3'
-          - '23.0'
+          - '23'
           - '23.1'
     name: 'ci-erl:${{ matrix.otp_vsn }}'
     runs-on: ubuntu-latest
+    container:
+      image: 'erlang:${{ matrix.otp_vsn }}'
     env:
       LATEST_OTP_RELEASE: 23.1
     steps:
       - shell: bash
         run: |
-          # install erlang via kerl
+          # upgrade git to 2.18+ for actions/checkout@v2
           set -euo pipefail
           set -x
-          sudo curl -o /usr/local/bin/kerl https://raw.githubusercontent.com/kerl/kerl/master/kerl
-          sudo chmod +x /usr/local/bin/kerl
-          kerl update releases
-          kerl build ${{ matrix.otp_vsn }} ${{ matrix.otp_vsn }}
-          kerl install ${{ matrix.otp_vsn }} ~/kerl/${{ matrix.otp_vsn }}
-          set +x
-          echo source ~/kerl/${{ matrix.otp_vsn }}/activate
-          source ~/kerl/${{ matrix.otp_vsn }}/activate
-          set -x
-          erl --version
+          # some erlang containers are based on jesse, some or stretch, etc
+          # NOTE jesse has no VERSION_CODENAME in /etc/os-release
+          # NOTE lsb_release is not installed
+          # see https://unix.stackexchange.com/questions/180776/how-to-get-debian-codename-without-lsb-release
+          VERSION_CODENAME=$(dpkg --status tzdata|grep Provides|cut -f2 -d'-')
+          VCB=${VERSION_CODENAME}-backports
+          echo "deb http://cloudfront.debian.net/debian ${VCB} main" >>/etc/apt/sources.list.d/${VCB}.list
+          echo "deb-src http://cloudfront.debian.net/debian ${VCB} main" >>/etc/apt/sources.list.d/${VCB}.list
+          apt-get update -y --fix-missing -o Acquire::Check-Valid-Until=false
+          apt-get -t ${VCB} install -y git
       - uses: actions/checkout@v2
       - shell: bash
         run: |
           # run linter and docs if latest otp release
-          source ~/kerl/${{ matrix.otp_vsn }}/activate
-          erl --version
           [[ "${{ matrix.otp_vsn }}" != "${{ env.LATEST_OTP_RELEASE }}" ]] || make elvis docs
       - shell: bash
-        run: |
-          source ~/kerl/${{ matrix.otp_vsn }}/activate
-          erl --version
-          make
+        run: make
       - shell: bash
-        run: |
-          source ~/kerl/${{ matrix.otp_vsn }}/activate
-          erl --version
-          make test
+        run: make test
