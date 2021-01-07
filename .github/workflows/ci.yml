@@ -45,7 +45,8 @@ jobs:
       LATEST_OTP_RELEASE: 23.1
       RUNNING_ON_CI: true
     steps:
-      - run: |
+      - shell: bash
+        run: |
           apt-get update
           apt-get -y install tcl tcl-dev gettext
           wget https://github.com/git/git/archive/v2.18.0.tar.gz -O git.tar.gz
@@ -60,5 +61,7 @@ jobs:
         run: |
           # run linter and docs if latest otp release
           [[ "${{ matrix.otp_vsn }}" != "${{ env.LATEST_OTP_RELEASE }}" ]] || make elvis docs
-      - run: make
-      - run: make test
+      - shell: bash
+        run: make
+      - shell: bash
+        run: make test
