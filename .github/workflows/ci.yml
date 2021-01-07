@@ -43,7 +43,6 @@ jobs:
       image: 'erlang:${{ matrix.otp_vsn }}'
     env:
       LATEST_OTP_RELEASE: 23.1
-      RUNNING_ON_CI: true
     steps:
       - shell: bash
         run: |
