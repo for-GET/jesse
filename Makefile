@@ -1,6 +1,10 @@
 # See LICENSE for licensing information.
 
+ifdef CI
+REBAR = ./rebar3
+else
 REBAR ?= $(shell command -v rebar3 >/dev/null 2>&1 && echo "rebar3" || echo "$(CURDIR)/rebar3")
+endif
 
 SRCS := $(wildcard src/* include/* rebar.config)
 
@@ -76,7 +80,7 @@ dialyzer:
 
 .PHONY: elvis
 elvis:
-	$(REBAR) as lint lint
+	$(REBAR) lint
 
 .PHONY: cover
 cover:
