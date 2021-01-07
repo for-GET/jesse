@@ -54,8 +54,9 @@ test/JSON-Schema-Test-Suite/tests:
 	git submodule sync --recursive
 	git submodule update --init --recursive
 
+# Would be nice to include elvis to test, but it fails on OTP-18
 .PHONY: test
-test: eunit ct xref dialyzer elvis cover
+test: eunit ct xref dialyzer cover
 
 .PHONY: eunit
 eunit:
