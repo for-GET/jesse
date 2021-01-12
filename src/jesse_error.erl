@@ -56,7 +56,8 @@
 
 -type error_type() :: atom()
                     | {atom(), jesse:json_term()}
-                    | {atom(), binary()}.
+                    | {atom(), binary()}
+                    | {atom(), [error_reason()]}.
 
 %% Includes
 -include("jesse_schema_validator.hrl").
@@ -66,7 +67,7 @@
 %% throws an exeption, otherwise adds a new element to the list and returs it.
 -spec default_error_handler( Error         :: error_reason()
                            , ErrorList     :: [error_reason()]
-                           , AllowedErrors :: jesse_state:allowed_errors()
+                           , AllowedErrors :: jesse:allowed_errors()
                            ) -> [error_reason()] | no_return().
 default_error_handler(Error, ErrorList0, AllowedErrors) ->
   ErrorList = ErrorList0 ++ [Error],
@@ -150,5 +151,3 @@ handle_error(Error, State) ->
   AllowedErrors = jesse_state:get_allowed_errors(State),
   NewErrorList  = ErrorHandler(Error, ErrorList, AllowedErrors),
   jesse_state:set_error_list(State, NewErrorList).
-
-%% @private

@@ -239,14 +239,20 @@ resolve_ref(State, Reference) ->
       Path = jesse_json_path:parse(Pointer),
       case load_local_schema(State#state.root_schema, Path) of
         ?not_found ->
-          jesse_error:handle_schema_invalid({?schema_not_found, CanonicalReference}, State);
+          jesse_error:handle_schema_invalid( { ?schema_not_found
+                                             , CanonicalReference}
+                                           , State
+                                           );
         Schema ->
           set_current_schema(State, Schema)
       end;
     false ->
       case load_schema(State, BaseURI) of
         ?not_found ->
-          jesse_error:handle_schema_invalid({?schema_not_found, CanonicalReference}, State);
+          jesse_error:handle_schema_invalid( { ?schema_not_found
+                                             , CanonicalReference}
+                                           , State
+                                           );
         RemoteSchema ->
           SchemaVer =
             jesse_json_path:value(?SCHEMA, RemoteSchema, ?default_schema_ver),
@@ -257,7 +263,10 @@ resolve_ref(State, Reference) ->
           Path = jesse_json_path:parse(Pointer),
           case load_local_schema(RemoteSchema, Path) of
             ?not_found ->
-              jesse_error:handle_schema_invalid({?schema_not_found, CanonicalReference}, State);
+              jesse_error:handle_schema_invalid( { ?schema_not_found
+                                                 , CanonicalReference}
+                                               , State
+                                               );
             Schema ->
               set_current_schema(NewState, Schema)
           end
@@ -320,7 +329,8 @@ load_local_schema(Schema, [Key | Keys]) ->
       end
   end.
 
--type http_uri_uri() :: string() | unicode:unicode_binary(). %% From https://github.com/erlang/otp/blob/OTP-20.2.3/lib/inets/doc/src/http_uri.xml#L57
+%% github.com/erlang/otp/blob/OTP-20.2.3/lib/inets/doc/src/http_uri.xml#L57
+-type http_uri_uri() :: string() | unicode:unicode_binary().
 
 %% @doc Resolve a new id
 %% @private
@@ -329,16 +339,11 @@ load_local_schema(Schema, [Key | Keys]) ->
 combine_id(Id, undefined) ->
   Id;
 combine_id(Id, RefBin) ->
-  Ref = unicode:characters_to_list(RefBin),
-  case http_uri:parse(Ref) of
-    %% Absolute http/s:
-    {ok, _} ->
-      Ref;
-    %% Absolute file:
-    {error, {no_default_port, file, Ref}} ->
+  case parse_ref(RefBin) of
+    {absolute, Ref} ->
       Ref;
     %% Relative
-    _ ->
+    {relative, Ref} ->
       combine_relative_id(Id, Ref)
   end.
 
@@ -433,3 +438,32 @@ load_schema(#state{schema_loader_fun = LoaderFun}, SchemaURI) ->
     _C:_E ->
       ?not_found
   end.
+
+%% @private
+get_external_validator(#state{external_validator = Fun}) ->
+  Fun.
+
+%% @private
+-ifdef(OTP_RELEASE). %% OTP 21+
+parse_ref(RefBin) ->
+  Ref = unicode:characters_to_list(RefBin),
+  case uri_string:parse(Ref) of
+    #{scheme := _} ->
+      {absolute, Ref};
+    _ ->
+      {relative, Ref}
+  end.
+-else.
+parse_ref(RefBin) ->
+  Ref = unicode:characters_to_list(RefBin),
+  case http_uri:parse(Ref) of
+    %% Absolute http/s:
+    {ok, _} ->
+      {absolute, Ref};
+    %% Absolute file:
+    {error, {no_default_port, file, Ref}} ->
+      {absolute, Ref};
+    _ ->
+      {relative, Ref}
+  end.
+-endif.
