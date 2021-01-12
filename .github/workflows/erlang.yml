@@ -7,7 +7,7 @@ on:
     branches: [ master ]
 
 env:
-  ERLANG_VERSION: 22.3
+  ERLANG_VERSION: 23.2
 
 jobs:
 
@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
 
     container:
-      image: erlang:22.3
+      image: erlang:23.2
 
     steps:
     - name: Checkout
