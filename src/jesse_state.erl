@@ -329,16 +329,11 @@ load_local_schema(Schema, [Key | Keys]) ->
 combine_id(Id, undefined) ->
   Id;
 combine_id(Id, RefBin) ->
-  Ref = unicode:characters_to_list(RefBin),
-  case http_uri:parse(Ref) of
-    %% Absolute http/s:
-    {ok, _} ->
-      Ref;
-    %% Absolute file:
-    {error, {no_default_port, file, Ref}} ->
+  case parse_ref(RefBin) of
+    {absolute, Ref} ->
       Ref;
     %% Relative
-    _ ->
+    {relative, Ref} ->
       combine_relative_id(Id, Ref)
   end.
 
@@ -433,3 +428,28 @@ load_schema(#state{schema_loader_fun = LoaderFun}, SchemaURI) ->
     _C:_E ->
       ?not_found
   end.
+
+%% @private
+-ifdef(OTP_RELEASE). %% OTP 21+
+parse_ref(RefBin) ->
+  Ref = unicode:characters_to_list(RefBin),
+  case uri_string:parse(Ref) of
+    #{scheme := _} ->
+      {absolute, Ref};
+    _ ->
+      {relative, Ref}
+  end.
+-else.
+parse_ref(RefBin) ->
+  Ref = unicode:characters_to_list(RefBin),
+  case http_uri:parse(Ref) of
+    %% Absolute http/s:
+    {ok, _} ->
+      {absolute, Ref};
+    %% Absolute file:
+    {error, {no_default_port, file, Ref}} ->
+      {absolute, Ref};
+    _ ->
+      {relative, Ref}
+  end.
+-endif.

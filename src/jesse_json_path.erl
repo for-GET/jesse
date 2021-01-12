@@ -293,7 +293,7 @@ normalize(K, undefined) ->
 
 -spec parse_json_pointer_token(Token :: string()) -> binary().
 parse_json_pointer_token(Token) ->
-  DecodedToken = unicode:characters_to_binary(http_uri:decode(Token)),
+  DecodedToken = unicode:characters_to_binary(hex_decode(Token)),
   lists:foldl( fun({From, To}, T) ->
                    binary:replace(T, From, To)
                end
@@ -302,3 +302,19 @@ parse_json_pointer_token(Token) ->
                , {<<"~1">>, <<"/">>}
                ]
              ).
+
+%% This implementation is based on http_uri:decode(), because there is
+%% no direct alternative in uri_string module.
+%% cf. http://erlang.org/pipermail/erlang-questions/2020-March/099207.html
+%% @private
+hex_decode([$%, Hex1, Hex2 | Rest]) ->
+    [hex2dec(Hex1)*16 + hex2dec(Hex2) | hex_decode(Rest)];
+hex_decode([First | Rest]) ->
+    [First | hex_decode(Rest)];
+hex_decode([]) ->
+    [].
+
+%% @private
+hex2dec(X) when (X>=$0) andalso (X=<$9) -> X-$0;
+hex2dec(X) when (X>=$A) andalso (X=<$F) -> X-$A+10;
+hex2dec(X) when (X>=$a) andalso (X=<$f) -> X-$a+10.
