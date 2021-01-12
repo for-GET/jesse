@@ -304,7 +304,7 @@ parse_json_pointer_token(Token) ->
              ).
 
 %% This implementation is based on http_uri:decode(), because there is
-%% no direct alternative inin uri_string module.
+%% no direct alternative in uri_string module.
 %% cf. http://erlang.org/pipermail/erlang-questions/2020-March/099207.html
 %% @private
 hex_decode([$%, Hex1, Hex2 | Rest]) ->
