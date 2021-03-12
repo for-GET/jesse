@@ -219,6 +219,9 @@ check_value(Value, [{?MAXLENGTH, MaxLength} | Attrs], State) ->
 check_value(Value, [{?ENUM, Enum} | Attrs], State) ->
   NewState = check_enum(Value, Enum, State),
   check_value(Value, Attrs, NewState);
+check_value(Value, [{?CONST, Enum} | Attrs], State) ->
+  NewState = check_enum(Value, Enum, State),
+  check_value(Value, Attrs, NewState);
 check_value(Value, [{?FORMAT, Format} | Attrs], State) ->
   NewState = check_format(Value, Format, State),
   check_value(Value, Attrs, NewState);

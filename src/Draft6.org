@@ -59,7 +59,8 @@ added
 
 array keyword that passes validation if its schema validates at least one array item
 
-*** TODO const
+*** DONE const
+    CLOSED: [2021-03-12 Fri 13:07]
 
 added
 

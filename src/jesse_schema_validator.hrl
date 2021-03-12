@@ -63,6 +63,7 @@
 -define(MINLENGTH,            <<"minLength">>).
 -define(MAXLENGTH,            <<"maxLength">>).
 -define(ENUM,                 <<"enum">>).
+-define(CONST,                 <<"const">>).
 -define(FORMAT,               <<"format">>).               % NOT IMPLEMENTED YET
 -define(DIVISIBLEBY,          <<"divisibleBy">>).
 -define(DISALLOW,             <<"disallow">>).
