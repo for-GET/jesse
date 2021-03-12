@@ -50,6 +50,7 @@
 -define(ADDITIONALPROPERTIES, <<"additionalProperties">>).
 -define(ITEMS,                <<"items">>).
 -define(ADDITIONALITEMS,      <<"additionalItems">>).
+-define(CONTAINS,             <<"contains">>).
 -define(REQUIRED,             <<"required">>).
 -define(DEPENDENCIES,         <<"dependencies">>).
 -define(MINIMUM,              <<"minimum">>).

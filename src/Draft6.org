@@ -41,6 +41,7 @@ fractional parts
 *** TODO booleans as schemas
 
 **** Change
+
 allowable anywhere, not just "additionalProperties" and "additionalItems"
 
 **** Consequence
@@ -53,7 +54,8 @@ Added.
 
 takes a schema which validates the names of all properties rather than their values
 
-*** TODO contains
+*** DONE contains
+    CLOSED: [2021-03-12 Fri 15:05]
 
 added
 
@@ -99,7 +101,6 @@ allows relative URI references per RFC 3986; see the section below about "uri" a
 
 Simple: use library uri_string:parse(), which returns either a uri_map() or error()
 http://erlang.org/doc/man/uri_string.html#parse-1
-
 
 *** TODO "format": "uri-template"
 

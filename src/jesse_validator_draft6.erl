@@ -136,6 +136,12 @@ check_value( Value
            , State
            ) ->
   check_value(Value, Attrs, State);
+check_value(Value, [{?CONTAINS, Schema} | Attrs], State) ->
+  NewState = case jesse_lib:is_array(Value) of
+               true  -> check_contains(Value, Schema, State);
+               false -> State
+             end,
+  check_value(Value, Attrs, NewState);
 check_value(Value, [{?REQUIRED, Required} | Attrs], State) ->
   NewState = case jesse_lib:is_json_object(Value) of
                true  -> check_required(Value, Required, State);
@@ -567,6 +573,26 @@ check_items(Value, Items, State) ->
     _ ->
       handle_schema_invalid({?wrong_type_items, Items}, State)
   end.
+
+check_contains([], _Schema, State) ->
+  State;
+check_contains(Values, Schema, State) ->
+  DefaultAssumption = {false, State},
+  Result = lists:foldl(fun (Value, Acc) ->
+                         case Acc of
+                           {false, NewState} ->
+                             validate_schema(Value, Schema, NewState);
+                           {true, _} ->
+                             Acc
+                         end
+                       end, DefaultAssumption, Values),
+  case Result of
+    true ->
+      State;
+    false ->
+      handle_data_invalid(?data_invalid, Values, State)
+  end.
+
 
 %% @private
 check_items_array(Value, Items, State) ->
