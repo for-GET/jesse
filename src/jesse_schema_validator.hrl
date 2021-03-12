@@ -47,6 +47,7 @@
 -define(TYPE,                 <<"type">>).
 -define(PROPERTIES,           <<"properties">>).
 -define(PATTERNPROPERTIES,    <<"patternProperties">>).
+-define(PROPERTYNAMES,        <<"propertyNames">>).
 -define(ADDITIONALPROPERTIES, <<"additionalProperties">>).
 -define(ITEMS,                <<"items">>).
 -define(ADDITIONALITEMS,      <<"additionalItems">>).

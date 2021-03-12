@@ -48,7 +48,8 @@ allowable anywhere, not just "additionalProperties" and "additionalItems"
  true is equivalent to {}, false is equivalent to {"not": {}}, but the intent is
 more clear and implementations can optimize these cases more easily
 
-*** TODO propertyNames
+*** DONE propertyNames
+    CLOSED: [2021-03-12 Fri 15:45]
 
 Added.
 

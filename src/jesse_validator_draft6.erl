@@ -112,6 +112,21 @@ check_value( Value
              end,
   check_value(Value, Attrs, NewState);
 check_value( Value
+           , [{?PROPERTYNAMES, PatternProperties} | Attrs]
+           , State
+           ) ->
+  %% The description of PropertyNames seems to do the same as PatternProperties.
+  %% I am not sure whether the PatternProperties follows the standard draft 4,
+  %% since it needs to consider that additionalProperties must be false.
+  NewState = case jesse_lib:is_json_object(Value) of
+               true  -> check_property_names( Value
+                                            , PatternProperties
+                                            , State
+                                            );
+               false -> State
+             end,
+  check_value(Value, Attrs, NewState);
+check_value( Value
            , [{?ADDITIONALPROPERTIES, AdditionalProperties} | Attrs]
            , State
            ) ->
@@ -429,6 +444,16 @@ check_pattern_properties(Value, PatternProperties, State) ->
                         ),
   set_current_schema(TmpState, get_current_schema(State)).
 
+check_property_names(Value, PatternProperties, State) ->
+  P1P2 = [{P1, P2} || P1 <- unwrap(Value), P2  <- unwrap(PatternProperties)],
+  TmpState = lists:foldl( fun({Property, Pattern}, CurrentState) ->
+                              check_match_property(Property, Pattern, CurrentState)
+                          end
+                        , State
+                        , P1P2
+                        ),
+  set_current_schema(TmpState, get_current_schema(State)).
+
 %% @private
 check_match({PropertyName, PropertyValue}, {Pattern, Schema}, State) ->
   case re:run(PropertyName, Pattern, [{capture, none}, unicode]) of
@@ -441,6 +466,16 @@ check_match({PropertyName, PropertyValue}, {Pattern, Schema}, State) ->
     nomatch ->
       State
   end.
+
+%% @private
+check_match_property({PropertyName, _PropertyValue}, {_PatternKeyword, Regex}, State) ->
+  case re:run(PropertyName, Regex, [{capture, none}, unicode]) of
+    match   ->
+      State;
+    nomatch ->
+      handle_data_invalid(?no_match, PropertyName, State)
+  end.
+
 
 %% @doc additionalProperties
 %% See check_properties/3.
