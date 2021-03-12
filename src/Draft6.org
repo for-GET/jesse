@@ -116,7 +116,8 @@ added
 indicates a JSON Pointer value such as /foo/bar; do not use this for JSON Pointer
 URI fragments such as #/foo/bar: the proper format for those is "uri-reference"
 
-*** TODO examples
+*** DONE examples
+    CLOSED: [2021-03-12 Fri 15:59]
 
 added
 

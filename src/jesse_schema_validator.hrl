@@ -52,6 +52,7 @@
 -define(ITEMS,                <<"items">>).
 -define(ADDITIONALITEMS,      <<"additionalItems">>).
 -define(CONTAINS,             <<"contains">>).
+-define(EXAMPLES,             <<"examples">>).
 -define(REQUIRED,             <<"required">>).
 -define(DEPENDENCIES,         <<"dependencies">>).
 -define(MINIMUM,              <<"minimum">>).
@@ -131,6 +132,7 @@
 -define(not_in_enum,                 'not_in_enum').
 -define(not_in_range,                'not_in_range').
 -define(not_divisible,               'not_divisible').
+-define(not_array,                   'not_array').
 -define(wrong_type,                  'wrong_type').
 -define(wrong_size,                  'wrong_size').
 -define(wrong_length,                'wrong_length').

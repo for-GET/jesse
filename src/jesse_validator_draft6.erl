@@ -157,6 +157,14 @@ check_value(Value, [{?CONTAINS, Schema} | Attrs], State) ->
                false -> State
              end,
   check_value(Value, Attrs, NewState);
+check_value(Value, [{?EXAMPLES, _Examples} | Attrs], State) ->
+  NewState = case jesse_lib:is_array(Value) of
+               true  ->
+                 %% No need to check. The schema is valid, by definition, at this point.
+                 State;
+               false -> handle_data_invalid(?not_array, Value, State)
+             end,
+  check_value(Value, Attrs, NewState);
 check_value(Value, [{?REQUIRED, Required} | Attrs], State) ->
   NewState = case jesse_lib:is_json_object(Value) of
                true  -> check_required(Value, Required, State);
