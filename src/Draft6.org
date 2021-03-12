@@ -1,0 +1,104 @@
+* Moving to draft 6
+
+** Incompatible changes
+
+*** TODO $id
+
+For the moment, we check whether the user uses `id` and fallback
+to checking `$id` if `id` fails.
+
+**** Note
+
+TODO: We must allow the usage of `id` as a field.
+
+*** TODO $ref
+
+**** TODO only allowed where a schema is expected
+**** TODO it is now possible to describe instance properties named "$ref"
+
+*** DONE exclusiveMinimum
+    CLOSED: [2021-03-12 Fri 10:24]
+
+- changed from a boolean to a number to be consistent with the principle of keyword independence
+
+*** DONE exclusiveMaximum
+    CLOSED: [2021-03-12 Fri 10:24]
+
+- changed from a boolean to a number to be consistent with the principle of keyword independence
+*** DONE type
+    CLOSED: [2021-03-12 Fri 11:50]
+
+in draft-04, "integer" is listed as a primitive type and defined as “a JSON
+number without a fraction or exponent part”; in draft-06, "integer" is not
+considered a primitive type and is only defined in the section for keyword "type"
+as “any number with a zero fractional part”; 1.0 is thus not a valid "integer"
+type in draft-04 and earlier, but is a valid "integer" type in draft-06 and
+later; note that both drafts say that integers SHOULD be encoded in JSON without
+fractional parts
+
+** Additions And Backwards compatible changes
+
+*** TODO booleans as schemas
+
+**** Change
+allowable anywhere, not just "additionalProperties" and "additionalItems"
+
+**** Consequence
+ true is equivalent to {}, false is equivalent to {"not": {}}, but the intent is
+more clear and implementations can optimize these cases more easily
+
+*** TODO propertyNames
+
+Added.
+
+takes a schema which validates the names of all properties rather than their values
+
+*** TODO contains
+
+added
+
+array keyword that passes validation if its schema validates at least one array item
+
+*** TODO const
+
+added
+
+more readible form of a one-element "enum"
+
+*** TODO required
+
+allows an empty array
+
+an empty array indicates that no properties are required
+
+*** TODO dependencies
+
+allows an empty array for property dependencies
+
+an empty array indicates that there are no dependencies for the given property
+
+*** TODO "format": "uri-reference"
+
+added
+
+allows relative URI references per RFC 3986; see the section below about "uri" as a format
+
+*** TODO "format": "uri-template"
+
+added
+
+indicates an RFC 6570 conforming URI Template value, as is used in JSON Hyper-Schema for "href"
+
+*** TODO "format": "json-pointer"
+
+added
+
+indicates a JSON Pointer value such as /foo/bar; do not use this for JSON Pointer
+URI fragments such as #/foo/bar: the proper format for those is "uri-reference"
+
+*** TODO examples
+
+added
+
+array of examples with no validation effect; the value of "default" is usable as
+an example without repeating it under this keyword
