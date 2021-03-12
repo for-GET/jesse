@@ -66,11 +66,18 @@ added
 
 more readible form of a one-element "enum"
 
-*** TODO required
+*** DONE required
+    CLOSED: [2021-03-12 Fri 13:15]
 
 allows an empty array
 
 an empty array indicates that no properties are required
+
+**** NOTE:
+
+This case was already handle in `jesse`. The implementation should have checked the the array
+contains at least one argument, failing on empty arrays. The array was not checked, thus
+it handles the empty array case.
 
 *** DONE dependencies
     CLOSED: [2021-03-12 Fri 13:02]
