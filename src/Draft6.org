@@ -71,17 +71,27 @@ allows an empty array
 
 an empty array indicates that no properties are required
 
-*** TODO dependencies
+*** DONE dependencies
+    CLOSED: [2021-03-12 Fri 13:02]
 
 allows an empty array for property dependencies
 
 an empty array indicates that there are no dependencies for the given property
 
-*** TODO "format": "uri-reference"
+**** NOTE
+
+jesse already handle empty arrays in the correct way in the `check_value` function.
+
+*** DONE "format": "uri-reference"
+    CLOSED: [2021-03-12 Fri 12:49]
 
 added
 
 allows relative URI references per RFC 3986; see the section below about "uri" as a format
+
+Simple: use library uri_string:parse(), which returns either a uri_map() or error()
+http://erlang.org/doc/man/uri_string.html#parse-1
+
 
 *** TODO "format": "uri-template"
 

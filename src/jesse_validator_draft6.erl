@@ -180,20 +180,6 @@ check_value(Value, [{?EXCLUSIVEMAXIMUM, ExclusiveMaximum} | Attrs], State) ->
                  State
              end,
   check_value(Value, Attrs, NewState);
-%% doesn't really do anything, since this attribute will be handled
-%% by the previous function clause if it's presented in the schema
-check_value( Value
-           , [{?EXCLUSIVEMINIMUM, _ExclusiveMinimum} | Attrs]
-           , State
-           ) ->
-  check_value(Value, Attrs, State);
-%% doesn't really do anything, since this attribute will be handled
-%% by the previous function clause if it's presented in the schema
-check_value( Value
-           , [{?EXCLUSIVEMAXIMUM, _ExclusiveMaximum} | Attrs]
-           , State
-           ) ->
-  check_value(Value, Attrs, State);
 check_value(Value, [{?MINITEMS, MinItems} | Attrs], State) ->
   NewState = case jesse_lib:is_array(Value) of
                true  -> check_min_items(Value, MinItems, State);
@@ -999,8 +985,22 @@ check_format(Value, _Format = <<"ipv6">>, State) when is_binary(Value) ->
 check_format(Value, _Format = <<"uri">>, State) when is_binary(Value) ->
   %% not yet supported
   State;
+check_format(Value, _Format = <<"uri-reference">>, State) when is_binary(Value) ->
+  case valid_uri_string(Value) of
+    true -> State;
+    false -> handle_data_invalid(?wrong_format, Value, State)
+  end;
 check_format(_Value, _Format, State) ->
   State.
+
+valid_uri_string(Value) ->
+  case uri_string:parse(Value) of
+    {error, _ErrorType, _Term} ->
+      false;
+    _ ->
+      true
+  end.
+
 
 %% @doc 5.1.1. multipleOf
 %%
