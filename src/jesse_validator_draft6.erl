@@ -623,16 +623,16 @@ check_contains(Values, Schema, State) ->
   DefaultAssumption = {false, State},
   Result = lists:foldl(fun (Value, Acc) ->
                          case Acc of
-                           {false, NewState} ->
-                             validate_schema(Value, Schema, NewState);
+                           {false, _} ->
+                             validate_schema(Value, Schema, State);
                            {true, _} ->
                              Acc
                          end
                        end, DefaultAssumption, Values),
   case Result of
-    true ->
+    {true, _} ->
       State;
-    false ->
+    {false, _} ->
       handle_data_invalid(?data_invalid, Values, State)
   end.
 
