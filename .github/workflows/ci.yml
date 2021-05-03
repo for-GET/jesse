@@ -37,6 +37,9 @@ jobs:
           - '22.3'
           - '23'
           - '23.1'
+          - '23.2'
+          - '23.3'
+          - '24.0-rc3'
     name: 'ci-erl:${{ matrix.otp_vsn }}'
     runs-on: ubuntu-latest
     container:
