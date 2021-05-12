@@ -511,5 +511,53 @@ data_dollarid_test() ->
      jesse_schema_validator:validate(SchemaWithId(?json_schema_draft6, <<"$id">>), Object, [])
     ).
 
+data_contains_test() ->
+  Schema = {[ {<<"$schema">>, ?json_schema_draft6}
+            , {<<"type">>, <<"array">>}
+            , {<<"contains">>, {[
+                {<<"type">>, <<"number">>}
+              ]}}
+            ]},
+  Array = [<<"foo">>, 42],
+  ArrayOfString = [<<"foo">>, <<"bar">>],
+  ?assertEqual(
+     {ok, Array},
+     jesse_schema_validator:validate(Schema, Array, [])
+    ),
+
+  ?assertThrow([{data_invalid
+                , {[{ <<"$schema">>, <<"http://json-schema.org/draft-06/schema#">>}
+                   , { <<"type">> , <<"array">> }
+                   , { <<"contains">>
+                     , {[{ <<"type">> , <<"number">> }]}
+                     }
+                   ]}
+                , data_invalid
+                , [<<"foo">>,<<"bar">>]
+                , []}],
+               jesse_schema_validator:validate(Schema, ArrayOfString, [])
+              ).
+
+data_const_test() ->
+  Schema = {[ {<<"$schema">>, ?json_schema_draft6}
+            , {<<"type">>, <<"string">>}
+            , {<<"const">>, [<<"foo">>, <<"bar">> ]}
+            ]},
+
+  ?assertEqual(
+     {ok, <<"foo">>},
+     jesse_schema_validator:validate(Schema, <<"foo">>, [])
+    ),
+    ?assertThrow([{ data_invalid
+                  , {[{<<"$schema">> , <<"http://json-schema.org/draft-06/schema#">> }
+                     , {<<"type">>,<<"string">>}
+                     , {<<"const">>
+                       , [ <<"foo">>,<<"bar">> ]
+                       }
+                     ]}
+                  , not_in_enum,<<"qux">>,[]}],
+     jesse_schema_validator:validate(Schema, <<"qux">>, [])
+    ).
+
 -endif.
 -endif.
