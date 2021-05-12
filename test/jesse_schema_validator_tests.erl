@@ -294,6 +294,7 @@ map_schema_test() ->
   [ map_schema_test_draft(URI)
     || URI <- [ <<"http://json-schema.org/draft-03/schema#">>
               , <<"http://json-schema.org/draft-04/schema#">>
+              , <<"http://json-schema.org/draft-06/schema#">>
               ]].
 
 map_schema_test_draft(URI) ->
@@ -334,6 +335,7 @@ map_data_test() ->
   [ map_data_test_draft(URI)
     || URI <- [ <<"http://json-schema.org/draft-03/schema#">>
               , <<"http://json-schema.org/draft-04/schema#">>
+              , <<"http://json-schema.org/draft-06/schema#">>
               ]
   ].
 
