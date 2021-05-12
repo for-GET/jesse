@@ -409,7 +409,7 @@ map_schema_references_test() ->
        Schema, Json,
        [{default_schema_ver, <<"http://json-schema.org/draft-04/schema#">>}])).
 
-data_invalid_exclusive_minimum_test() ->
+data_exclusive_maximum_minimum_test() ->
 
   Schema = fun (Property, V) ->
                {[ {<<"$schema">>, V}
@@ -481,6 +481,34 @@ data_propertyNames_test() ->
       ,<<"foo">>
       ,[]}]
     , jesse_schema_validator:validate(Schema, IllformedObject, [])
+    ).
+
+data_dollarid_test() ->
+  SchemaWithId = fun (Draft, Id) ->
+                     {[ {<<"$schema">>, Draft}
+                      , {<<"type">>, <<"object">>}
+                      , {Id, <<"foo">>}
+                      ]}
+                 end,
+  Object = {[{ <<"foo">>, <<"bar">> }]},
+  ?assertEqual(
+     {ok, Object},
+     jesse_schema_validator:validate(SchemaWithId(?json_schema_draft4, <<"id">>), Object, [])
+    ),
+
+  ?assertEqual(
+     {ok, Object},
+     jesse_schema_validator:validate(SchemaWithId(?json_schema_draft4, <<"$id">>), Object, [])
+    ),
+
+  ?assertEqual(
+     {ok, Object},
+     jesse_schema_validator:validate(SchemaWithId(?json_schema_draft6, <<"id">>), Object, [])
+    ),
+
+  ?assertEqual(
+     {ok, Object},
+     jesse_schema_validator:validate(SchemaWithId(?json_schema_draft6, <<"$id">>), Object, [])
     ).
 
 -endif.
