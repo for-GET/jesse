@@ -496,15 +496,21 @@ data_dollarid_test() ->
      jesse_schema_validator:validate(SchemaWithId(?json_schema_draft4, <<"id">>), Object, [])
     ),
 
-  ?assertEqual(
-     {ok, Object},
-     jesse_schema_validator:validate(SchemaWithId(?json_schema_draft4, <<"$id">>), Object, [])
-    ),
+  ?assertThrow([{schema_invalid,
+                {[{<<"$schema">>,
+                   <<"http://json-schema.org/draft-04/schema#">>},
+                  {<<"type">>,<<"object">>},
+                  {<<"$id">>,<<"foo">>}]},
+                wrong_draft4_id_tag}],
+               jesse_schema_validator:validate(SchemaWithId(?json_schema_draft4, <<"$id">>), Object, [])),
 
-  ?assertEqual(
-     {ok, Object},
-     jesse_schema_validator:validate(SchemaWithId(?json_schema_draft6, <<"id">>), Object, [])
-    ),
+  ?assertThrow([{ schema_invalid,
+                  {[{<<"$schema">>,
+                     <<"http://json-schema.org/draft-06/schema#">>},
+                    {<<"type">>,<<"object">>},
+                    {<<"id">>,<<"foo">>}]},
+                  wrong_draft6_id_tag}],
+               jesse_schema_validator:validate(SchemaWithId(?json_schema_draft6, <<"id">>), Object, [])),
 
   ?assertEqual(
      {ok, Object},
