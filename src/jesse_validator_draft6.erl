@@ -1115,6 +1115,8 @@ check_multiple_of(_Value, _MultipleOf, State) ->
 %%   contains all elements in this keyword's array value.
 %%
 %% @private
+check_required(Value, [] = Required, State) ->
+  check_required_values(Value, Required, State);
 check_required(Value, [_ | _] = Required, State) ->
   check_required_values(Value, Required, State);
 check_required(_Value, _InvalidRequired, State) ->

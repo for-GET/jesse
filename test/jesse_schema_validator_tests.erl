@@ -565,5 +565,16 @@ data_const_test() ->
      jesse_schema_validator:validate(Schema, <<"qux">>, [])
     ).
 
+data_empty_required_test() ->
+  Schema = {[ {<<"$schema">>, ?json_schema_draft6}
+            , {<<"type">>, <<"object">>}
+            , {<<"required">>, []}
+            ]},
+
+  ?assertEqual(
+     {ok, {[ ]}},
+     jesse_schema_validator:validate(Schema, {[ ]}, [])
+    ).
+
 -endif.
 -endif.
