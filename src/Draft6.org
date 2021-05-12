@@ -2,7 +2,8 @@
 
 ** Incompatible changes
 
-*** TODO $id
+*** DONE $id
+    CLOSED: [2021-05-12 Wed 15:52]
 
 For the moment, we check whether the user uses `id` and fallback
 to checking `$id` if `id` fails.
