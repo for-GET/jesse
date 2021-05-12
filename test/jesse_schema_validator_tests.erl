@@ -576,5 +576,17 @@ data_empty_required_test() ->
      jesse_schema_validator:validate(Schema, {[ ]}, [])
     ).
 
+data_empty_dependencies_test() ->
+  Schema = {[ {<<"$schema">>, ?json_schema_draft6}
+            , {<<"type">>, <<"object">>}
+            , {<<"dependencies">>, []}
+            ]},
+
+  ?assertEqual(
+     {ok, {[ ]}},
+     jesse_schema_validator:validate(Schema, {[ ]}, [])
+    ).
+
+
 -endif.
 -endif.
