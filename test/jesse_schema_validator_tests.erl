@@ -453,5 +453,35 @@ data_invalid_exclusive_minimum_test() ->
                 jesse_schema_validator:validate(Schema(<<"exclusiveMaximum">>, ?json_schema_draft6), ValidNumber+2, [])
               ).
 
+
+data_propertyNames_test() ->
+  Schema = {[ {<<"$schema">>, ?json_schema_draft6}
+            , {<<"type">>, <<"object">>}
+            , {<<"propertyNames">>, {[
+                {<<"pattern">>, <<"^[A-Z]*$">>}
+              ]}}
+            ]},
+  Object = {[{ <<"FOO">>, <<"value">> }]},
+  IllformedObject = {[{ <<"foo">>, <<"value">> }]},
+  %% A case without errors
+  ?assertEqual(
+    {ok, Object},
+    jesse_schema_validator:validate(Schema, Object, [])
+    ),
+  ?assertThrow(
+     [{ data_invalid
+      , {[{ <<"$schema">>
+          , <<"http://json-schema.org/draft-06/schema#">>}
+         , { <<"type">>,<<"object">> }
+         , { <<"propertyNames">>
+           , {[{ <<"pattern">> , <<"^[A-Z]*$">>}]}
+           }
+         ]}
+      , no_match
+      ,<<"foo">>
+      ,[]}]
+    , jesse_schema_validator:validate(Schema, IllformedObject, [])
+    ).
+
 -endif.
 -endif.
