@@ -118,6 +118,7 @@
 -define(wrong_type_items,            'wrong_type_items').
 -define(wrong_type_specification,    'wrong_type_specification').
 -define(wrong_draft6_id_tag,         'wrong_draft6_id_tag').
+-define(wrong_draft4_id_tag,         'wrong_draft4_id_tag').
 
 %% Constant definitions for data errors
 -define(data_error,                  'data_error').

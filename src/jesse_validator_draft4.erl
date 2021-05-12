@@ -43,7 +43,8 @@
                       | ?wrong_required_array
                       | ?wrong_type_dependency
                       | ?wrong_type_items
-                      | ?wrong_type_specification.
+                      | ?wrong_type_specification
+                      | ?wrong_draft4_id_tag.
 
 -type schema_error_type() :: schema_error()
                            | {schema_error(), jesse:json_term()}.
@@ -80,6 +81,8 @@
                  , JsonSchema :: jesse:schema()
                  , State :: jesse_state:state()
                  ) -> jesse_state:state() | no_return().
+check_value(_Value, [{?IDv6, _ID} | _Attrs], State) ->
+  handle_schema_invalid(?wrong_draft4_id_tag, State);
 check_value(Value, [{?REF, RefSchemaURI} | _], State) ->
   validate_ref(Value, RefSchemaURI, State);
 check_value(Value, [{?TYPE, Type} | Attrs], State) ->
