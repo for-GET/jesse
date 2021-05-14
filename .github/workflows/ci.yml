@@ -39,13 +39,12 @@ jobs:
           - '23.1'
           - '23.2'
           - '23.3'
-          - '24.0-rc3'
+          - '24.0'
+          - 'latest'
     name: 'ci-erl:${{ matrix.otp_vsn }}'
     runs-on: ubuntu-latest
     container:
       image: 'erlang:${{ matrix.otp_vsn }}'
-    env:
-      LATEST_OTP_RELEASE: 23.1
     steps:
       - shell: bash
         run: |
@@ -61,10 +60,10 @@ jobs:
         with:
           fetch-depth: 0
       - shell: bash
-        run: |
-          # run linter and docs if latest otp release
-          [[ "${{ matrix.otp_vsn }}" != "${{ env.LATEST_OTP_RELEASE }}" ]] || make elvis docs
-      - shell: bash
         run: make
       - shell: bash
         run: make test
+      - shell: bash
+        run: |
+          make elvis docs
+        if: ${{ matrix.otp_vsn == 'latest' }}
