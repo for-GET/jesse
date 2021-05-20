@@ -587,6 +587,117 @@ data_empty_dependencies_test() ->
      jesse_schema_validator:validate(Schema, {[ ]}, [])
     ).
 
+object_property_with_boolean_value_test() ->
+  Schema = {[ {<<"$schema">>, ?json_schema_draft6}
+            , {<<"type">>, <<"object">>}
+            , {<<"properties">>, true}
+            ]},
+
+  ?assertEqual(
+     {ok, {[ ]}},
+     jesse_schema_validator:validate(Schema, {[ ]}, [])
+    ),
+
+  InvalidSchema = {[ {<<"$schema">>, ?json_schema_draft6}
+                   , {<<"type">>, <<"object">>}
+                   , {<<"properties">>, false}
+                   ]},
+
+  ?assertThrow([{data_invalid,
+                  {[{<<"$schema">>,?json_schema_draft6},
+                    {<<"type">>,<<"object">>},
+                    {<<"properties">>,false}]},
+                  ?validation_always_fails,
+                  {[]},
+                  []
+                }]
+              , jesse_schema_validator:validate(InvalidSchema, {[ ]}, [])
+              ).
+
+pattern_property_with_boolean_value_test() ->
+  Schema = {[ {<<"$schema">>, ?json_schema_draft6}
+            , {<<"type">>, <<"object">>}
+            , {<<"propertyNames">>, true}
+            ]},
+
+  ?assertEqual(
+     {ok, {[ ]}},
+     jesse_schema_validator:validate(Schema, {[ ]}, [])
+    ),
+
+  InvalidSchema = {[ {<<"$schema">>, ?json_schema_draft6}
+                   , {<<"type">>, <<"object">>}
+                   , {<<"propertyNames">>, false}
+                   ]},
+
+  ?assertThrow([{data_invalid,
+                  {[{<<"$schema">>,?json_schema_draft6},
+                    {<<"type">>,<<"object">>},
+                    {<<"propertyNames">>,false}]},
+                  ?validation_always_fails,
+                  {[]},
+                  []
+                }]
+              , jesse_schema_validator:validate(InvalidSchema, {[ ]}, [])
+              ).
+
+array_items_with_boolean_value_test() ->
+  Schema = {[ {<<"$schema">>, ?json_schema_draft6}
+            , {<<"type">>, <<"array">>}
+            , {<<"items">>, true}
+            ]},
+
+  ?assertEqual(
+     {ok, []},
+     jesse_schema_validator:validate(Schema, [], [])
+    ),
+
+  InvalidSchema = {[ {<<"$schema">>, ?json_schema_draft6}
+                   , {<<"type">>, <<"array">>}
+                   , {<<"items">>, false}
+                   ]},
+
+  ?assertThrow([{schema_invalid,
+                 {[{<<"$schema">>,
+                    <<"http://json-schema.org/draft-06/schema#">>},
+                   {<<"type">>,<<"array">>},
+                   {<<"items">>,false}]},
+                 {wrong_type_items,{<<"not">>,{[]}}}}]
+              , jesse_schema_validator:validate(InvalidSchema, [], [])
+    ),
+
+  ?assertThrow([{schema_invalid,
+                 {[{<<"$schema">>,
+                    <<"http://json-schema.org/draft-06/schema#">>},
+                   {<<"type">>,<<"array">>},
+                   {<<"items">>,false}]},
+                 {wrong_type_items,{<<"not">>,{[]}}}}]
+              , jesse_schema_validator:validate(InvalidSchema, [1], [])
+    ).
+
+contains_with_boolean_value_test() ->
+  Schema = {[ {<<"$schema">>, ?json_schema_draft6}
+            , {<<"type">>, <<"array">>}
+            , {<<"contains">>, true}
+            ]},
+  Array = [<<"foo">>, 42],
+  ?assertEqual(
+     {ok, Array},
+     jesse_schema_validator:validate(Schema, Array, [])
+    ),
+
+  InvalidSchema = {[ {<<"$schema">>, ?json_schema_draft6}
+                   , {<<"type">>, <<"array">>}
+                   , {<<"contains">>, false}
+                   ]},
+  ?assertThrow([{data_invalid,{[{<<"$schema">>,<<"http://json-schema.org/draft-06/schema#">>},
+                 {<<"type">>,<<"array">>},
+                 {<<"contains">>,false}]},
+               validation_always_fails,[],[]}]
+              , jesse_schema_validator:validate(InvalidSchema, [], [])
+              ).
+
+
 
 -endif.
 -endif.

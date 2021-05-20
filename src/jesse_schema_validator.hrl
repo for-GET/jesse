@@ -147,6 +147,7 @@
 -define(not_one_schema_valid,        'not_one_schema_valid').
 -define(more_than_one_schema_valid,  'more_than_one_schema_valid').
 -define(not_schema_valid,            'not_schema_valid').
+-define(validation_always_fails,     'validation_always_fails').
 -define(wrong_not_schema,            'wrong_not_schema').
 -define(external,                    'external').
 

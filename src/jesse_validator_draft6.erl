@@ -93,6 +93,10 @@ check_value(Value, [{?REF, RefSchemaURI} | Attrs], State) ->
 check_value(Value, [{?TYPE, Type} | Attrs], State) ->
   NewState = check_type(Value, Type, State),
   check_value(Value, Attrs, NewState);
+check_value(Value, [{?PROPERTIES, true} | Attrs], State) ->
+  check_value(Value, Attrs, State);
+check_value(Value, [{?PROPERTIES, false} | _Attrs], State) ->
+  handle_data_invalid(?validation_always_fails, Value, State);
 check_value(Value, [{?PROPERTIES, Properties} | Attrs], State) ->
   NewState = case jesse_lib:is_json_object(Value) of
                true  -> check_properties( Value
@@ -114,6 +118,22 @@ check_value( Value
                false -> State
              end,
   check_value(Value, Attrs, NewState);
+check_value( Value
+           , [{?PROPERTYNAMES, true} | Attrs]
+           , State
+           ) ->
+  case jesse_lib:is_json_object(Value) of
+    true -> check_value( Value, Attrs, State);
+    false -> State
+  end;
+check_value( Value
+           , [{?PROPERTYNAMES, false} | _Attrs]
+           , State
+           ) ->
+  case jesse_lib:is_json_object(Value) of
+    true -> handle_data_invalid(?validation_always_fails, Value, State);
+    false -> State
+  end;
 check_value( Value
            , [{?PROPERTYNAMES, PatternProperties} | Attrs]
            , State
@@ -141,6 +161,12 @@ check_value( Value
                false -> State
        end,
   check_value(Value, Attrs, NewState);
+check_value(Value, [{?ITEMS, true} | Attrs], State) ->
+  check_value(Value, Attrs, State);
+check_value(Value, [{?ITEMS, false} | Attrs], State) ->
+% Default semantics: `not: {}`
+  Not = {?NOT, {[  ]}},
+  check_value(Value, [{?ITEMS, Not} | Attrs], State);
 check_value(Value, [{?ITEMS, Items} | Attrs], State) ->
   NewState = case jesse_lib:is_array(Value) of
                true  -> check_items(Value, Items, State);
@@ -154,6 +180,10 @@ check_value( Value
            , State
            ) ->
   check_value(Value, Attrs, State);
+check_value(Value, [{?CONTAINS, true} | Attrs], State) ->
+  check_value(Value, Attrs, State);
+check_value(Value, [{?CONTAINS, false} | _Attrs], State) ->
+  handle_data_invalid(?validation_always_fails, Value, State);
 check_value(Value, [{?CONTAINS, Schema} | Attrs], State) ->
   NewState = case jesse_lib:is_array(Value) of
                true  -> check_contains(Value, Schema, State);

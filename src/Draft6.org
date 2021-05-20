@@ -39,7 +39,8 @@ fractional parts
 
 ** Additions And Backwards compatible changes
 
-*** TODO booleans as schemas
+*** DONE booleans as schemas
+    CLOSED: [2021-05-20 Thu 22:13]
 
 **** Change
 
