@@ -978,21 +978,17 @@ check_format(Value, _Format = <<"uri">>, State) when is_binary(Value) ->
   %% not yet supported
   State;
 check_format(Value, <<"uri-reference">>, State) when is_binary(Value) ->
-  case valid_uri_string(Value) of
-    true -> State;
-    false -> handle_data_invalid(?wrong_format, Value, State)
-  end;
+  State;
+  %%
+  %% The following code works for OTP 21+ but fails for OTP 19-20.
+  %%
+  %% case uri_string:parse(Value) of
+  %%   {error, _ErrorType, _Term} ->
+  %%     handle_data_invalid(?wrong_format, Value, State);
+  %%   _ -> State
+  %% end;
 check_format(_Value, _Format, State) ->
   State.
-
-valid_uri_string(Value) ->
-  case uri_string:parse(Value) of
-    {error, _ErrorType, _Term} ->
-      false;
-    _ ->
-      true
-  end.
-
 
 %% @doc 6.1. multipleOf
 %%
