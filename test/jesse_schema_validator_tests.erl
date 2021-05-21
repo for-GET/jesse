@@ -410,7 +410,6 @@ map_schema_references_test() ->
        [{default_schema_ver, <<"http://json-schema.org/draft-04/schema#">>}])).
 
 data_exclusive_maximum_minimum_test() ->
-
   Schema = fun (Property, V) ->
                {[ {<<"$schema">>, V}
                 , {<<"type">>, <<"number">>}
