@@ -96,7 +96,7 @@
 -define(json_schema_draft3, <<"http://json-schema.org/draft-03/schema#">>).
 -define(json_schema_draft4, <<"http://json-schema.org/draft-04/schema#">>).
 -define(json_schema_draft6, <<"http://json-schema.org/draft-06/schema#">>).
--define(default_schema_ver, ?json_schema_draft6).
+-define(default_schema_ver, ?json_schema_draft3).
 -define(default_schema_loader_fun, fun jesse_database:load_uri/1).
 -define(default_error_handler_fun, fun jesse_error:default_error_handler/3).
 
