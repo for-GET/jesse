@@ -123,7 +123,6 @@
 %% Constant definitions for data errors
 -define(data_error,                  'data_error').
 -define(data_invalid,                'data_invalid').
--define(missing_id_field,            'missing_id_field').
 -define(missing_required_property,   'missing_required_property').
 -define(missing_dependency,          'missing_dependency').
 -define(no_match,                    'no_match').
@@ -148,7 +147,6 @@
 -define(more_than_one_schema_valid,  'more_than_one_schema_valid').
 -define(not_schema_valid,            'not_schema_valid').
 -define(validation_always_fails,     'validation_always_fails').
--define(wrong_not_schema,            'wrong_not_schema').
 -define(external,                    'external').
 
 %%

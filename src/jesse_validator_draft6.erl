@@ -193,7 +193,8 @@ check_value(Value, [{?CONTAINS, Schema} | Attrs], State) ->
 check_value(Value, [{?EXAMPLES, _Examples} | Attrs], State) ->
   NewState = case jesse_lib:is_array(Value) of
                true  ->
-                 %% No need to check. The schema is valid, by definition, at this point.
+                 %% No need to check.
+                 %% The schema is valid, by definition, at this point.
                  State;
                false -> handle_data_invalid(?not_array, Value, State)
              end,
@@ -419,8 +420,7 @@ check_properties(Value, Properties, State) ->
                            CurrentState;
                          Property ->
                            NewState = set_current_schema( CurrentState
-                                                        , PropertySchema
-                                                        ),
+                                                        , PropertySchema),
                            check_value( PropertyName
                                       , Property
                                       , PropertySchema
@@ -448,12 +448,13 @@ check_pattern_properties(Value, PatternProperties, State) ->
 
 check_property_names(Value, PatternProperties, State) ->
   P1P2 = [{P1, P2} || P1 <- unwrap(Value), P2  <- unwrap(PatternProperties)],
-  TmpState = lists:foldl( fun({Property, Pattern}, CurrentState) ->
-                              check_match_property(Property, Pattern, CurrentState)
-                          end
-                        , State
-                        , P1P2
-                        ),
+  TmpState = lists:foldl(
+               fun({Property, Pattern}, CurrentState) ->
+                   check_match_property(Property, Pattern, CurrentState)
+               end
+              , State
+              , P1P2
+              ),
   set_current_schema(TmpState, get_current_schema(State)).
 
 %% @private
@@ -470,7 +471,7 @@ check_match({PropertyName, PropertyValue}, {Pattern, Schema}, State) ->
   end.
 
 %% @private
-check_match_property({PropertyName, _PropertyValue}, {_PatternKeyword, Regex}, State) ->
+check_match_property({PropertyName, _}, {_, Regex}, State) ->
   case re:run(PropertyName, Regex, [{capture, none}, unicode]) of
     match   ->
       State;
@@ -976,7 +977,7 @@ check_format(Value, _Format = <<"ipv6">>, State) when is_binary(Value) ->
 check_format(Value, _Format = <<"uri">>, State) when is_binary(Value) ->
   %% not yet supported
   State;
-check_format(Value, _Format = <<"uri-reference">>, State) when is_binary(Value) ->
+check_format(Value, <<"uri-reference">>, State) when is_binary(Value) ->
   case valid_uri_string(Value) of
     true -> State;
     false -> handle_data_invalid(?wrong_format, Value, State)
