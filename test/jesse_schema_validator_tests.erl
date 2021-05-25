@@ -22,8 +22,20 @@
 -include_lib("eunit/include/eunit.hrl").
 -include_lib("jesse_schema_validator.hrl").
 
+test_all_drafts(Fn) ->
+  [ Fn(URI)
+    || URI <- [ <<"http://json-schema.org/draft-03/schema#">>
+              , <<"http://json-schema.org/draft-04/schema#">>
+              , <<"http://json-schema.org/draft-06/schema#">>
+              ]].
+
 data_invalid_test() ->
-  IntegerSchema = {[{<<"type">>, <<"integer">>}]},
+  test_all_drafts(fun data_invalid_test_draft/1).
+
+data_invalid_test_draft(URI) ->
+  IntegerSchema = {[ { <<"$schema">>, URI}
+                   , {<<"type">>, <<"integer">>}
+                   ]},
 
   %% A case without errors
   ?assertEqual(
@@ -33,6 +45,7 @@ data_invalid_test() ->
 
   %% A schema for testing properties and patternProperties
   Schema = {[
+    {<<"$schema">>, URI},
     {<<"type">>, <<"object">>},
     {<<"properties">>, {[
       {<<"foo">>, {[
@@ -77,6 +90,7 @@ data_invalid_test() ->
 
   %% Object, additionalProperties, level 1
   Schema2 = {[
+    {<<"$schema">>, URI},
     {<<"type">>, <<"object">>},
     {<<"properties">>, {[
       {<<"foo">>, IntegerSchema}
@@ -93,6 +107,7 @@ data_invalid_test() ->
 
   %% Object, additionalProperties, level 2
   Schema3 = {[
+    {<<"$schema">>, URI},
     {<<"type">>, <<"object">>},
     {<<"properties">>, {[
       {<<"foo">>, {[
@@ -118,6 +133,7 @@ data_invalid_test() ->
 
   %% Items: A zero-based index is used in the property path
   ItemsSchema = {[
+    {<<"$schema">>, URI},
     {<<"type">>, <<"array">>},
     {<<"items">>, IntegerSchema},
     {<<"maxItems">>, 3}
@@ -133,6 +149,7 @@ data_invalid_test() ->
 
   %% Items, a schema per item
   ItemsSchema2 = {[
+    {<<"$schema">>, URI},
     {<<"type">>, <<"array">>},
     {<<"items">>, [IntegerSchema, IntegerSchema, IntegerSchema]},
     {<<"additionalItems">>, false}
@@ -148,6 +165,7 @@ data_invalid_test() ->
 
   %% Dependencies
   DependenciesSchema = {[
+    {<<"$schema">>, URI},
     {<<"type">>, <<"object">>},
     {<<"dependencies">>, {[
       {<<"bar">>, [<<"foo">>]} %% if there is bar, there must also be foo
@@ -169,7 +187,11 @@ data_invalid_test() ->
   ok.
 
 dots_used_in_keys_test() ->
-  Schema      = {[ {<<"type">>, <<"object">>}
+  test_all_drafts(fun dots_used_in_keys_test_draft/1).
+
+dots_used_in_keys_test_draft(URI) ->
+  Schema      = {[ {<<"$schema">>, URI}
+                 , {<<"type">>, <<"object">>}
                  , {<<"properties">>
                    , {[ {<<"3.4.5.6.7">>, {[{<<"type">>, <<"string">>}]}}
                       , {<<"additionalProperties">>, false}
@@ -191,9 +213,13 @@ dots_used_in_keys_test() ->
               ).
 
 empty_list_as_valid_value_for_string_test() ->
+  test_all_drafts(fun empty_list_as_valid_value_for_string_test_draft/1).
+
+empty_list_as_valid_value_for_string_test_draft(URI) ->
   StringSchema = {[{<<"type">>, <<"string">>}]},
 
-  EmptyListSchema = {[ {<<"type">>, <<"object">>}
+  EmptyListSchema = {[ {<<"$schema">>, URI}
+                     , {<<"type">>, <<"object">>}
                      , {<<"properties">>
                        , {[{<<"foo">>, StringSchema}]}}
                      ]},
@@ -203,8 +229,11 @@ empty_list_as_valid_value_for_string_test() ->
     ).
 
 schema_unsupported_test() ->
+  test_all_drafts(fun schema_unsupported_test_draft/1).
+
+schema_unsupported_test_draft(URI) ->
   SupportedSchema = {[{ <<"$schema">>
-                      , <<"http://json-schema.org/draft-03/schema#">>
+                      , URI
                       }]},
   UnsupportedSchema = {[{ <<"$schema">>
                         , <<"http://json-schema.org/draft-05/schema#">>
@@ -223,6 +252,12 @@ schema_unsupported_test() ->
               ).
 
 data_invalid_one_of_test() ->
+  [ data_invalid_one_of_test_draft(URI)
+    || URI <- [ <<"http://json-schema.org/draft-04/schema#">>
+              , <<"http://json-schema.org/draft-06/schema#">>
+              ]].
+
+data_invalid_one_of_test_draft(URI) ->
   IntegerSchema = {[{<<"type">>, <<"integer">>}]},
   StringSchema  = {[{<<"type">>, <<"string">>}]},
   ObjectSchema  = {[ {<<"type">>, <<"object">>}
@@ -234,7 +269,7 @@ data_invalid_one_of_test() ->
                    , {<<"additionalProperties">>, false}
                    ]},
 
-  Schema = {[ {<<"$schema">>, <<"http://json-schema.org/draft-04/schema#">>}
+  Schema = {[ {<<"$schema">>, URI}
             , {<<"oneOf">>, [IntegerSchema, StringSchema, ObjectSchema]}
             ]},
 
@@ -257,7 +292,14 @@ data_invalid_one_of_test() ->
      jesse_schema_validator:validate(Schema, Json, [])
     ).
 
+
 data_invalid_any_of_test() ->
+  [ data_invalid_any_of_test_draft(URI)
+    || URI <- [ <<"http://json-schema.org/draft-04/schema#">>
+              , <<"http://json-schema.org/draft-06/schema#">>
+              ]].
+
+data_invalid_any_of_test_draft(URI) ->
   IntegerSchema = {[{<<"type">>, <<"integer">>}]},
   StringSchema  = {[{<<"type">>, <<"string">>}]},
   ObjectSchema  = {[ {<<"type">>, <<"object">>}
@@ -269,7 +311,7 @@ data_invalid_any_of_test() ->
                    , {<<"additionalProperties">>, false}
                    ]},
 
-  Schema = {[ {<<"$schema">>, <<"http://json-schema.org/draft-04/schema#">>}
+  Schema = {[ {<<"$schema">>, URI}
             , {<<"anyOf">>, [IntegerSchema, StringSchema, ObjectSchema]}
             ]},
 
@@ -292,11 +334,7 @@ data_invalid_any_of_test() ->
 -ifndef(erlang_deprecated_types).
 -ifndef(COMMON_TEST).  % see Emakefile
 map_schema_test() ->
-  [ map_schema_test_draft(URI)
-    || URI <- [ <<"http://json-schema.org/draft-03/schema#">>
-              , <<"http://json-schema.org/draft-04/schema#">>
-              , <<"http://json-schema.org/draft-06/schema#">>
-              ]].
+  test_all_drafts(fun map_schema_test_draft/1).
 
 map_schema_test_draft(URI) ->
   Schema = #{ <<"$schema">> => URI
@@ -333,13 +371,7 @@ map_schema_test_draft(URI) ->
 
 
 map_data_test() ->
-  [ map_data_test_draft(URI)
-    || URI <- [ <<"http://json-schema.org/draft-03/schema#">>
-              , <<"http://json-schema.org/draft-04/schema#">>
-              , <<"http://json-schema.org/draft-06/schema#">>
-              ]
-  ].
-
+  test_all_drafts(fun map_data_test_draft/1).
 
 map_data_test_draft(URI) ->
   Schema = {[ {<<"$schema">>, URI}
