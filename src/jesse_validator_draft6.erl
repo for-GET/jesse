@@ -17,7 +17,7 @@
 %% @doc Json schema validation module.
 %%
 %% This module is the core of jesse, it implements the validation functionality
-%% according to the standard(draft4).
+%% according to the standard(draft6).
 %% @end
 %%%=============================================================================
 
