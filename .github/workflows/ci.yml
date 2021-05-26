@@ -63,7 +63,6 @@ jobs:
         run: make
       - shell: bash
         run: make test
-      - shell: bash
-        run: |
-          make elvis docs
-        if: ${{ matrix.otp_vsn == 'latest' }}
+      - if: ${{ matrix.otp_vsn == 'latest' }}
+        shell: bash
+        run: make elvis docs
