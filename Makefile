@@ -1,9 +1,15 @@
 # See LICENSE for licensing information.
 
+CHMOD := $(shell command -v chmod 2>/dev/null)
+CURL := $(shell command -v curl 2>/dev/null)
+LN := $(shell command -v ln 2>/dev/null)
+
+OTP_RELEASE = $(shell erl -eval 'io:format("~s", [erlang:system_info(otp_release)]), halt().'  -noshell)
+
 ifdef CI
-REBAR = ./rebar3
+REBAR = ./rebar3.OTP$(OTP_RELEASE)
 else
-REBAR ?= $(shell command -v rebar3 >/dev/null 2>&1 && echo "rebar3" || echo "$(CURDIR)/rebar3")
+REBAR ?= $(shell command -v rebar3 2>/dev/null || echo "./rebar3.OTP$(OTP_RELEASE)")
 endif
 
 SRCS := $(wildcard src/* include/* rebar.config)
@@ -89,3 +95,34 @@ dialyzer:
 cover:
 	@ $(MAKE) clean-tests
 	$(REBAR) cover -v
+
+.PHONY: rebar3.OTP18
+rebar3.OTP18:
+	$(CURL) -fqsS -L -o $@ https://github.com/erlang/rebar3/releases/download/3.13.3/rebar3
+	$(CHMOD) +x $@
+
+.PHONY: rebar3.OTP19
+rebar3.OTP19:
+	$(CURL) -fqsS -L -o $@ https://github.com/erlang/rebar3/releases/download/3.15.2/rebar3
+	$(CHMOD) +x $@
+
+.PHONY: rebar3.OTP20
+rebar3.OTP20:
+	$(LN) -sf rebar3.OTP19 $@
+
+.PHONY: rebar3.OTP21
+rebar3.OTP21:
+	$(LN) -sf rebar3.OTP19 $@
+
+.PHONY: rebar3.OTP22
+rebar3.OTP22:
+	$(CURL) -fqsS -L -o $@ https://github.com/erlang/rebar3/releases/download/3.16.1/rebar3
+	$(CHMOD) +x $@
+
+.PHONY: rebar3.OTP23
+rebar3.OTP23:
+	$(LN) -sf rebar3.OTP22 $@
+
+.PHONY: rebar3.OTP24
+rebar3.OTP24:
+	$(LN) -sf rebar3.OTP22 $@
