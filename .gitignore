@@ -1,4 +1,5 @@
 .#*
+/*.coverdata
 /*.plt
 /_build/
 /bin
