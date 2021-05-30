@@ -96,6 +96,10 @@ cover:
 	@ $(MAKE) clean-tests
 	$(REBAR) cover -v
 
+.PHONY: publish
+publish: docs
+	$(REBAR) hex publish -r hexpm --yes
+
 .PHONY: rebar3.OTP18
 rebar3.OTP18:
 	$(CURL) -fqsS -L -o $@ https://github.com/erlang/rebar3/releases/download/3.13.3/rebar3
