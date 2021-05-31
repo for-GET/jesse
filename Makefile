@@ -7,9 +7,9 @@ LN := $(shell command -v ln 2>/dev/null)
 OTP_RELEASE = $(shell erl -eval 'io:format("~s", [erlang:system_info(otp_release)]), halt().'  -noshell)
 
 ifdef CI
-REBAR = ./rebar3.OTP$(OTP_RELEASE)
+REBAR3 = ./rebar3.OTP$(OTP_RELEASE)
 else
-REBAR ?= $(shell command -v rebar3 2>/dev/null || echo "./rebar3.OTP$(OTP_RELEASE)")
+REBAR3 ?= $(shell command -v rebar3 2>/dev/null || echo "./rebar3.OTP$(OTP_RELEASE)")
 endif
 
 SRCS := $(wildcard src/* include/* rebar.config)
@@ -21,7 +21,7 @@ all: ebin/jesse.app bin/jesse
 
 .PHONY: clean
 clean:
-	$(REBAR) clean
+	$(REBAR3) clean
 
 .PHONY: distclean
 distclean:
@@ -41,7 +41,7 @@ clean-tests:
 
 .PHONY: docs
 docs:
-	$(REBAR) edoc
+	$(REBAR3) edoc
 
 # Compile
 
@@ -53,12 +53,12 @@ ebin/jesse.app: compile
 
 .PHONY: escript
 escript: ebin/jesse.app
-	$(REBAR) escriptize
+	$(REBAR3) escriptize
 	./_build/default/bin/jesse --help
 
 .PHONY: compile
 compile: $(SRCS)
-	$(REBAR) compile
+	$(REBAR3) compile
 
 # Tests
 
@@ -73,34 +73,34 @@ test: eunit ct xref dialyzer cover
 
 .PHONY: elvis
 elvis:
-	$(REBAR) lint
+	$(REBAR3) lint
 
 .PHONY: eunit
 eunit:
 	@ $(MAKE) clean-tests
-	$(REBAR) eunit
+	$(REBAR3) eunit
 
 .PHONY: ct
 ct: test/JSON-Schema-Test-Suite/tests
 	@ $(MAKE) clean-tests
-	TEST_DIR=_build/default/test/lib/jesse/test $(REBAR) ct
+	TEST_DIR=_build/default/test/lib/jesse/test $(REBAR3) ct
 
 .PHONY: xref
 xref:
-	$(REBAR) xref
+	$(REBAR3) xref
 
 .PHONY: dialyzer
 dialyzer:
-	$(REBAR) dialyzer
+	$(REBAR3) dialyzer
 
 .PHONY: cover
 cover:
 	@ $(MAKE) clean-tests
-	$(REBAR) cover -v
+	$(REBAR3) cover -v
 
 .PHONY: publish
 publish: docs
-	$(REBAR) hex publish -r hexpm --yes
+	$(REBAR3) hex publish -r hexpm --yes
 
 .PHONY: rebar3.OTP18
 rebar3.OTP18:
