@@ -15,7 +15,7 @@ endif
 SRCS := $(wildcard src/* include/* rebar.config)
 
 .PHONY: all
-all: escript
+all: ebin/jesse.app bin/jesse
 
 # Clean
 
@@ -44,6 +44,10 @@ docs:
 	$(REBAR) edoc
 
 # Compile
+
+bin/jesse: escript
+	mkdir -p bin
+	cp -a _build/default/bin/jesse bin/jesse
 
 ebin/jesse.app: compile
 
@@ -76,12 +80,10 @@ eunit:
 	@ $(MAKE) clean-tests
 	$(REBAR) eunit
 
-# @ rm -rf _build
-
 .PHONY: ct
 ct: test/JSON-Schema-Test-Suite/tests
 	@ $(MAKE) clean-tests
-	$(REBAR) ct
+	TEST_DIR=_build/default/test/lib/jesse/test $(REBAR) ct
 
 .PHONY: xref
 xref:

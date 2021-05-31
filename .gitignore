@@ -10,6 +10,5 @@
 /ebin
 /erl_crash.dump
 /rebar3.crashdump
-/logs
 /rebar.lock
 /test/*.beam
