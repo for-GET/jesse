@@ -17,11 +17,11 @@
 %% @doc Json schema validation module.
 %%
 %% This module is the core of jesse, it implements the validation functionality
-%% according to the standard(draft4).
+%% according to the standard(draft6).
 %% @end
 %%%=============================================================================
 
--module(jesse_validator_draft4).
+-module(jesse_validator_draft6).
 
 %% API
 -export([ check_value/3
@@ -44,7 +44,7 @@
                       | ?wrong_type_dependency
                       | ?wrong_type_items
                       | ?wrong_type_specification
-                      | ?wrong_draft4_id_tag.
+                      | ?wrong_draft6_id_tag.
 
 -type schema_error_type() :: schema_error()
                            | {schema_error(), jesse:json_term()}.
@@ -81,8 +81,8 @@
                  , JsonSchema :: jesse:schema()
                  , State :: jesse_state:state()
                  ) -> jesse_state:state() | no_return().
-check_value(_Value, [{?IDv6, _ID} | _Attrs], State) ->
-  handle_schema_invalid(?wrong_draft4_id_tag, State);
+check_value(_, [{?ID, _} | _], State) ->
+  handle_schema_invalid(?wrong_draft6_id_tag, State);
 check_value(Value, [{?REF, RefSchemaURI} | Attrs], State) ->
   case Attrs of
     [] ->
@@ -93,6 +93,10 @@ check_value(Value, [{?REF, RefSchemaURI} | Attrs], State) ->
 check_value(Value, [{?TYPE, Type} | Attrs], State) ->
   NewState = check_type(Value, Type, State),
   check_value(Value, Attrs, NewState);
+check_value(Value, [{?PROPERTIES, true} | Attrs], State) ->
+  check_value(Value, Attrs, State);
+check_value(Value, [{?PROPERTIES, false} | _Attrs], State) ->
+  handle_data_invalid(?validation_always_fails, Value, State);
 check_value(Value, [{?PROPERTIES, Properties} | Attrs], State) ->
   NewState = case jesse_lib:is_json_object(Value) of
                true  -> check_properties( Value
@@ -115,6 +119,37 @@ check_value( Value
              end,
   check_value(Value, Attrs, NewState);
 check_value( Value
+           , [{?PROPERTYNAMES, true} | Attrs]
+           , State
+           ) ->
+  case jesse_lib:is_json_object(Value) of
+    true -> check_value( Value, Attrs, State);
+    false -> State
+  end;
+check_value( Value
+           , [{?PROPERTYNAMES, false} | _Attrs]
+           , State
+           ) ->
+  case jesse_lib:is_json_object(Value) of
+    true -> handle_data_invalid(?validation_always_fails, Value, State);
+    false -> State
+  end;
+check_value( Value
+           , [{?PROPERTYNAMES, PatternProperties} | Attrs]
+           , State
+           ) ->
+  %% The description of PropertyNames seems to do the same as PatternProperties.
+  %% I am not sure whether the PatternProperties follows the standard draft 4,
+  %% since it needs to consider that additionalProperties must be false.
+  NewState = case jesse_lib:is_json_object(Value) of
+               true  -> check_property_names( Value
+                                            , PatternProperties
+                                            , State
+                                            );
+               false -> State
+             end,
+  check_value(Value, Attrs, NewState);
+check_value( Value
            , [{?ADDITIONALPROPERTIES, AdditionalProperties} | Attrs]
            , State
            ) ->
@@ -126,6 +161,12 @@ check_value( Value
                false -> State
        end,
   check_value(Value, Attrs, NewState);
+check_value(Value, [{?ITEMS, true} | Attrs], State) ->
+  check_value(Value, Attrs, State);
+check_value(Value, [{?ITEMS, false} | Attrs], State) ->
+% Default semantics: `not: {}`
+  Not = {?NOT, {[  ]}},
+  check_value(Value, [{?ITEMS, Not} | Attrs], State);
 check_value(Value, [{?ITEMS, Items} | Attrs], State) ->
   NewState = case jesse_lib:is_array(Value) of
                true  -> check_items(Value, Items, State);
@@ -139,6 +180,25 @@ check_value( Value
            , State
            ) ->
   check_value(Value, Attrs, State);
+check_value(Value, [{?CONTAINS, true} | Attrs], State) ->
+  check_value(Value, Attrs, State);
+check_value(Value, [{?CONTAINS, false} | _Attrs], State) ->
+  handle_data_invalid(?validation_always_fails, Value, State);
+check_value(Value, [{?CONTAINS, Schema} | Attrs], State) ->
+  NewState = case jesse_lib:is_array(Value) of
+               true  -> check_contains(Value, Schema, State);
+               false -> State
+             end,
+  check_value(Value, Attrs, NewState);
+check_value(Value, [{?EXAMPLES, _Examples} | Attrs], State) ->
+  NewState = case jesse_lib:is_array(Value) of
+               true  ->
+                 %% No need to check.
+                 %% The schema is valid, by definition, at this point.
+                 State;
+               false -> handle_data_invalid(?not_array, Value, State)
+             end,
+  check_value(Value, Attrs, NewState);
 check_value(Value, [{?REQUIRED, Required} | Attrs], State) ->
   NewState = case jesse_lib:is_json_object(Value) of
                true  -> check_required(Value, Required, State);
@@ -154,10 +214,15 @@ check_value(Value, [{?DEPENDENCIES, Dependencies} | Attrs], State) ->
 check_value(Value, [{?MINIMUM, Minimum} | Attrs], State) ->
   NewState = case is_number(Value) of
                true  ->
-                 ExclusiveMinimum = get_value( ?EXCLUSIVEMINIMUM
-                                             , get_current_schema(State)
-                                             ),
-                 check_minimum(Value, Minimum, ExclusiveMinimum, State);
+                 check_minimum(Value, Minimum, State);
+               false ->
+                 State
+             end,
+  check_value(Value, Attrs, NewState);
+check_value(Value, [{?EXCLUSIVEMINIMUM, ExclusiveMinimum} | Attrs], State) ->
+  NewState = case is_number(Value) of
+               true  ->
+                 check_exclusive_minimum(Value, ExclusiveMinimum, State);
                false ->
                  State
              end,
@@ -165,28 +230,19 @@ check_value(Value, [{?MINIMUM, Minimum} | Attrs], State) ->
 check_value(Value, [{?MAXIMUM, Maximum} | Attrs], State) ->
   NewState = case is_number(Value) of
                true  ->
-                 ExclusiveMaximum = get_value( ?EXCLUSIVEMAXIMUM
-                                             , get_current_schema(State)
-                                             ),
-                 check_maximum(Value, Maximum, ExclusiveMaximum, State);
+                 check_maximum(Value, Maximum, State);
                false ->
                  State
              end,
   check_value(Value, Attrs, NewState);
-%% doesn't really do anything, since this attribute will be handled
-%% by the previous function clause if it's presented in the schema
-check_value( Value
-           , [{?EXCLUSIVEMINIMUM, _ExclusiveMinimum} | Attrs]
-           , State
-           ) ->
-  check_value(Value, Attrs, State);
-%% doesn't really do anything, since this attribute will be handled
-%% by the previous function clause if it's presented in the schema
-check_value( Value
-           , [{?EXCLUSIVEMAXIMUM, _ExclusiveMaximum} | Attrs]
-           , State
-           ) ->
-  check_value(Value, Attrs, State);
+check_value(Value, [{?EXCLUSIVEMAXIMUM, ExclusiveMaximum} | Attrs], State) ->
+  NewState = case is_number(Value) of
+               true  ->
+                 check_exclusive_maximum(Value, ExclusiveMaximum, State);
+               false ->
+                 State
+             end,
+  check_value(Value, Attrs, NewState);
 check_value(Value, [{?MINITEMS, MinItems} | Attrs], State) ->
   NewState = case jesse_lib:is_array(Value) of
                true  -> check_min_items(Value, MinItems, State);
@@ -224,6 +280,9 @@ check_value(Value, [{?MAXLENGTH, MaxLength} | Attrs], State) ->
              end,
   check_value(Value, Attrs, NewState);
 check_value(Value, [{?ENUM, Enum} | Attrs], State) ->
+  NewState = check_enum(Value, Enum, State),
+  check_value(Value, Attrs, NewState);
+check_value(Value, [{?CONST, Enum} | Attrs], State) ->
   NewState = check_enum(Value, Enum, State),
   check_value(Value, Attrs, NewState);
 check_value(Value, [{?FORMAT, Format} | Attrs], State) ->
@@ -310,7 +369,17 @@ check_type(Value, Type, State) ->
 %% @private
 is_type_valid(Value, ?STRING)  -> is_binary(Value);
 is_type_valid(Value, ?NUMBER)  -> is_number(Value);
-is_type_valid(Value, ?INTEGER) -> is_integer(Value);
+%%
+%% Draft 6
+%%
+%% In draft-04"integer" is listed as a primitive type and defined as
+%% “a JSON number without a fraction or exponent part”; in draft-06, "integer"
+%% is not considered a primitive type and is only defined in the section for
+%% keyword "type" as “any number with a zero fractional part”; 1.0 is thus not a
+%% valid "integer" type in draft-04 and earlier, but is a valid "integer" type
+%% in draft-06 and later; note that both drafts say that integers SHOULD be
+%% encoded in JSON without fractional parts
+is_type_valid(Value, ?INTEGER) -> is_number(Value);
 is_type_valid(Value, ?BOOLEAN) -> is_boolean(Value);
 is_type_valid(Value, ?OBJECT)  -> jesse_lib:is_json_object(Value);
 is_type_valid(Value, ?ARRAY)   -> jesse_lib:is_array(Value);
@@ -326,61 +395,22 @@ check_union_type(_Value, _InvalidTypes, State) ->
 wrong_type(Value, State) ->
   handle_data_invalid(?wrong_type, Value, State).
 
-%% @doc 5.4.4. additionalProperties, properties and patternProperties
+
+%% @doc 6.20.  additionalProperties
 %%
-%% 5.4.4.1. Valid values
+%% The value of "additionalProperties" MUST be a valid JSON Schema.
 %%
-%%   The value of "additionalProperties" MUST be a boolean or an object. If it
-%%   is an object, it MUST also be a valid JSON Schema.
+%% This keyword determines how child instances validate for objects, and
+%% does not directly validate the immediate instance itself.
 %%
-%%   The value of "properties" MUST be an object. Each value of this object MUST
-%%   be an object, and each object MUST be a valid JSON Schema.
+%% Validation with "additionalProperties" applies only to the child
+%% values of instance names that do not match any names in "properties",
+%% and do not match any regular expression in "patternProperties".
 %%
-%%   The value of "patternProperties" MUST be an object. Each property name of
-%%   this object SHOULD be a valid regular expression, according to the ECMA 262
-%%   regular expression dialect. Each property value of this object MUST be an
-%%   object, and each object MUST be a valid JSON Schema.
+%% For all such properties, validation succeeds if the child instance
+%% validates against the "additionalProperties" schema.
 %%
-%% 5.4.4.2. Conditions for successful validation
-%%
-%%   Successful validation of an object instance against these three keywords
-%%   depends on the value of "additionalProperties":
-%%
-%%     if its value is boolean true or a schema, validation succeeds;
-%%
-%%     if its value is boolean false, the algorithm to determine validation
-%%     success is described below.
-%%
-%% 5.4.4.3. Default values
-%%
-%%   If either "properties" or "patternProperties" are absent, they can be
-%%   considered present with an empty object as a value.
-%%
-%%   If "additionalProperties" is absent, it may be considered present with an
-%%   empty schema as a value.
-%%
-%% 5.4.4.4. If "additionalProperties" has boolean value false
-%%
-%%   In this case, validation of the instance depends on the property set of
-%%   "properties" and "patternProperties". In this section, the property names
-%%   of "patternProperties" will be called regexes for convenience.
-%%
-%%   The first step is to collect the following sets:
-%%
-%%     s  - The property set of the instance to validate.
-%%     p  - The property set from "properties".
-%%     pp - The property set from "patternProperties".
-%%
-%%   Having collected these three sets, the process is as follows:
-%%
-%%     remove from "s" all elements of "p", if any;
-%%
-%%     for each regex in "pp", remove all elements of "s" which this regex
-%%     matches.
-%%
-%%   Validation of the instance succeeds if, after these two steps, set "s" is
-%%   empty.
-%%
+%% Omitting this keyword has the same behavior as an empty schema.
 %% @private
 check_properties(Value, Properties, State) ->
   TmpState
@@ -390,8 +420,7 @@ check_properties(Value, Properties, State) ->
                            CurrentState;
                          Property ->
                            NewState = set_current_schema( CurrentState
-                                                        , PropertySchema
-                                                        ),
+                                                        , PropertySchema),
                            check_value( PropertyName
                                       , Property
                                       , PropertySchema
@@ -417,6 +446,17 @@ check_pattern_properties(Value, PatternProperties, State) ->
                         ),
   set_current_schema(TmpState, get_current_schema(State)).
 
+check_property_names(Value, PatternProperties, State) ->
+  P1P2 = [{P1, P2} || P1 <- unwrap(Value), P2  <- unwrap(PatternProperties)],
+  TmpState = lists:foldl(
+               fun({Property, Pattern}, CurrentState) ->
+                   check_match_property(Property, Pattern, CurrentState)
+               end
+              , State
+              , P1P2
+              ),
+  set_current_schema(TmpState, get_current_schema(State)).
+
 %% @private
 check_match({PropertyName, PropertyValue}, {Pattern, Schema}, State) ->
   case re:run(PropertyName, Pattern, [{capture, none}, unicode]) of
@@ -429,6 +469,16 @@ check_match({PropertyName, PropertyValue}, {Pattern, Schema}, State) ->
     nomatch ->
       State
   end.
+
+%% @private
+check_match_property({PropertyName, _}, {_, Regex}, State) ->
+  case re:run(PropertyName, Regex, [{capture, none}, unicode]) of
+    match   ->
+      State;
+    nomatch ->
+      handle_data_invalid(?no_match, PropertyName, State)
+  end.
+
 
 %% @doc additionalProperties
 %% See check_properties/3.
@@ -507,38 +557,22 @@ filter_extra_names(Pattern, ExtraNames) ->
            end,
   lists:filter(Filter, ExtraNames).
 
-%% @doc 5.3.1. additionalItems and items
+%% @doc 6.10. additionalItems and items
 %%
-%% 5.3.1.1. Valid values
+%% The value of "additionalItems" MUST be a valid JSON Schema.
 %%
-%%   The value of "additionalItems" MUST be either a boolean or an object. If it
-%%   is an object, this object MUST be a valid JSON Schema.
+%% This keyword determines how child instances validate for arrays, and
+%% does not directly validate the immediate instance itself.
 %%
-%%   The value of "items" MUST be either an object or an array. If it is an
-%%   object, this object MUST be a valid JSON Schema. If it is an array, items
-%%   of this array MUST be objects, and each of these objects MUST be a valid
-%%   JSON Schema.
+%% If "items" is an array of schemas, validation succeeds if every
+%% instance element at a position greater than the size of "items"
+%% validates against "additionalItems".
 %%
-%% 5.3.1.2. Conditions for successful validation
+%% Otherwise, "additionalItems" MUST be ignored, as the "items" schema
+%% (possibly the default value of an empty schema) is applied to all
+%% elements.
 %%
-%%   Successful validation of an array instance with regards to these two
-%%   keywords is determined as follows:
-%%
-%%     if "items" is not present, or its value is an object, validation of the
-%%     instance always succeeds, regardless of the value of "additionalItems";
-%%
-%%     if the value of "additionalItems" is boolean value true or an object,
-%%     validation of the instance always succeeds;
-%%
-%%     if the value of "additionalItems" is boolean value false and the value of
-%%     "items" is an array, the instance is valid if its size is less than, or
-%%     equal to, the size of "items".
-%%
-%% 5.3.1.4. Default values
-%%
-%%   If either keyword is absent, it may be considered present with an empty
-%%   schema.
-%%
+%% Omitting this keyword has the same behavior as an empty schema.
 %% @private
 check_items(Value, Items, State) ->
   case jesse_lib:is_json_object(Items) of
@@ -561,6 +595,26 @@ check_items(Value, Items, State) ->
     _ ->
       handle_schema_invalid({?wrong_type_items, Items}, State)
   end.
+
+check_contains([], _Schema, State) ->
+  State;
+check_contains(Values, Schema, State) ->
+  DefaultAssumption = {false, State},
+  Result = lists:foldl(fun (Value, Acc) ->
+                         case Acc of
+                           {false, _} ->
+                             validate_schema(Value, Schema, State);
+                           {true, _} ->
+                             Acc
+                         end
+                       end, DefaultAssumption, Values),
+  case Result of
+    {true, _} ->
+      State;
+    {false, _} ->
+      handle_data_invalid(?data_invalid, Values, State)
+  end.
+
 
 %% @private
 check_items_array(Value, Items, State) ->
@@ -603,36 +657,25 @@ check_items_fun(Tuples, State) ->
                              ),
   set_current_schema(TmpState, get_current_schema(State)).
 
-%% @doc 5.4.5.  dependencies
+%% @doc 6.21.  dependencies
 %%
-%% 5.4.5.1. Valid values
+%%   This keyword specifies rules that are evaluated if the instance is an
+%%   object and contains a certain property.
 %%
-%%   This keyword's value MUST be an object. Each value of this object MUST be
-%%   either an object or an array.
+%%   This keyword's value MUST be an object.  Each property specifies a
+%%   dependency.  Each dependency value MUST be an array or a valid JSON
+%%   Schema.
 %%
-%%   If the value is an object, it MUST be a valid JSON Schema. This is called a
-%%   schema dependency.
+%%   If the dependency value is a subschema, and the dependency key is a
+%%   property in the instance, the entire instance must validate against
+%%   the dependency value.
 %%
-%%   If the value is an array, it MUST have at least one element. Each element
-%%   MUST be a string, and elements in the array MUST be unique. This is called
-%%   a property dependency.
+%%   If the dependency value is an array, each element in the array, if
+%%   any, MUST be a string, and MUST be unique.  If the dependency key is
+%%   a property in the instance, each of the items in the dependency value
+%%   must be a property that exists in the instance.
 %%
-%% 5.4.5.2. Conditions for successful validation
-%%
-%%   5.4.5.2.1. Schema dependencies
-%%
-%%     For all (name, schema) pair of schema dependencies, if the instance has a
-%%     property by this name, then it must also validate successfully against
-%%     the schema.
-%%
-%%     Note that this is the instance itself which must validate successfully,
-%%     not the value associated with the property name.
-%%
-%%   5.4.5.2.2. Property dependencies
-%%
-%%     For each (name, propertyset) pair of property dependencies, if the
-%%     instance has a property by this name, then it must also have properties
-%%     with the same names as propertyset.
+%%   Omitting this keyword has the same behavior as an empty object.
 %%
 %% @private
 check_dependencies(Value, Dependencies, State) ->
@@ -693,99 +736,78 @@ check_dependency_array(Value, DependencyName, Dependency, State) ->
              , State
              , Dependency
              ).
-
-%% @doc 5.1.3. minimum and exclusiveMinimum
 %%
-%% 5.1.3.1. Valid values
+%% 6.4.  minimum
 %%
-%%   The value of "minimum" MUST be a JSON number. The value of
-%%   "exclusiveMinimum" MUST be a boolean.
+%%    The value of "minimum" MUST be a number, representing an inclusive
+%%    upper limit for a numeric instance.
 %%
-%%   If "exclusiveMinimum" is present, "minimum" MUST also be present.
+%%    If the instance is a number, then this keyword validates only if the
+%%    instance is greater than or exactly equal to "minimum".
 %%
-%% 5.1.3.2. Conditions for successful validation
+%% 6.5.  exclusiveMinimum
 %%
-%%   Successful validation depends on the presence and value of
-%%   "exclusiveMinimum":
+%%    The value of "exclusiveMinimum" MUST be number, representing an
+%%    exclusive upper limit for a numeric instance.
 %%
-%%     if "exclusiveMinimum" is not present, or has boolean value false, then
-%%     the instance is valid if it is greater than, or equal to, the value of
-%%     "minimum";
-%%
-%%     if "exclusiveMinimum" is present and has boolean value true, the instance
-%%     is valid if it is strictly greater than the value of "minimum".
-%%
-%% 5.1.3.3. Default value
-%%
-%%   "exclusiveMinimum", if absent, may be considered as being present with
-%%   boolean value false.
+%%    If the instance is a number, then the instance is valid only if it
+%%    has a value strictly greater than (not equal to) "exclusiveMinimum".
 %%
 %% @private
-check_minimum(Value, Minimum, ExclusiveMinimum, State) ->
-  Result = case ExclusiveMinimum of
-             true -> Value > Minimum;
-             _    -> Value >= Minimum
-           end,
-  case Result of
+check_minimum(Value, Minimum, State) ->
+  case (Value >= Minimum) of
     true  -> State;
     false ->
       handle_data_invalid(?not_in_range, Value, State)
   end.
 
-%% @doc 5.1.2. maximum and exclusiveMaximum
-%%
-%% 5.1.2.1. Valid values
-%%
-%%   The value of "maximum" MUST be a JSON number. The value of
-%%   "exclusiveMaximum" MUST be a boolean.
-%%
-%%   If "exclusiveMaximum" is present, "maximum" MUST also be present.
-%%
-%% 5.1.2.2. Conditions for successful validation
-%%
-%%   Successful validation depends on the presence and value of
-%%   "exclusiveMaximum":
-%%
-%%     if "exclusiveMaximum" is not present, or has boolean value false, then
-%%     the instance is valid if it is lower than, or equal to, the value of
-%%     "maximum";
-%%
-%%     if "exclusiveMaximum" has boolean value true, the instance is valid if it
-%%     is strictly lower than the value of "maximum".
-%%
-%% 5.1.2.3. Default value
-%%
-%%   "exclusiveMaximum", if absent, may be considered as being present with
-%%   boolean value false.
-%%
-%% @private
-check_maximum(Value, Maximum, ExclusiveMaximum, State) ->
-  Result = case ExclusiveMaximum of
-             true -> Value < Maximum;
-             _    -> Value =< Maximum
-           end,
-  case Result of
+check_exclusive_minimum(Value, ExclusiveMinimum, State) ->
+  case (Value > ExclusiveMinimum) of
     true  -> State;
     false ->
       handle_data_invalid(?not_in_range, Value, State)
   end.
 
-%% @doc 5.3.3.  minItems
+
+%% @doc 6.2. maximum and exclusiveMaximum
 %%
-%% 5.3.3.1. Valid values
+%% The value of "maximum" MUST be a number, representing an inclusive
+%% upper limit for a numeric instance.
 %%
-%%   The value of this keyword MUST be an integer. This integer MUST be greater
-%%   than, or equal to, 0.
+%% If the instance is a number, then this keyword validates only if the
+%% instance is less than or exactly equal to "maximum".
 %%
-%% 5.3.3.2.  Conditions for successful validation
+%% 6.3.  exclusiveMaximum
 %%
-%%   An array instance is valid against "minItems" if its size is greater than,
-%%   or equal to, the value of this keyword.
+%% The value of "exclusiveMaximum" MUST be number, representing an
+%% exclusive upper limit for a numeric instance.
 %%
-%% 5.3.3.3. Default value
+%% If the instance is a number, then the instance is valid only if it
+%% has a value strictly less than (not equal to) "exclusiveMaximum".
 %%
-%%   If this keyword is not present, it may be considered present with a value
-%%   of 0.
+%% @private
+check_maximum(Value, Maximum, State) ->
+  case (Value =< Maximum) of
+    true  -> State;
+    false ->
+      handle_data_invalid(?not_in_range, Value, State)
+  end.
+
+check_exclusive_maximum(Value, ExclusiveMaximum, State) ->
+  case (Value < ExclusiveMaximum) of
+    true  -> State;
+    false ->
+      handle_data_invalid(?not_in_range, Value, State)
+  end.
+
+%% @doc 6.12.  minItems
+%%
+%% The value of this keyword MUST be a non-negative integer.
+%%
+%% An array instance is valid against "minItems" if its size is greater
+%% than, or equal to, the value of this keyword.
+%%
+%% Omitting this keyword has the same behavior as a value of 0.
 %%
 %% @private
 check_min_items(Value, MinItems, State) when length(Value) >= MinItems ->
@@ -793,17 +815,12 @@ check_min_items(Value, MinItems, State) when length(Value) >= MinItems ->
 check_min_items(Value, _MinItems, State) ->
   handle_data_invalid(?wrong_size, Value, State).
 
-%% @doc 5.3.2. maxItems
+%% @doc 6.11. maxItems
 %%
-%% 5.3.2.1. Valid values
+%% The value of this keyword MUST be a non-negative integer.
 %%
-%%   The value of this keyword MUST be an integer. This integer MUST be greater
-%%   than, or equal to, 0.
-%%
-%% 5.3.2.2. Conditions for successful validation
-%%
-%%   An array instance is valid against "maxItems" if its size is less than, or
-%%   equal to, the value of this keyword.
+%% An array instance is valid against "maxItems" if its size is less
+%% than, or equal to, the value of this keyword.
 %%
 %% @private
 check_max_items(Value, MaxItems, State) when length(Value) =< MaxItems ->
@@ -811,22 +828,15 @@ check_max_items(Value, MaxItems, State) when length(Value) =< MaxItems ->
 check_max_items(Value, _MaxItems, State) ->
   handle_data_invalid(?wrong_size, Value, State).
 
-%% @doc 5.3.4. uniqueItems
+%% @doc 6.13. uniqueItems
 %%
-%% 5.3.4.1. Valid values
+%% The value of this keyword MUST be a boolean.
 %%
-%%   The value of this keyword MUST be a boolean.
+%% If this keyword has boolean value false, the instance validates
+%% successfully.  If it has boolean value true, the instance validates
+%% successfully if all of its elements are unique.
 %%
-%% 5.3.4.2. Conditions for successful validation
-%%
-%%   If this keyword has boolean value false, the instance validates
-%%   successfully. If it has boolean value true, the instance validates
-%%   successfully if all of its elements are unique.
-%%
-%% 5.3.4.3. Default value
-%%
-%%   If not present, this keyword may be considered present with boolean value
-%%   false.
+%% Omitting this keyword has the same behavior as a value of false.
 %%
 %% @private
 check_unique_items(_, false, State) ->
@@ -857,18 +867,16 @@ check_unique_items(Value, true, State) ->
     throw:ErrorInfo -> handle_data_invalid(ErrorInfo, Value, State)
   end.
 
-%% @doc 5.2.3. pattern
+%% @doc 6.8. pattern
 %%
-%% 5.2.3.1. Valid values
+%% The value of this keyword MUST be a string.  This string SHOULD be a
+%% valid regular expression, according to the ECMA 262 regular
+%% expression dialect.
 %%
-%%   The value of this keyword MUST be a string. This string SHOULD be a valid
-%%   regular expression, according to the ECMA 262 regular expression dialect.
+%% A string instance is considered valid if the regular expression
+%% matches the instance successfully.  Recall: regular expressions are
+%% not implicitly anchored.
 %%
-%% 5.2.3.2. Conditions for successful validation
-%%
-%%   A string instance is considered valid if the regular expression matches
-%%   the instance successfully. Recall: regular expressions are not implicitly
-%%   anchored.
 %% @private
 check_pattern(Value, Pattern, State) ->
   case re:run(Value, Pattern, [{capture, none}, unicode]) of
@@ -877,25 +885,18 @@ check_pattern(Value, Pattern, State) ->
       handle_data_invalid(?no_match, Value, State)
   end.
 
-%% @doc 5.2.2.  minLength
+%% @doc 6.7.  minLength
 %%
-%% 5.2.2.1. Valid values
+%% The value of this keyword MUST be a non-negative integer.
 %%
-%%   The value of this keyword MUST be an integer. This integer MUST be greater
-%%   than, or equal to, 0.
+%% A string instance is valid against this keyword if its length is
+%% greater than, or equal to, the value of this keyword.
 %%
-%% 5.2.2.2. Conditions for successful validation
+%% The length of a string instance is defined as the number of its
+%% characters as defined by RFC 7159 [RFC7159].
 %%
-%%   A string instance is valid against this keyword if its length is greater
-%%   than, or equal to, the value of this keyword.
+%% Omitting this keyword has the same behavior as a value of 0.
 %%
-%%   The length of a string instance is defined as the number of its characters
-%%   as defined by RFC 4627 [RFC4627].
-%%
-%% 5.2.2.3. Default value
-%%
-%%   "minLength", if absent, may be considered as being present with integer
-%%   value 0.
 %% @private
 check_min_length(Value, MinLength, State) ->
   case length(unicode:characters_to_list(Value)) >= MinLength of
@@ -904,20 +905,15 @@ check_min_length(Value, MinLength, State) ->
       handle_data_invalid(?wrong_length, Value, State)
   end.
 
-%% @doc 5.2.1. maxLength
+%% @doc 6.6. maxLengthmaxLength
 %%
-%% 5.2.1.1. Valid values
+%% The value of this keyword MUST be a non-negative integer.
 %%
-%%   The value of this keyword MUST be an integer. This integer MUST be greater
-%%   than, or equal to, 0.
+%% A string instance is valid against this keyword if its length is less
+%% than, or equal to, the value of this keyword.
 %%
-%% 5.2.1.2. Conditions for successful validation
-%%
-%%   A string instance is valid against this keyword if its length is less than,
-%%   or equal to, the value of this keyword.
-%%
-%%   The length of a string instance is defined as the number of its characters
-%%   as defined by RFC 4627 [RFC4627].
+%% The length of a string instance is defined as the number of its
+%% characters as defined by RFC 7159 [RFC7159]
 %%
 %% @private
 check_max_length(Value, MaxLength, State) ->
@@ -927,19 +923,15 @@ check_max_length(Value, MaxLength, State) ->
       handle_data_invalid(?wrong_length, Value, State)
   end.
 
-%% @doc 5.5.1. enum
+%% @doc 6.23. enum
 %%
-%% 5.5.1.1. Valid values
+%% The value of this keyword MUST be an array.  This array SHOULD have
+%% at least one element.  Elements in the array SHOULD be unique.
 %%
-%%   The value of this keyword MUST be an array. This array MUST have at least
-%%   one element. Elements in the array MUST be unique.
+%% An instance validates successfully against this keyword if its value
+%% is equal to one of the elements in this keyword's array value.
 %%
-%%   Elements in the array MAY be of any type, including null.
-%%
-%% 5.5.1.2. Conditions for successful validation
-%%
-%%   An instance validates successfully against this keyword if its value is
-%%   equal to one of the elements in this keyword's array value.
+%% Elements in the array might be of any value, including null.
 %%
 %% @private
 check_enum(Value, Enum, State) ->
@@ -985,20 +977,30 @@ check_format(Value, _Format = <<"ipv6">>, State) when is_binary(Value) ->
 check_format(Value, _Format = <<"uri">>, State) when is_binary(Value) ->
   %% not yet supported
   State;
+check_format(Value, <<"uri-reference">>, State) when is_binary(Value) ->
+  uri_reference(Value, State);
 check_format(_Value, _Format, State) ->
   State.
 
-%% @doc 5.1.1. multipleOf
+-ifdef(OTP_RELEASE).
+uri_reference(Value, State) when is_binary(Value) ->
+  case uri_string:parse(Value) of
+    {error, _ErrorType, _Term} ->
+      handle_data_invalid(?wrong_format, Value, State);
+    _ -> State
+  end.
+-else.
+uri_reference(_Value, State) ->
+  State.
+-endif.
+
+
+%% @doc 6.1. multipleOf
 %%
-%% 5.1.1.1. Valid values
+%% The value of "multipleOf" MUST be a number, strictly greater than 0.
 %%
-%%   The value of "multipleOf" MUST be a JSON number. This number MUST be
-%%   strictly greater than 0.
-%%
-%% 5.1.1.2. Conditions for successful validation
-%%
-%%   A numeric instance is valid against "multipleOf" if the result of the
-%%   division of the instance by this keyword's value is an integer.
+%% A numeric instance is valid only if division by this keyword's value
+%% results in an integer.
 %%
 %% @private
 check_multiple_of(Value, MultipleOf, State)
@@ -1013,19 +1015,19 @@ check_multiple_of(Value, MultipleOf, State)
 check_multiple_of(_Value, _MultipleOf, State) ->
   handle_schema_invalid(?wrong_multiple_of, State).
 
-%% @doc 5.4.3. required
+%% @doc 6.17. required
 %%
-%% 5.4.3.1. Valid values
+%% The value of this keyword MUST be an array.  Elements of this array,
+%% if any, MUST be strings, and MUST be unique.
 %%
-%%   The value of this keyword MUST be an array. This array MUST have at least
-%%   one element. Elements of this array MUST be strings, and MUST be unique.
+%% An object instance is valid against this keyword if every item in the
+%% array is the name of a property in the instance.
 %%
-%% 5.4.3.2. Conditions for successful validation
-%%
-%%   An object instance is valid against this keyword if its property set
-%%   contains all elements in this keyword's array value.
+%% Omitting this keyword has the same behavior as an empty array.
 %%
 %% @private
+check_required(Value, [] = Required, State) ->
+  check_required_values(Value, Required, State);
 check_required(Value, [_ | _] = Required, State) ->
   check_required_values(Value, Required, State);
 check_required(_Value, _InvalidRequired, State) ->
@@ -1042,17 +1044,12 @@ check_required_values(Value, [PropertyName | Required], State) ->
       check_required_values(Value, Required, State)
   end.
 
-%% @doc 5.4.1. maxProperties
+%% @doc 6.15. maxProperties
 %%
-%% 5.4.1.1. Valid values
+%% The value of this keyword MUST be a non-negative integer.
 %%
-%%   The value of this keyword MUST be an integer. This integer MUST be greater
-%%   than, or equal to, 0.
-%%
-%% 5.4.1.2.Conditions for successful validation
-%%
-%%   An object instance is valid against "maxProperties" if its number of
-%%   properties is less than, or equal to, the value of this keyword.
+%% An object instance is valid against "maxProperties" if its number of
+%% properties is less than, or equal to, the value of this keyword.
 %%
 %% @private
 check_max_properties(Value, MaxProperties, State)
@@ -1064,22 +1061,14 @@ check_max_properties(Value, MaxProperties, State)
 check_max_properties(_Value, _MaxProperties, State) ->
   handle_schema_invalid(?wrong_max_properties, State).
 
-%% @doc 5.4.2. minProperties
+%% @doc 6.16. minProperties
 %%
-%% 5.4.2.1. Valid values
+%% The value of this keyword MUST be a non-negative integer.
 %%
-%%   The value of this keyword MUST be an integer. This integer MUST be greater
-%%   than, or equal to, 0.
+%% An object instance is valid against "minProperties" if its number of
+%% properties is greater than, or equal to, the value of this keyword.
 %%
-%% 5.4.2.2. Conditions for successful validation
-%%
-%%   An object instance is valid against "minProperties" if its number of
-%%   properties is greater than, or equal to, the value of this keyword.
-%%
-%% 5.4.2.3. Default value
-%%
-%%   If this keyword is not present, it may be considered present with a value
-%%   of 0.
+%% Omitting this keyword has the same behavior as a value of 0.
 %%
 %% @private
 check_min_properties(Value, MinProperties, State)
@@ -1091,20 +1080,14 @@ check_min_properties(Value, MinProperties, State)
 check_min_properties(_Value, _MaxProperties, State) ->
   handle_schema_invalid(?wrong_min_properties, State).
 
-%% @doc 5.5.3. allOf
+%% @doc 6.26. allOf
 %%
-%% 5.5.3.1. Valid values
+%% This keyword's value MUST be a non-empty array.  Each item of the
+%% array MUST be a valid JSON Schema.
 %%
-%%   This keyword's value MUST be an array. This array MUST have at least one
-%%   element.
-%%
-%%   Elements of the array MUST be objects. Each object MUST be a valid JSON
-%%   Schema.
-%%
-%% 5.5.3.2. Conditions for successful validation
-%%
-%%   An instance validates successfully against this keyword if it validates
-%%   successfully against all schemas defined by this keyword's value.
+%% An instance validates successfully against this keyword if it
+%% validates successfully against all schemas defined by this keyword's
+%% value.
 %%
 %% @private
 check_all_of(Value, [_ | _] = Schemas, State) ->
@@ -1122,20 +1105,14 @@ check_all_of_(Value, [Schema | Schemas], State) ->
       handle_data_invalid({?all_schemas_not_valid, Errors}, Value, State)
   end.
 
-%% @doc 5.5.4. anyOf
+%% @doc 6.27. anyOf
 %%
-%% 5.5.4.1. Valid values
+%% This keyword's value MUST be a non-empty array.  Each item of the
+%% array MUST be a valid JSON Schema.
 %%
-%%   This keyword's value MUST be an array. This array MUST have at least one
-%%   element.
-%%
-%%   Elements of the array MUST be objects. Each object MUST be a valid JSON
-%%   Schema.
-%%
-%% 5.5.4.2. Conditions for successful validation
-%%
-%%   An instance validates successfully against this keyword if it validates
-%%   successfully against at least one schema defined by this keyword's value.
+%% An instance validates successfully against this keyword if it
+%% validates successfully against at least one schema defined by this
+%% keyword's value.
 %%
 %% @private
 check_any_of(Value, [_ | _] = Schemas, State) ->
@@ -1163,20 +1140,14 @@ check_any_of_(Value, [Schema | Schemas], State, Errors) ->
       check_any_of_(Value, Schemas, State, shortest(NewErrors, Errors))
   end.
 
-%% @doc 5.5.5. oneOf
+%% @doc 6.28. oneOf
 %%
-%% 5.5.5.1. Valid values
+%% This keyword's value MUST be a non-empty array.  Each item of the
+%% array MUST be a valid JSON Schema.
 %%
-%%   This keyword's value MUST be an array. This array MUST have at least one
-%%   element.
-%%
-%%   Elements of the array MUST be objects. Each object MUST be a valid JSON
-%%   Schema.
-%%
-%% 5.5.5.2. Conditions for successful validation
-%%
-%%   An instance validates successfully against this keyword if it validates
-%%   successfully against exactly one schema defined by this keyword's value.
+%% An instance validates successfully against this keyword if it
+%% validates successfully against exactly one schema defined by this
+%% keyword's value.
 %%
 %% @private
 check_one_of(Value, [_ | _] = Schemas, State) ->
@@ -1207,17 +1178,12 @@ check_one_of_(Value, [Schema | Schemas], State, Valid, Errors) ->
       check_one_of_(Value, Schemas, State, Valid, Errors ++ NewErrors)
   end.
 
-%% @doc 5.5.6. not
+%% @doc 6.29. not
 %%
-%% 5.5.6.1. Valid values
+%% This keyword's value MUST be a valid JSON Schema.
 %%
-%%   This keyword's value MUST be an object. This object MUST be a valid JSON
-%%   Schema.
-%%
-%% 5.5.6.2. Conditions for successful validation
-%%
-%%   An instance is valid against this keyword if it fails to validate
-%%   successfully against the schema defined by this keyword.
+%% An instance is valid against this keyword if it fails to validate
+%% successfully against the schema defined by this keyword.
 %%
 %% @private
 check_not(Value, Schema, State) ->
