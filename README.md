@@ -295,5 +295,5 @@ If you see something missing or incorrect, a pull request is most welcome!
 [Apache 2.0](LICENSE)
 
 
-  [1]: https://github.com/for-GET/jesse
+  [1]: https://github.com/for-GET/jesse/actions?query=workflow%3ACI+branch%3Amaster
   [2]: https://github.com/for-GET/jesse/workflows/CI/badge.svg?branch=master
