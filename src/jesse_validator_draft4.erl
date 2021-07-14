@@ -982,6 +982,11 @@ check_format(Value, _Format = <<"ipv6">>, State) when is_binary(Value) ->
 check_format(Value, _Format = <<"uri">>, State) when is_binary(Value) ->
   %% not yet supported
   State;
+check_format(Value, _Format = <<"boolean">>, State) when is_binary(Value) ->
+  case is_type_valid(binary_to_atom(Value), boolean) of
+    true -> State;
+    false -> handle_data_invalid(?wrong_format, Value, State)
+  end;
 check_format(_Value, _Format, State) ->
   State.
 
