@@ -75,7 +75,7 @@
 -type external_validator() :: fun((json_term(), any()) -> any())
                             | undefined.
 
-%% From https://github.com/erlang/otp/blob/OTP-20.2.3/lib/inets/doc/src/http_uri.xml#L57
+%% github.com/erlang/otp/blob/OTP-20.2.3/lib/inets/doc/src/http_uri.xml#L57
 -type http_uri_uri() :: string() | unicode:unicode_binary().
 
 -type json_term() :: term().
@@ -156,7 +156,7 @@ del_schema(Key) ->
 %% where `ValidationFun' is `fun jesse_json:is_json_object/1'.
 -spec load_schemas( Path :: string()
                   , ParserFun :: fun((binary()) -> json_term())
-                  ) -> jesse_database:update_result().
+                  ) -> jesse_database:store_result().
 load_schemas(Path, ParserFun) ->
   load_schemas( Path
               , ParserFun
@@ -181,7 +181,7 @@ load_schemas(Path, ParserFun) ->
 -spec load_schemas( Path :: string()
                   , ParserFun :: parser_fun()
                   , ValidationFun :: validation_fun()
-                  ) -> jesse_database:update_result().
+                  ) -> jesse_database:store_result().
 load_schemas(Path, ParserFun, ValidationFun) ->
   jesse_database:add_path(Path, ParserFun, ValidationFun).
 

@@ -25,6 +25,7 @@
 -behaviour(jesse_schema_validator).
 
 -compile([ export_all
+         , nowarn_export_all
          ]).
 
 -define(EXCLUDED_FUNS, [ module_info
@@ -38,7 +39,7 @@
 
 -include_lib("common_test/include/ct.hrl").
 
--import(jesse_tests_util, [ get_tests/2
+-import(jesse_tests_util, [ get_tests/3
                           , do_test/2
                           ]).
 
@@ -47,14 +48,17 @@ all() ->
   [F || {F, _} <- Exports, not lists:member(F, ?EXCLUDED_FUNS)].
 
 init_per_suite(Config) ->
-  inets:start(),
-  get_tests( "Generic-Test-Suite"
+  {ok, _} = application:ensure_all_started(jesse),
+  get_tests( "standard"
            , <<"http://json-schema.org/draft-04/schema#">>
-           )
+           , Config)
+    ++ get_tests( "extra"
+                , <<"http://json-schema.org/draft-04/schema#">>
+                , Config)
     ++ Config.
 
 end_per_suite(_Config) ->
-  inets:stop().
+  ok.
 
 init_state(_) ->
   0.

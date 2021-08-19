@@ -122,6 +122,7 @@
 -define(any_schemas_not_valid,       'any_schemas_not_valid').
 -define(not_multiple_of,             'not_multiple_of').
 -define(not_one_schema_valid,        'not_one_schema_valid').
+-define(more_than_one_schema_valid,  'more_than_one_schema_valid').
 -define(not_schema_valid,            'not_schema_valid').
 -define(wrong_not_schema,            'wrong_not_schema').
 -define(external,                    'external').

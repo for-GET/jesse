@@ -1,0 +1,88 @@
+---
+name: CI
+on:
+  push:
+    branches:
+      - github*
+      - master
+    tags:
+      - '*'
+  pull_request:
+    branches:
+      - '**'
+  schedule:
+    - cron: 0 0 * * *
+jobs:
+  ci:
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        otp_vsn:
+          - 'latest'
+          - '24.0'
+          - '23.3'
+          - '23.2'
+          - '23.1'
+          - '23'
+          - '22.3'
+          - '22.2'
+          - '22.1'
+          - '22'
+          - '21.3'
+          - '21.2'
+          - '21.1'
+          - '21'
+          - '20.3'
+          - '20.2'
+          - '20.1'
+          - '20'
+          - '19.3'
+          - '19.2'
+          - '19.1'
+          - '19'
+    name: 'ci-erl:${{ matrix.otp_vsn }}'
+    runs-on: ubuntu-latest
+    container:
+      image: 'erlang:${{ matrix.otp_vsn }}'
+    steps:
+      - shell: bash
+        run: |
+          apt-get update
+          apt-get -y install tcl tcl-dev gettext
+          cd /usr/src/
+          wget https://github.com/git/git/archive/v2.18.0.tar.gz -O git.tar.gz
+          tar -xf git.tar.gz
+          cd git-*
+          make prefix=/usr/local all
+          make prefix=/usr/local install
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - shell: bash
+        run: make
+      - shell: bash
+        run: make test
+      - if: ${{ matrix.otp_vsn == 'latest' }}
+        shell: bash
+        run: make elvis docs
+
+      # PUBLISH TAGS
+
+      - if: ${{ startsWith(github.ref, 'refs/tags/') }}
+        name: Check is-semver-tag
+        id: is-semver-tag
+        shell: bash
+        run: |
+          if [[ ${{ github.event.ref }} =~ ^refs/tags/[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+              echo ::set-output name=check::true
+          fi
+      - if: ${{ matrix.otp_vsn == 'latest' && steps.is-semver-tag.outputs.check == 'true'}}
+        name: Run make publish
+        shell: bash
+        env:
+          HEX_API_KEY: ${{secrets.HEX_API_KEY}}
+        run: |
+          mkdir -p ~/.config/rebar3
+          echo "{plugins, [rebar3_hex]}." > ~/.config/rebar3/rebar.config
+          make publish
