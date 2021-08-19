@@ -21,7 +21,7 @@
 -module(jesse_tests_util).
 
 %% API
--export([ get_tests/2
+-export([ get_tests/3
         , do_test/2
         ]).
 
@@ -38,22 +38,24 @@
 -ifdef(OTP_RELEASE). %% OTP 21+
 -define(EXCEPTION(C, R, Stacktrace), C:R:Stacktrace ->).
 -else.
--define(EXCEPTION(C, R, Stacktrace), C:R -> Stacktrace = erlang:get_stacktrace(),).
+-define( EXCEPTION(C, R, Stacktrace)
+       , C:R -> Stacktrace = erlang:get_stacktrace(),
+       ).
 -endif.
 
 %%% API
 
-get_tests(RelativeTestsDir, DefaultSchema) ->
-  TestsDir = filename:join( os:getenv("TEST_DIR")
+get_tests(RelativeTestsDir, DefaultSchema, Config) ->
+  TestsDir = filename:join( ?config(data_dir, Config)
                           , RelativeTestsDir
                           ),
   TestFiles = filelib:wildcard(TestsDir ++ "/*.json"),
   lists:map( fun(TestFile) ->
                  {ok, Bin} = file:read_file(TestFile),
-                 Tests = jsx:decode(Bin),
+                 Tests = jsx:decode(Bin, [{return_maps, false}]),
                  Key = testfile_to_key(TestFile),
-                 Config = {Tests, DefaultSchema},
-                 {Key, Config}
+                 CaseConfig = {Tests, DefaultSchema},
+                 {Key, CaseConfig}
              end
            , TestFiles
            ).
@@ -94,9 +96,16 @@ test_schema(DefaultSchema, Opts0, Schema, SchemaTests) ->
                            true ->
                              {ok, Instance} = Result;
                            false ->
-                             {error, _} = Result
+                             {error, _} = Result;
+                           ExpectedErrors ->
+                             {error, Errors} = Result,
+                             GotErrors =
+                               [atom_to_binary(E, utf8)
+                                || {data_invalid, _, E, _, _} <- Errors],
+                             (ExpectedErrors == GotErrors)
+                               orelse error({unexpected_error, GotErrors})
                          end
-                     catch ?EXCEPTION(C,R,Stacktrace)
+                     catch ?EXCEPTION(C, R, Stacktrace)
                          ct:pal( "Error: ~p:~p~n"
                                  "Stacktrace: ~p~n"
                                , [C, R, Stacktrace]
@@ -130,4 +139,4 @@ get_path(Key, Schema) ->
 load_schema(URI) ->
   {ok, Response} = httpc:request(get, {URI, []}, [], [{body_format, binary}]),
   {{_Line, 200, _}, _Headers, Body} = Response,
-  jsx:decode(Body).
+  jsx:decode(Body, [{return_maps, false}]).

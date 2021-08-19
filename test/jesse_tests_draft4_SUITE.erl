@@ -34,7 +34,7 @@
 
 -include_lib("common_test/include/ct.hrl").
 
--import(jesse_tests_util, [ get_tests/2
+-import(jesse_tests_util, [ get_tests/3
                           , do_test/2
                           ]).
 
@@ -43,17 +43,17 @@ all() ->
   [F || {F, _} <- Exports, not lists:member(F, ?EXCLUDED_FUNS)].
 
 init_per_suite(Config) ->
-  inets:start(),
-  get_tests( "JSON-Schema-Test-Suite/tests/draft4"
+  {ok, _} = application:ensure_all_started(jesse),
+  get_tests( "standard"
            , <<"http://json-schema.org/draft-04/schema#">>
-           )
-    ++ get_tests( "JSON-Schema-Test-Suite-extra/draft4"
+           , Config)
+    ++ get_tests( "extra"
                 , <<"http://json-schema.org/draft-04/schema#">>
-                )
+                , Config)
     ++ Config.
 
 end_per_suite(_Config) ->
-  inets:stop().
+  ok.
 
 %%% Testcases
 
@@ -130,8 +130,8 @@ ref(Config) ->
   do_test("ref", Config).
 
 refRemote(Config) ->
-  TestDir = os:getenv("TEST_DIR"),
-  DocumentRoot = filename:join(TestDir, "JSON-Schema-Test-Suite/remotes"),
+  TestDir = ?config(data_dir, Config),
+  DocumentRoot = filename:join(TestDir, "remotes"),
   ServerOpts = [ {port, 1234}
                , {server_name, "localhost"}
                , {server_root, "."}
@@ -165,6 +165,9 @@ anyOfOneOfAllowedErrorsOneExtra(Config) ->
 
 anyOfOneOfAllowedErrorsInfinityExtra(Config) ->
   do_test("anyOfOneOfAllowedErrorsInfinityExtra", Config).
+
+anyOfOneOfAllowedErrorsInfinityPrevError(Config) ->
+  do_test("anyOfOneOfAllowedErrorsInfinityPrevError", Config).
 
 unicodePatternProperties(Config) ->
   do_test("unicodePatternProperties", Config).

@@ -221,6 +221,73 @@ schema_unsupported_test() ->
               , jesse_schema_validator:validate(UnsupportedSchema, Json, [])
               ).
 
+data_invalid_one_of_test() ->
+  IntegerSchema = {[{<<"type">>, <<"integer">>}]},
+  StringSchema  = {[{<<"type">>, <<"string">>}]},
+  ObjectSchema  = {[ {<<"type">>, <<"object">>}
+                   , { <<"properties">>
+                     , [ {<<"name">>, StringSchema}
+                       , {<<"age">>, IntegerSchema}
+                       ]
+                     }
+                   , {<<"additionalProperties">>, false}
+                   ]},
+
+  Schema = {[ {<<"$schema">>, <<"http://json-schema.org/draft-04/schema#">>}
+            , {<<"oneOf">>, [IntegerSchema, StringSchema, ObjectSchema]}
+            ]},
+
+  Json = [ {<<"name">>, 42}
+         , {<<"age">>, <<"John">>}
+         ],
+
+  ?assertThrow(
+     [ { data_invalid
+       , Schema
+       , { not_one_schema_valid
+         , [ {data_invalid, IntegerSchema, wrong_type, Json, []}
+           , {data_invalid, StringSchema, wrong_type, Json, []}
+           , {data_invalid, StringSchema, wrong_type, 42, [<<"name">>]}
+           ]
+         }
+       , Json
+       , []
+       }],
+     jesse_schema_validator:validate(Schema, Json, [])
+    ).
+
+data_invalid_any_of_test() ->
+  IntegerSchema = {[{<<"type">>, <<"integer">>}]},
+  StringSchema  = {[{<<"type">>, <<"string">>}]},
+  ObjectSchema  = {[ {<<"type">>, <<"object">>}
+                   , { <<"properties">>
+                     , [ {<<"name">>, StringSchema}
+                       , {<<"age">>, IntegerSchema}
+                       ]
+                     }
+                   , {<<"additionalProperties">>, false}
+                   ]},
+
+  Schema = {[ {<<"$schema">>, <<"http://json-schema.org/draft-04/schema#">>}
+            , {<<"anyOf">>, [IntegerSchema, StringSchema, ObjectSchema]}
+            ]},
+
+  Json = [ {<<"name">>, 42}
+         , {<<"age">>, <<"John">>}
+         ],
+
+  ?assertThrow(
+     [ { data_invalid
+       , Schema
+       , { any_schemas_not_valid
+         , [{data_invalid, IntegerSchema, wrong_type, Json, []}]
+         }
+       , Json
+       , []
+       }],
+     jesse_schema_validator:validate(Schema, Json, [])
+    ).
+
 -ifndef(erlang_deprecated_types).
 -ifndef(COMMON_TEST).  % see Emakefile
 map_schema_test() ->
