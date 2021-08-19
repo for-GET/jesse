@@ -25,8 +25,8 @@
 -behaviour(jesse_schema_validator).
 
 %% API
--export([ init_state/1
-        , check_value/3
+-export([ check_value/3
+        , init_state/1
         ]).
 
 %% Includes
@@ -236,8 +236,8 @@ check_value(Value, {?NOT, Schema}, State) ->
   check_not(Value, Schema, State);
 check_value(Value, {?REF, RefSchemaURI}, State) ->
   validate_ref(Value, RefSchemaURI, State);
-check_value(_Value, _Attr, State) ->
-  State.
+check_value(Value, _Attr, State) ->
+  maybe_external_check_value(Value, State).
 
 %%% Internal functions
 %% @doc Adds Property to the current path and checks the value
