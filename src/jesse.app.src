@@ -12,7 +12,6 @@
                    , ssl
                    , inets
                    , jsx
-                   , rfc3339
                    ]}
   , {licenses, [ "Apache 2.0"
                ]}
