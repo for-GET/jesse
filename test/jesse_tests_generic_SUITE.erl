@@ -49,12 +49,9 @@ all() ->
 
 init_per_suite(Config) ->
   {ok, _} = application:ensure_all_started(jesse),
-  get_tests( "standard"
+  get_tests( "extra"
            , <<"http://json-schema.org/draft-04/schema#">>
            , Config)
-    ++ get_tests( "extra"
-                , <<"http://json-schema.org/draft-04/schema#">>
-                , Config)
     ++ Config.
 
 end_per_suite(_Config) ->

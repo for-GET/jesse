@@ -203,8 +203,8 @@ check_value(Value, {?EXTENDS, Extends}, State) ->
   check_extends(Value, Extends, State);
 check_value(Value, {?REF, RefSchemaURI}, State) ->
   validate_ref(Value, RefSchemaURI, State);
-check_value(_Value, _Attr, State) ->
-  State.
+check_value(Value, _Attr, State) ->
+  maybe_external_check_value(Value, State).
 
 %%% Internal functions
 %% @doc Adds Property to the current path and checks the value
@@ -1031,4 +1031,11 @@ add_to_path(State, Property) ->
 remove_last_from_path(State) ->
   jesse_state:remove_last_from_path(State).
 
-
+%% @private
+maybe_external_check_value(Value, State) ->
+  case jesse_state:get_external_validator(State) of
+    undefined ->
+      State;
+    Fun ->
+      Fun(Value, State)
+  end.
