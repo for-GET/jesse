@@ -303,13 +303,13 @@ get_schema_info(File, {Acc, ParseFun}) ->
 %% @doc Returns value of "id" field from json object `Schema', assuming that
 %% the given json object has such a field, otherwise returns undefined.
 %% @private
--spec get_schema_id(Schema :: jesse:json_term()) -> string() | undefined.
+-spec get_schema_id(Schema :: jesse:json_term()) -> binary() | undefined.
 get_schema_id(Schema) ->
   case jesse_json_path:value(?ID, Schema, undefined) of
     undefined ->
       undefined;
     Id ->
-      erlang:binary_to_list(Id)
+      Id
   end.
 
 %% @private

@@ -1,0 +1,36 @@
+[
+    {
+        "description": "use custom validator",
+        "schema": {
+            "customDef": "testSuccess",
+            "properties": {
+                "testSuccess": {
+                    "type": "boolean"
+                }
+            },
+            "required": [
+                "testSuccess"
+            ]
+        },
+        "tests": [
+            {
+                "description": "custom validation success",
+                "data": {"testSuccess": true},
+                "valid": true
+            },
+            {
+                "description": "custom validation failure",
+                "data": {"testSuccess": false},
+                "valid": false
+            },
+            {
+                "description": "base validation failure",
+                "data": {"wrongProperty": "whatever"},
+                "valid": false
+            }
+        ],
+        "options": {
+            "validator": "jesse_tests_generic_SUITE"
+        }
+    }
+]

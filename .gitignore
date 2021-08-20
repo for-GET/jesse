@@ -12,3 +12,4 @@
 /rebar3.crashdump
 /rebar.lock
 /test/*.beam
+/deps/

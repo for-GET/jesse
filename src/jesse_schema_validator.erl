@@ -25,11 +25,29 @@
 
 %% API
 -export([ validate/3
+        , validate_definition/4
+        , validate_local_ref/4
         , validate_with_state/3
         ]).
 
 %% Includes
 -include("jesse_schema_validator.hrl").
+
+%% Behaviour definition
+-callback check_value(Value, Attr, State) ->
+  State | no_return()
+    when
+    Value :: any(),
+    Attr  :: {binary(), jesse:json_term()},
+    State :: jesse_state:state().
+
+-callback init_state(Opts :: jesse_state:validator_opts()) ->
+    validator_state().
+
+-type validator_state() :: any().
+
+-export_type([ validator_state/0
+             ]).
 
 %%% API
 %% @doc Validates json `Data' against `JsonSchema' with `Options'.
@@ -45,6 +63,34 @@ validate(JsonSchema, Value, Options) ->
   NewState = validate_with_state(JsonSchema, Value, State),
   {result(NewState), Value}.
 
+%% @doc Validates json `Data' against a given $ref path in `JsonSchema' with `Options'.
+%% If the given json is valid, then it is returned to the caller as is,
+%% otherwise an exception will be thrown.
+-spec validate_definition( Definition :: string()
+                         , JsonSchema :: jesse:json_term()
+                         , Data       :: jesse:json_term()
+                         , Options    :: [{Key :: atom(), Data :: any()}]
+                         ) -> {ok, jesse:json_term()}
+                            | no_return().
+validate_definition(Definition, JsonSchema, Value, Options) ->
+  RefPath = "#/definitions/" ++ Definition,
+  validate_local_ref(RefPath, JsonSchema, Value, Options).
+
+%% @doc Validates json `Data' against `Definition' in `JsonSchema' with `Options'.
+%% If the given json is valid, then it is returned to the caller as is,
+%% otherwise an exception will be thrown.
+-spec validate_local_ref( RefPath :: string()
+                         , JsonSchema :: jesse:json_term()
+                         , Data       :: jesse:json_term()
+                         , Options    :: [{Key :: atom(), Data :: any()}]
+                         ) -> {ok, jesse:json_term()}
+                            | no_return().
+validate_local_ref(RefPath, JsonSchema, Value, Options) ->
+  State = jesse_state:new(JsonSchema, Options),
+  Ref   = make_ref(RefPath),
+  NewState = validate_with_state(Ref, Value, State),
+  {result(NewState), Value}.
+
 %% @doc Validates json `Data' against `JsonSchema' with `State'.
 %% If the given json is valid, then the latest state is returned to the caller,
 %% otherwise an exception will be thrown.
@@ -53,11 +99,31 @@ validate(JsonSchema, Value, Options) ->
                          , State      :: jesse_state:state()
                          ) -> jesse_state:state()
                             | no_return().
-validate_with_state(JsonSchema, Value, State) ->
-  SchemaVer = get_schema_ver(JsonSchema, State),
-  select_and_run_validator(SchemaVer, JsonSchema, Value, State).
+validate_with_state(JsonSchema0, Value, State) ->
+  Validator = select_validator(JsonSchema0, State),
+  JsonSchema = jesse_json_path:unwrap_value(JsonSchema0),
+  run_validator(Validator, Value, JsonSchema, State).
+
 
 %%% Internal functions
+%% @doc Gets validator from the state or else
+%% selects an appropriate one by schema version.
+%% @private
+select_validator(JsonSchema, State) ->
+  case jesse_state:get_validator(State) of
+    undefined ->
+      select_validator_by_schema(get_schema_ver(JsonSchema, State), State);
+    Validator ->
+      Validator
+  end.
+
+select_validator_by_schema(?json_schema_draft3, _) ->
+  jesse_validator_draft3;
+select_validator_by_schema(?json_schema_draft4, _) ->
+  jesse_validator_draft4;
+select_validator_by_schema(SchemaURI, State) ->
+  jesse_error:handle_schema_invalid({?schema_unsupported, SchemaURI}, State).
+
 %% @doc Returns "$schema" property from `JsonSchema' if it is present,
 %% otherwise the default schema version from `State' is returned.
 %% @private
@@ -76,18 +142,21 @@ result(State) ->
     _  -> throw(ErrorList)
   end.
 
-%% @doc Runs appropriate validator depending on schema version
-%% it is called with.
+%% @doc Goes through attributes of the given `JsonSchema' and
+%% validates the `Value' against them calling `Validator'.
 %% @private
-select_and_run_validator(?json_schema_draft3, JsonSchema, Value, State) ->
-  jesse_validator_draft3:check_value( Value
-                                    , jesse_json_path:unwrap_value(JsonSchema)
-                                    , State
-                                    );
-select_and_run_validator(?json_schema_draft4, JsonSchema, Value, State) ->
-    jesse_validator_draft4:check_value( Value
-                                      , jesse_json_path:unwrap_value(JsonSchema)
-                                      , State
-                                      );
-select_and_run_validator(SchemaURI, _JsonSchema, _Value, State) ->
-  jesse_error:handle_schema_invalid({?schema_unsupported, SchemaURI}, State).
+run_validator(_Validator, _Value, [], State) ->
+  State;
+run_validator(Validator, Value, [Attr | Attrs], State0) ->
+  State = Validator:check_value( Value
+                               , Attr
+                               , State0
+                               ),
+  run_validator(Validator, Value, Attrs, State).
+
+%% @doc Makes a $ref schema object pointing to the given path
+%% in schema defintions.
+%% @private
+make_ref(RefPath) ->
+  RefPath1 = list_to_binary(RefPath),
+  [{<<"$ref">>, RefPath1}].

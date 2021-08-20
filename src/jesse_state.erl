@@ -33,11 +33,14 @@
         , get_default_schema_ver/1
         , get_error_handler/1
         , get_error_list/1
+        , get_validator/1
+        , get_validator_state/1
         , new/2
         , remove_last_from_path/1
         , set_allowed_errors/2
         , set_current_schema/2
         , set_error_list/2
+        , set_validator_state/2
         , resolve_ref/2
         , undo_resolve_ref/2
         , canonical_path/2
@@ -45,6 +48,7 @@
         ]).
 
 -export_type([ state/0
+             , validator_opts/0
              ]).
 
 %% Includes
@@ -62,6 +66,8 @@
          , id :: jesse:schema_id()
          , root_schema :: jesse:schema()
          , schema_loader_fun :: jesse:schema_loader_fun()
+         , validator      = undefined    :: module() | 'undefined'
+         , validator_state    = undefined :: any() | 'undefined'
          }
        ).
 
@@ -70,6 +76,8 @@
 -type current_path_item() :: binary() | non_neg_integer().
 
 -opaque state() :: #state{}.
+
+-type validator_opts() :: any().
 
 %%% API
 %% @doc Adds `Property' to the `current_path' in `State'.
@@ -118,6 +126,16 @@ get_error_handler(#state{error_handler = ErrorHandler}) ->
 get_error_list(#state{error_list = ErrorList}) ->
   ErrorList.
 
+%% @doc Getter for `validator'.
+-spec get_validator(State :: state()) -> module() | undefined.
+get_validator(#state{validator = Validator}) ->
+  Validator.
+
+%% @doc Getter for `validator_state'.
+-spec get_validator_state(State :: state()) -> any() | undefined.
+get_validator_state(#state{validator_state = ValidatorState}) ->
+  ValidatorState.
+
 %% @doc Returns newly created state.
 -spec new( JsonSchema :: jesse:schema()
          , Options :: jesse:options()
@@ -146,6 +164,17 @@ new(JsonSchema, Options) ->
                                  , Options
                                  , ?default_schema_loader_fun
                                  ),
+  Validator = proplists:get_value( validator
+                                        , Options
+                                        , undefined
+                                        ),
+  ValidatorOpts = proplists:get_value( validator_opts
+                                     , Options
+                                     , undefined
+                                     ),
+  ValidatorState = init_validator_state( Validator
+                                       , ValidatorOpts
+                                       ),
   NewState = #state{ root_schema        = JsonSchema
                    , current_path       = []
                    , allowed_errors     = AllowedErrors
@@ -154,6 +183,8 @@ new(JsonSchema, Options) ->
                    , default_schema_ver = DefaultSchemaVer
                    , schema_loader_fun  = LoaderFun
                    , external_validator = ExternalValidator
+                   , validator          = Validator
+                   , validator_state    = ValidatorState
                    },
   set_current_schema(NewState, JsonSchema).
 
@@ -183,6 +214,11 @@ set_current_schema(#state{id = Id} = State, NewSchema) ->
                     ) -> state().
 set_error_list(State, ErrorList) ->
   State#state{error_list = ErrorList}.
+
+%% @doc Setter for `validator_state'.
+-spec set_validator_state(State :: state(), ValidatorState :: any()) -> state().
+set_validator_state(State, ValidatorState) ->
+  State#state{validator_state = ValidatorState}.
 
 %% @doc Resolve a reference.
 -spec resolve_ref(State :: state(), Reference :: jesse:schema_ref()) -> state().
@@ -247,6 +283,16 @@ undo_resolve_ref(RefState, OriginalState) ->
                 , default_schema_ver = OriginalState#state.default_schema_ver
                 , id = OriginalState#state.id
                 }.
+
+%% @doc Init custom validator state.
+%% @private
+-spec init_validator_state( Validator :: module() | undefined
+                          , Opts :: validator_opts()
+                          ) -> jesse_schema_validator:validator_state().
+init_validator_state(undefined, _) ->
+  undefined;
+init_validator_state(Validator, Opts) ->
+  Validator:init_state(Opts).
 
 %% @doc Retrieve a specific part of a schema
 %% @private
