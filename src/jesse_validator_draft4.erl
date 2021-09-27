@@ -85,6 +85,7 @@ check_value(Value, [{?REF, RefSchemaURI} | Attrs], State) ->
     [] ->
       validate_ref(Value, RefSchemaURI, State);
     _ ->
+      %% FIXME: should override, not crash
       handle_schema_invalid(?only_ref_allowed, State)
   end;
 check_value(Value, [{?TYPE, Type} | Attrs], State) ->
@@ -1235,7 +1236,7 @@ validate_schema(Value, Schema, State0) ->
                                                            , Value
                                                            , State1
                                                            ),
-        {true, State2};
+        {true, set_current_schema(State2, get_current_schema(State0))};
       false ->
         handle_schema_invalid(?schema_invalid, State0)
     end
@@ -1297,7 +1298,7 @@ is_equal(Value1, Value2) ->
     true  -> compare_objects(Value1, Value2);
     false -> case is_list(Value1) andalso is_list(Value2) of
                true  -> compare_lists(Value1, Value2);
-               false -> Value1 =:= Value2
+               false -> Value1 == Value2
              end
   end.
 
