@@ -173,7 +173,17 @@ set_allowed_errors(#state{} = State, AllowedErrors) ->
 -spec set_current_schema( State :: state()
                         , NewSchema :: jesse:schema()
                         ) -> state().
-set_current_schema(#state{id = Id} = State, NewSchema) ->
+set_current_schema(#state{id = Id} = State, NewSchema0) ->
+  NewSchema =
+    case jesse_json_path:value(?REF, NewSchema0, undefined) of
+      undefined ->
+        NewSchema0;
+      Ref ->
+        %% Instead of just removing all the other fields, we put schema as
+        %% 1st element, so, only `ref' will be validated, while other fields
+        %% (say, `definitions') may still be referenced.
+        [{?REF, Ref} | lists:keydelete(?REF, 1, NewSchema0)]
+    end,
   NewSchemaId = jesse_json_path:value(?ID, NewSchema, undefined),
   NewId = combine_id(Id, NewSchemaId),
   State#state{current_schema = NewSchema, id = NewId}.
