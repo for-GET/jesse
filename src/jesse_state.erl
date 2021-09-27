@@ -174,7 +174,8 @@ set_allowed_errors(#state{} = State, AllowedErrors) ->
                         , NewSchema :: jesse:schema()
                         ) -> state().
 set_current_schema(#state{id = Id} = State, NewSchema) ->
-  NewId = combine_id(Id, jesse_json_path:value(?ID, NewSchema, undefined)),
+  NewSchemaId = jesse_json_path:value(?ID, NewSchema, undefined),
+  NewId = combine_id(Id, NewSchemaId),
   State#state{current_schema = NewSchema, id = NewId}.
 
 %% @doc Setter for `error_list'.
@@ -200,43 +201,34 @@ resolve_ref(State, Reference) ->
       _ ->
         binary_to_list(BaseURI) =:= Id
     end,
-  case IsLocalReference of
-    true ->
-      Path = jesse_json_path:parse(Pointer),
-      case load_local_schema(State#state.root_schema, Path) of
-        ?not_found ->
-          jesse_error:handle_schema_invalid( { ?schema_not_found
-                                             , CanonicalReference}
-                                           , State
-                                           );
-        Schema ->
-          set_current_schema(State, Schema)
-      end;
-    false ->
-      case load_schema(State, BaseURI) of
-        ?not_found ->
-          jesse_error:handle_schema_invalid( { ?schema_not_found
-                                             , CanonicalReference}
-                                           , State
-                                           );
-        RemoteSchema ->
-          SchemaVer =
-            jesse_json_path:value(?SCHEMA, RemoteSchema, ?default_schema_ver),
-          NewState = State#state{ root_schema = RemoteSchema
-                                , id = BaseURI
-                                , default_schema_ver = SchemaVer
-                                },
-          Path = jesse_json_path:parse(Pointer),
-          case load_local_schema(RemoteSchema, Path) of
-            ?not_found ->
-              jesse_error:handle_schema_invalid( { ?schema_not_found
-                                                 , CanonicalReference}
-                                               , State
-                                               );
-            Schema ->
-              set_current_schema(NewState, Schema)
-          end
-      end
+  {State1, BaseSchema} =
+    case IsLocalReference of
+      true ->
+        {State, State#state.root_schema};
+      false ->
+        case load_schema(State, BaseURI) of
+          ?not_found ->
+            jesse_error:handle_schema_invalid( { ?schema_not_found
+                                               , CanonicalReference}
+                                             , State
+                                             );
+          RemoteSchema ->
+            SchemaVer =
+              jesse_json_path:value(?SCHEMA, RemoteSchema, State#state.default_schema_ver),
+            RemoteState = State#state{ root_schema = RemoteSchema
+                                  , id = BaseURI
+                                  , default_schema_ver = SchemaVer
+                                  },
+            {RemoteState, RemoteSchema}
+        end
+    end,
+  Path = jesse_json_path:parse(Pointer),
+  try load_local_schema(set_current_schema(State1, BaseSchema), Path)
+  catch throw:?not_found ->
+      jesse_error:handle_schema_invalid( { ?schema_not_found
+                                         , CanonicalReference}
+                                       , State1
+                                       )
   end.
 
 %% @doc Revert changes made by resolve_reference.
@@ -250,40 +242,47 @@ undo_resolve_ref(RefState, OriginalState) ->
 
 %% @doc Retrieve a specific part of a schema
 %% @private
--spec load_local_schema( Schema :: ?not_found | jesse:schema()
+-spec load_local_schema( Schema :: state() | ?not_found
                        , Path :: [binary()]
                        ) -> not_found | jesse:json_term().
-load_local_schema(?not_found, _Path) ->
-  ?not_found;
-load_local_schema(Schema, []) ->
-  case jesse_lib:is_json_object(Schema) of
+load_local_schema(St, []) ->
+  St;
+load_local_schema(St, [<<>> | Keys]) ->
+  load_local_schema(St, Keys);
+load_local_schema(St, [Key | Keys]) ->
+  Schema = get_current_schema(St),
+  SubSchema = jesse_json_path:value(Key, Schema, ?not_found),
+  (SubSchema =/= ?not_found) orelse throw(?not_found),
+  {ObjectSubSchema, Keys1} =
+    case jesse_lib:is_json_object(SubSchema) of
+      true  ->
+        {SubSchema, Keys};
+      false ->
+        choose_array(SubSchema, Keys)
+    end,
+  load_local_schema(
+    set_current_schema(St, ObjectSubSchema),
+    Keys1).
+
+choose_array(SubSchema, [Key | Keys] = AllKeys) ->
+  case jesse_lib:is_array(SubSchema) of
     true ->
-      Schema;
+      try binary_to_integer(Key) of
+        Index ->
+          choose_array(lists:nth(Index + 1, SubSchema), Keys)
+      catch
+        _:_ -> throw(?not_found)
+      end;
     false ->
-      ?not_found
-  end;
-load_local_schema(Schema, [<<>> | Keys]) ->
-  load_local_schema(Schema, Keys);
-load_local_schema(Schema, [Key | Keys]) ->
-  case jesse_lib:is_json_object(Schema) of
-    true  ->
-      SubSchema = jesse_json_path:value(Key, Schema, ?not_found),
-      load_local_schema(SubSchema, Keys);
-    false ->
-      case jesse_lib:is_array(Schema) of
+      case jesse_lib:is_json_object(SubSchema) of
         true ->
-          %% avoiding binary_to_integer to maintain R15 compatibility
-          try list_to_integer(binary_to_list(Key)) of
-            Index ->
-              SubSchema = lists:nth(Index + 1, Schema),
-              load_local_schema(SubSchema, Keys)
-          catch
-            _:_ -> ?not_found
-          end;
+          {SubSchema, AllKeys};
         false ->
-          ?not_found
+          throw(?not_found)
       end
-  end.
+  end;
+choose_array(Schema, []) ->
+  {Schema, []}.
 
 %% github.com/erlang/otp/blob/OTP-20.2.3/lib/inets/doc/src/http_uri.xml#L57
 -type http_uri_uri() :: string() | unicode:unicode_binary().

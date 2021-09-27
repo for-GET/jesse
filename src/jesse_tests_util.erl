@@ -26,6 +26,7 @@
         ]).
 
 -include_lib("common_test/include/ct.hrl").
+-include_lib("stdlib/include/assert.hrl").
 
 %% JSON-Schema-Test-Suite attributes definitions
 -define(DATA,        <<"data">>).
@@ -94,9 +95,9 @@ test_schema(DefaultSchema, Opts0, Schema, SchemaTests) ->
                          ct:pal("Result: ~p~n", [Result]),
                          case get_path(?VALID, Test) of
                            true ->
-                             {ok, Instance} = Result;
+                             ?assertEqual({ok, Instance}, Result);
                            false ->
-                             {error, _} = Result;
+                             ?assertMatch({error, _}, Result);
                            ExpectedErrors ->
                              {error, Errors} = Result,
                              GotErrors =
@@ -109,7 +110,8 @@ test_schema(DefaultSchema, Opts0, Schema, SchemaTests) ->
                          ct:pal( "Error: ~p:~p~n"
                                  "Stacktrace: ~p~n"
                                , [C, R, Stacktrace]
-                               )
+                               ),
+                         erlang:raise(C, R, Stacktrace)
                      end
                  end
                , SchemaTests
