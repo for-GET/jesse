@@ -63,6 +63,7 @@ get_tests(RelativeTestsDir, DefaultSchema, Config) ->
 
 do_test(Key, Config) ->
   {Tests, DefaultSchema} = ?config(Key, Config),
+  SkipList = ?config(skip_list, Config),
   lists:foreach( fun(Test) ->
                      Description = get_path(?DESCRIPTION, Test),
                      Schema = get_path(?SCHEMA, Test),
@@ -74,7 +75,13 @@ do_test(Key, Config) ->
                              "** Schema tests: ~p~n"
                            , [Description, Options, Schema, SchemaTests]
                            ),
-                     test_schema(DefaultSchema, Options, Schema, SchemaTests)
+                     case lists:member({list_to_binary(Key), Description},
+                                       SkipList) of
+                       true ->
+                         ct:pal("In skip-list");
+                       false ->
+                         test_schema(DefaultSchema, Options, Schema, SchemaTests)
+                     end
                  end
                , Tests
                ).

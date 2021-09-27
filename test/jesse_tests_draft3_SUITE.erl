@@ -50,6 +50,7 @@ init_per_suite(Config) ->
     ++ get_tests( "extra"
                 , <<"http://json-schema.org/draft-03/schema#">>
                 , Config)
+    ++ [{skip_list, []}]
     ++ Config.
 
 end_per_suite(_Config) ->
