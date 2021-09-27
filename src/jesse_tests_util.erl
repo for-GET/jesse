@@ -64,27 +64,28 @@ get_tests(RelativeTestsDir, DefaultSchema, Config) ->
 do_test(Key, Config) ->
   {Tests, DefaultSchema} = ?config(Key, Config),
   SkipList = ?config(skip_list, Config),
-  lists:foreach( fun(Test) ->
-                     Description = get_path(?DESCRIPTION, Test),
-                     Schema = get_path(?SCHEMA, Test),
-                     SchemaTests = get_path(?TESTS, Test),
-                     Options = get_path(?OPTIONS, Test),
-                     ct:pal( "** Description: ~s~n"
-                             "** Options: ~p~n"
-                             "** Schema: ~p~n"
-                             "** Schema tests: ~p~n"
-                           , [Description, Options, Schema, SchemaTests]
-                           ),
-                     case lists:member({list_to_binary(Key), Description},
-                                       SkipList) of
-                       true ->
-                         ct:pal("In skip-list");
-                       false ->
-                         test_schema(DefaultSchema, Options, Schema, SchemaTests)
-                     end
-                 end
-               , Tests
-               ).
+  lists:foreach(
+    fun(Test) ->
+        Description = get_path(?DESCRIPTION, Test),
+        Schema = get_path(?SCHEMA, Test),
+        SchemaTests = get_path(?TESTS, Test),
+        Options = get_path(?OPTIONS, Test),
+        ct:pal( "** Description: ~s~n"
+                "** Options: ~p~n"
+                "** Schema: ~p~n"
+                "** Schema tests: ~p~n"
+              , [Description, Options, Schema, SchemaTests]
+              ),
+        case lists:member({list_to_binary(Key), Description},
+                          SkipList) of
+          true ->
+            ct:pal("In skip-list");
+          false ->
+            test_schema(DefaultSchema, Options, Schema, SchemaTests)
+        end
+    end
+   , Tests
+   ).
 
 %%% Internal functions
 
