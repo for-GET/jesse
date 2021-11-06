@@ -274,13 +274,24 @@ ErrorType}` where
 
 * pattern and patternProperty attributes:
 
-  jesse uses standard erlang module `re` for regexp matching, therefore there could be
-  some incompatible regular expressions in schemas you define.
+  jesse uses standard erlang module `re` for regexp matching, therefore there
+  could be some incompatible regular expressions in schemas you define.
 
-  From erlang docs: "re's matching algorithms are currently based on the PCRE library,
-  but not all of the PCRE library is interfaced"
+  From the [erlang docs](https://www.erlang.org/doc/man/re.html#description):
 
-  But most of common cases should work fine.
+  > The matching algorithms of the library are based on the PCRE library, but
+  > not all of the PCRE library is interfaced and some parts of the library go
+  > beyond what PCRE offers.
+
+  Most common cases should work fine. Note that jesse provides an application
+  environment setting, `re_options` (default: `[unicode, ucp]`), for customizing
+  its use of the `re` module. `ucp` provides the widest compatibility for
+  matching unicode code points beyond ISO Latin-1 in character classes like
+  `\w`, `\s`, and `\d`, but hurts performance. If maximum compatibility is not
+  required and performance is a significant concern, set `re_options` to
+  `[unicode]` instead. See notes on the `ucp` option at
+  [`re:compile/2`](https://www.erlang.org/doc/man/re.html#compile-2) for more
+  details.
 
 * internal references (id attribute) are NOT supported
 

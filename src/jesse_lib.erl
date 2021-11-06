@@ -28,6 +28,8 @@
         , is_array/1
         , is_json_object/1
         , is_null/1
+        , re_run/2
+        , re_options/0
         ]).
 
 %% Includes
@@ -86,3 +88,22 @@ is_null(null) ->
 is_null(_Value) ->
   false.
 
+%% @doc Run the RE against the subject using the `re_options' from the jesse
+%% application environment. `{capture, none}' is always used.
+-spec re_run( Subject :: iodata() | unicode:charlist()
+            , RE :: iodata() | unicode:charlist()
+            ) -> match
+               | nomatch.
+re_run(Subject, RE) ->
+  re:run(Subject, RE, [{capture, none} | re_options()]).
+
+%% @doc Returns the base re options from jesse environment which will be used
+%% when running client-provided patterns. By default, that is `[unicode, ucp]'
+%% for the fullest compatibility matching unicode code points beyond ISO Latin-1
+%% in character classes like `\w', `\s', and `\d'. Use only `[unicode]' instead
+%% (without `ucp`) for better performance at the expense of full non-ISO Latin-1
+%% compatibility in character classes. See also notes on the `ucp' option at
+%% [https://www.erlang.org/doc/man/re.html#compile-2 re:compile/2].
+-spec re_options() -> list().
+re_options() ->
+  application:get_env(jesse, re_options, [unicode, ucp]).
