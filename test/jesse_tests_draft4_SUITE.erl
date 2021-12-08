@@ -44,12 +44,20 @@ all() ->
 
 init_per_suite(Config) ->
   {ok, _} = application:ensure_all_started(jesse),
+  SkipList =
+    [
+      {<<"ref">>, <<"Location-independent identifier">>}
+    , {<<"ref">>, <<"Recursive references between schemas">>}
+    , {<<"ref">>, <<"Location-independent identifier with base URI"
+                    " change in subschema">>}
+    ],
   get_tests( "standard"
            , <<"http://json-schema.org/draft-04/schema#">>
            , Config)
     ++ get_tests( "extra"
                 , <<"http://json-schema.org/draft-04/schema#">>
                 , Config)
+    ++ [{skip_list, SkipList}]
     ++ Config.
 
 end_per_suite(_Config) ->

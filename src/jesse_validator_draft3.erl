@@ -62,13 +62,8 @@
                  , JsonSchema :: jesse:schema()
                  , State :: jesse_state:state()
                  ) -> jesse_state:state() | no_return().
-check_value(Value, [{?REF, RefSchemaURI} | Attrs], State) ->
-  case Attrs of
-    [] ->
-      validate_ref(Value, RefSchemaURI, State);
-    _ ->
-      handle_schema_invalid(?only_ref_allowed, State)
-  end;
+check_value(Value, [{?REF, RefSchemaURI} | _], State) ->
+  validate_ref(Value, RefSchemaURI, State);
 check_value(Value, [{?TYPE, Type} | Attrs], State) ->
   NewState = check_type(Value, Type, State),
   check_value(Value, Attrs, NewState);
@@ -889,15 +884,17 @@ check_disallow(Value, Disallow, State) ->
 %% attributes, or add other constraints.
 %% @private
 check_extends(Value, Extends, State) ->
-  case jesse_lib:is_json_object(Extends) of
-    true  ->
-      check_value(Value, Extends, set_current_schema(State, Extends));
-    false ->
-      case is_list(Extends) of
-        true  -> check_extends_array(Value, Extends, State);
-        false -> State %% TODO: implement handling of $ref
-      end
-  end.
+  TmpState =
+    case jesse_lib:is_json_object(Extends) of
+      true  ->
+        check_value(Value, Extends, set_current_schema(State, Extends));
+      false ->
+        case is_list(Extends) of
+          true  -> check_extends_array(Value, Extends, State);
+          false -> State %% TODO: implement handling of $ref
+        end
+    end,
+  set_current_schema(TmpState, get_current_schema(State)).
 
 %% @private
 check_extends_array(Value, Extends, State) ->
