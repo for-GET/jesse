@@ -392,5 +392,19 @@ map_data_test_draft(URI) ->
                                               , [{allowed_errors, infinity}]
                                               )).
 
+%% Make sure references work with schemas as maps
+map_schema_references_test() ->
+  Schema = #{<<"definitions">> =>
+               #{<<"a">> => #{<<"type">> => <<"object">>}},
+             <<"type">> => <<"object">>,
+             <<"properties">> =>
+               #{<<"prop">> => #{<<"$ref">> => <<"#/definitions/a">>}}},
+  Json = #{<<"prop">> => #{}},
+  ?assertMatch(
+     {ok, _},
+     jesse_schema_validator:validate(
+       Schema, Json,
+       [{default_schema_ver, <<"http://json-schema.org/draft-04/schema#">>}])).
+
 -endif.
 -endif.
