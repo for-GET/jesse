@@ -404,7 +404,7 @@ check_pattern_properties(Value, PatternProperties, State) ->
 
 %% @private
 check_match({PropertyName, PropertyValue}, {Pattern, Schema}, State) ->
-  case re:run(PropertyName, Pattern, [{capture, none}, unicode]) of
+  case jesse_lib:re_run(PropertyName, Pattern) of
     match   ->
       check_value( PropertyName
                  , PropertyValue
@@ -491,7 +491,7 @@ get_additional_properties(Value, Properties, PatternProperties) ->
 %% @private
 filter_extra_names(Pattern, ExtraNames) ->
   Filter = fun(ExtraName) ->
-               case re:run(ExtraName, Pattern, [{capture, none}, unicode]) of
+               case jesse_lib:re_run(ExtraName, Pattern) of
                  match   -> false;
                  nomatch -> true
                end
@@ -780,7 +780,7 @@ check_unique_items(Value, true, State) ->
 %% specification from ECMA 262/Perl 5
 %% @private
 check_pattern(Value, Pattern, State) ->
-  case re:run(Value, Pattern, [{capture, none}, unicode]) of
+  case jesse_lib:re_run(Value, Pattern) of
     match   -> State;
     nomatch ->
       handle_data_invalid(?no_match, Value, State)
