@@ -82,6 +82,14 @@
                  ) -> jesse_state:state() | no_return().
 check_value(Value, [{?REF, RefSchemaURI} | _], State) ->
   validate_ref(Value, RefSchemaURI, State);
+check_value(null = Value, [{?TYPE, Type} | Attrs], State) ->
+  case proplists:get_value(?NULLABLE, Attrs) of
+    true ->
+      State;
+    _ ->
+      NewState = check_type(Value, Type, State),
+      check_value(Value, Attrs, NewState)
+  end;
 check_value(Value, [{?TYPE, Type} | Attrs], State) ->
   NewState = check_type(Value, Type, State),
   check_value(Value, Attrs, NewState);
