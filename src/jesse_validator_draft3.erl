@@ -749,29 +749,45 @@ check_unique_items(_, false, State) ->
   State;
 check_unique_items([], true, State) ->
     State;
+check_unique_items([_], true, State) ->
+    State;
 check_unique_items(Value, true, State) ->
   try
-    lists:foldl( fun(_Item, []) ->
-                     ok;
-                    (Item, RestItems) ->
-                     lists:foreach( fun(ItemFromRest) ->
-                                        case is_equal(Item, ItemFromRest) of
-                                          true  ->
-                                            throw({?not_unique, Item});
-                                          false -> ok
-                                        end
-                                    end
-                                  , RestItems
-                                  ),
-                     tl(RestItems)
-                 end
-               , tl(Value)
-               , Value
-               ),
-    State
+%% First we do an efficient check for duplicates: convert the list to a set
+%% and if there are no duplicates, the set and the list have the same length
+%% In order to avoid differences for lists in which order is not relevant
+%% (e.g. JSON properties of an object maybe represented as a proplist), these
+%% lists for which order is not relevant are sorted (objects are normalized).
+%% If the first efficient check fails, then we search for the items that are
+%% duplicated with a less efficient check (that will very seldom be executed).
+    NormalizedValue = jesse_lib:normalize_and_sort(Value),
+    NoDuplicates = ?SET_FROM_LIST(NormalizedValue),
+    case sets:size(NoDuplicates) == length(Value) of
+      true -> State;
+      false ->
+        lists:foldl( fun compare_rest_items/2
+                   , tl(Value)
+                   , Value
+                   ),
+        State
+    end
   catch
     throw:ErrorInfo -> handle_data_invalid(ErrorInfo, Value, State)
   end.
+
+%% @private
+compare_rest_items(_Item, []) ->
+  ok;
+compare_rest_items(Item, RestItems) ->
+  lists:foreach( fun(ItemFromRest) ->
+                     case jesse_lib:is_equal(Item, ItemFromRest) of
+                       true  -> throw({?not_unique, Item});
+                       false -> ok
+                     end
+                 end
+               , RestItems
+               ),
+  tl(RestItems).
 
 %% @doc 5.16.  pattern
 %% When the instance value is a string, this provides a regular
@@ -822,7 +838,7 @@ check_max_length(Value, MaxLength, State) ->
 %% @private
 check_enum(Value, Enum, State) ->
   IsValid = lists:any( fun(ExpectedValue) ->
-                           is_equal(Value, ExpectedValue)
+                           jesse_lib:is_equal(Value, ExpectedValue)
                        end
                      , Enum
                      ),
@@ -932,69 +948,6 @@ resolve_ref(Reference, State) ->
 
 undo_resolve_ref(State, OriginalState) ->
   jesse_state:undo_resolve_ref(State, OriginalState).
-
-%%=============================================================================
-%% @doc Returns `true' if given values (instance) are equal, otherwise `false'
-%% is returned.
-%%
-%% Two instance are consider equal if they are both of the same type
-%% and:
-%% <ul>
-%%   <li>are null; or</li>
-%%
-%%   <li>are booleans/numbers/strings and have the same value; or</li>
-%%
-%%   <li>are arrays, contains the same number of items, and each item in
-%%       the array is equal to the corresponding item in the other array;
-%%       or</li>
-%%
-%%   <li>are objects, contains the same property names, and each property
-%%       in the object is equal to the corresponding property in the other
-%%       object.</li>
-%% </ul>
-%% @private
-is_equal(Value1, Value2) ->
-  case jesse_lib:is_json_object(Value1)
-    andalso jesse_lib:is_json_object(Value2) of
-    true  -> compare_objects(Value1, Value2);
-    false -> case is_list(Value1) andalso is_list(Value2) of
-               true  -> compare_lists(Value1, Value2);
-               false -> Value1 =:= Value2
-             end
-  end.
-
-%% @private
-compare_lists(Value1, Value2) ->
-  case length(Value1) =:= length(Value2) of
-    true  -> compare_elements(Value1, Value2);
-    false -> false
-  end.
-
-%% @private
-compare_elements(Value1, Value2) ->
-  lists:all( fun({Element1, Element2}) ->
-                 is_equal(Element1, Element2)
-             end
-           , lists:zip(Value1, Value2)
-           ).
-
-%% @private
-compare_objects(Value1, Value2) ->
-  case length(unwrap(Value1)) =:= length(unwrap(Value2)) of
-    true  -> compare_properties(Value1, Value2);
-    false -> false
-  end.
-
-%% @private
-compare_properties(Value1, Value2) ->
-  lists:all( fun({PropertyName1, PropertyValue1}) ->
-                 case get_value(PropertyName1, Value2) of
-                   ?not_found     -> false;
-                   PropertyValue2 -> is_equal(PropertyValue1, PropertyValue2)
-                 end
-             end
-           , unwrap(Value1)
-           ).
 
 %%=============================================================================
 %% Wrappers

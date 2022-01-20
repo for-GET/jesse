@@ -12,6 +12,8 @@ else
 REBAR3 ?= $(shell command -v rebar3 2>/dev/null || echo "./rebar3.OTP$(OTP_RELEASE)")
 endif
 
+REBAR_CONFIG = rebar.OTP$(OTP_RELEASE).config
+
 SRCS := $(wildcard src/* include/* rebar.config)
 
 .PHONY: all
@@ -21,7 +23,7 @@ all: ebin/jesse.app bin/jesse
 
 .PHONY: clean
 clean:
-	$(REBAR3) clean
+	REBAR_CONFIG=$(REBAR_CONFIG) $(REBAR3) clean
 
 .PHONY: distclean
 distclean:
@@ -41,7 +43,7 @@ clean-tests:
 
 .PHONY: docs
 docs:
-	$(REBAR3) edoc
+	REBAR_CONFIG=$(REBAR_CONFIG) $(REBAR3) edoc
 
 # Compile
 
@@ -53,12 +55,12 @@ ebin/jesse.app: compile
 
 .PHONY: escript
 escript: ebin/jesse.app
-	$(REBAR3) escriptize
+	REBAR_CONFIG=$(REBAR_CONFIG) $(REBAR3) escriptize
 	./_build/default/bin/jesse --help
 
 .PHONY: compile
 compile: $(SRCS)
-	$(REBAR3) compile
+	REBAR_CONFIG=$(REBAR_CONFIG) $(REBAR3) compile
 
 # Tests
 
@@ -69,38 +71,42 @@ test/JSON-Schema-Test-Suite/tests:
 .PHONY: test
 # Would be nice to include elvis to test, but it fails on OTP-18
 # test: elvis
-test: eunit ct xref dialyzer cover
+test: eunit ct xref dialyzer proper cover
 
 .PHONY: elvis
 elvis:
-	$(REBAR3) lint
+	REBAR_CONFIG=$(REBAR_CONFIG) $(REBAR3) lint
 
 .PHONY: eunit
 eunit:
 	@ $(MAKE) clean-tests
-	$(REBAR3) eunit
+	REBAR_CONFIG=$(REBAR_CONFIG) $(REBAR3) eunit
 
 .PHONY: ct
 ct: test/JSON-Schema-Test-Suite/tests
 	@ $(MAKE) clean-tests
-	TEST_DIR=_build/default/test/lib/jesse/test $(REBAR3) ct
+	TEST_DIR=_build/default/test/lib/jesse/test REBAR_CONFIG=$(REBAR_CONFIG) $(REBAR3) ct
 
 .PHONY: xref
 xref:
-	$(REBAR3) xref
+	REBAR_CONFIG=$(REBAR_CONFIG) $(REBAR3) xref
 
 .PHONY: dialyzer
 dialyzer:
-	$(REBAR3) dialyzer
+	REBAR_CONFIG=$(REBAR_CONFIG) $(REBAR3) dialyzer
 
 .PHONY: cover
 cover:
 	@ $(MAKE) clean-tests
-	$(REBAR3) cover -v
+	REBAR_CONFIG=$(REBAR_CONFIG) $(REBAR3) cover -v
+
+.PHONY: proper
+proper:
+	REBAR_CONFIG=$(REBAR_CONFIG) $(REBAR3) proper
 
 .PHONY: publish
 publish: docs
-	$(REBAR3) hex publish -r hexpm --yes
+	REBAR_CONFIG=$(REBAR_CONFIG) $(REBAR3) hex publish -r hexpm --yes
 
 .PHONY: rebar3.OTP18
 rebar3.OTP18:
