@@ -33,6 +33,7 @@
                        ]).
 
 -include_lib("common_test/include/ct.hrl").
+-include_lib("stdlib/include/assert.hrl").
 
 -import(jesse_tests_util, [ get_tests/3
                           , do_test/2
@@ -145,3 +146,6 @@ remoteRefExtra(Config) ->
 
 unicodePatternProperties(Config) ->
   do_test("unicodePatternProperties", Config).
+
+uniqueItemsExtra(Config) ->
+  do_test("uniqueItemsExtra", Config).
