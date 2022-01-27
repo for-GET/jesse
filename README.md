@@ -9,7 +9,7 @@ jesse implements the following specifications:
 
 * [Draft 03](http://tools.ietf.org/html/draft-zyp-json-schema-03)
 * [Draft 04](http://tools.ietf.org/html/draft-zyp-json-schema-04)
-* [Draft 06](http://tools.ietf.org/html/draft-zyp-json-schema-06)
+* [Draft 06](https://datatracker.ietf.org/doc/html/draft-wright-json-schema-00)
 
 ## Erlang API Docs
 

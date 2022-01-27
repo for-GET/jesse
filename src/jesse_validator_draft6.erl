@@ -18,6 +18,8 @@
 %%
 %% This module is the core of jesse, it implements the validation functionality
 %% according to the standard(draft6).
+%% https://datatracker.ietf.org/doc/html/draft-wright-json-schema-00
+%% https://datatracker.ietf.org/doc/html/draft-wright-json-schema-validation-01
 %% @end
 %%%=============================================================================
 
@@ -83,20 +85,11 @@
                  ) -> jesse_state:state() | no_return().
 check_value(_, [{?ID, _} | _], State) ->
   handle_schema_invalid(?wrong_draft6_id_tag, State);
-check_value(Value, [{?REF, RefSchemaURI} | Attrs], State) ->
-  case Attrs of
-    [] ->
-      validate_ref(Value, RefSchemaURI, State);
-    _ ->
-      handle_schema_invalid(?only_ref_allowed, State)
-  end;
+check_value(Value, [{?REF, RefSchemaURI} | _], State) ->
+  validate_ref(Value, RefSchemaURI, State);
 check_value(Value, [{?TYPE, Type} | Attrs], State) ->
   NewState = check_type(Value, Type, State),
   check_value(Value, Attrs, NewState);
-check_value(Value, [{?PROPERTIES, true} | Attrs], State) ->
-  check_value(Value, Attrs, State);
-check_value(Value, [{?PROPERTIES, false} | _Attrs], State) ->
-  handle_data_invalid(?validation_always_fails, Value, State);
 check_value(Value, [{?PROPERTIES, Properties} | Attrs], State) ->
   NewState = case jesse_lib:is_json_object(Value) of
                true  -> check_properties( Value
@@ -161,12 +154,6 @@ check_value( Value
                false -> State
        end,
   check_value(Value, Attrs, NewState);
-check_value(Value, [{?ITEMS, true} | Attrs], State) ->
-  check_value(Value, Attrs, State);
-check_value(Value, [{?ITEMS, false} | Attrs], State) ->
-% Default semantics: `not: {}`
-  Not = {?NOT, {[  ]}},
-  check_value(Value, [{?ITEMS, Not} | Attrs], State);
 check_value(Value, [{?ITEMS, Items} | Attrs], State) ->
   NewState = case jesse_lib:is_array(Value) of
                true  -> check_items(Value, Items, State);
@@ -180,10 +167,6 @@ check_value( Value
            , State
            ) ->
   check_value(Value, Attrs, State);
-check_value(Value, [{?CONTAINS, true} | Attrs], State) ->
-  check_value(Value, Attrs, State);
-check_value(Value, [{?CONTAINS, false} | _Attrs], State) ->
-  handle_data_invalid(?validation_always_fails, Value, State);
 check_value(Value, [{?CONTAINS, Schema} | Attrs], State) ->
   NewState = case jesse_lib:is_array(Value) of
                true  -> check_contains(Value, Schema, State);
@@ -282,8 +265,8 @@ check_value(Value, [{?MAXLENGTH, MaxLength} | Attrs], State) ->
 check_value(Value, [{?ENUM, Enum} | Attrs], State) ->
   NewState = check_enum(Value, Enum, State),
   check_value(Value, Attrs, NewState);
-check_value(Value, [{?CONST, Enum} | Attrs], State) ->
-  NewState = check_enum(Value, Enum, State),
+check_value(Value, [{?CONST, Const} | Attrs], State) ->
+  NewState = check_enum(Value, [Const], State),
   check_value(Value, Attrs, NewState);
 check_value(Value, [{?FORMAT, Format} | Attrs], State) ->
   NewState = check_format(Value, Format, State),
@@ -316,7 +299,7 @@ check_value(Value, [{?ONEOF, Schemas} | Attrs], State) ->
   NewState = check_one_of(Value, Schemas, State),
   check_value(Value, Attrs, NewState);
 check_value(Value, [{?NOT, Schema} | Attrs], State) ->
-  NewState = check_not(Value, Schema, State),
+  NewState = check_not(Value, canonical(Schema), State),
   check_value(Value, Attrs, NewState);
 check_value(Value, [], State) ->
   maybe_external_check_value(Value, State);
@@ -379,7 +362,9 @@ is_type_valid(Value, ?NUMBER)  -> is_number(Value);
 %% valid "integer" type in draft-04 and earlier, but is a valid "integer" type
 %% in draft-06 and later; note that both drafts say that integers SHOULD be
 %% encoded in JSON without fractional parts
-is_type_valid(Value, ?INTEGER) -> is_number(Value);
+is_type_valid(Value, ?INTEGER) when is_float(Value) ->
+  (Value - trunc(Value)) == 0.0;
+is_type_valid(Value, ?INTEGER) -> is_integer(Value);
 is_type_valid(Value, ?BOOLEAN) -> is_boolean(Value);
 is_type_valid(Value, ?OBJECT)  -> jesse_lib:is_json_object(Value);
 is_type_valid(Value, ?ARRAY)   -> jesse_lib:is_array(Value);
@@ -419,11 +404,12 @@ check_properties(Value, Properties, State) ->
                          ?not_found ->
                            CurrentState;
                          Property ->
-                           NewState = set_current_schema( CurrentState
-                                                        , PropertySchema),
+                           NewState = set_current_schema(
+                                        CurrentState
+                                       , canonical(PropertySchema)),
                            check_value( PropertyName
                                       , Property
-                                      , PropertySchema
+                                      , canonical(PropertySchema)
                                       , NewState
                                       )
                        end
@@ -437,7 +423,8 @@ check_properties(Value, Properties, State) ->
 %% See check_properties/3.
 %% @private
 check_pattern_properties(Value, PatternProperties, State) ->
-  P1P2 = [{P1, P2} || P1 <- unwrap(Value), P2  <- unwrap(PatternProperties)],
+  P1P2 = [{P1, P2} || P1 <- unwrap(Value),
+                      P2  <- unwrap(PatternProperties)],
   TmpState = lists:foldl( fun({Property, Pattern}, CurrentState) ->
                               check_match(Property, Pattern, CurrentState)
                           end
@@ -458,8 +445,9 @@ check_property_names(Value, PatternProperties, State) ->
   set_current_schema(TmpState, get_current_schema(State)).
 
 %% @private
-check_match({PropertyName, PropertyValue}, {Pattern, Schema}, State) ->
-  case re:run(PropertyName, Pattern, [{capture, none}, unicode]) of
+check_match({PropertyName, PropertyValue}, {Pattern, Schema0}, State) ->
+  Schema = canonical(Schema0),
+  case jesse_lib:re_run(PropertyName, Pattern) of
     match   ->
       check_value( PropertyName
                  , PropertyValue
@@ -472,7 +460,7 @@ check_match({PropertyName, PropertyValue}, {Pattern, Schema}, State) ->
 
 %% @private
 check_match_property({PropertyName, _}, {_, Regex}, State) ->
-  case re:run(PropertyName, Regex, [{capture, none}, unicode]) of
+  case jesse_lib:re_run(PropertyName, Regex) of
     match   ->
       State;
     nomatch ->
@@ -550,7 +538,7 @@ get_additional_properties(Value, Properties, PatternProperties) ->
 %% @private
 filter_extra_names(Pattern, ExtraNames) ->
   Filter = fun(ExtraName) ->
-               case re:run(ExtraName, Pattern, [{capture, none}, unicode]) of
+               case jesse_lib:re_run(ExtraName, Pattern) of
                  match   -> false;
                  nomatch -> true
                end
@@ -574,9 +562,10 @@ filter_extra_names(Pattern, ExtraNames) ->
 %%
 %% Omitting this keyword has the same behavior as an empty schema.
 %% @private
-check_items(Value, Items, State) ->
-  case jesse_lib:is_json_object(Items) of
+check_items(Value, Items0, State) ->
+  case jesse_lib:is_json_object(Items0) orelse is_boolean(Items0) of
     true ->
+      Items = canonical(Items0),
       {_, TmpState} = lists:foldl( fun(Item, {Index, CurrentState}) ->
                                        { Index + 1
                                        , check_value( Index
@@ -590,15 +579,16 @@ check_items(Value, Items, State) ->
                                  , Value
                                  ),
       set_current_schema(TmpState, get_current_schema(State));
-    false when is_list(Items) ->
-      check_items_array(Value, Items, State);
+    false when is_list(Items0) ->
+      check_items_array(Value, lists:map(fun canonical/1, Items0), State);
     _ ->
-      handle_schema_invalid({?wrong_type_items, Items}, State)
+      handle_schema_invalid({?wrong_type_items, Items0}, State)
   end.
 
 check_contains([], _Schema, State) ->
-  State;
-check_contains(Values, Schema, State) ->
+  handle_data_invalid(?data_invalid, [], State);
+check_contains(Values, Schema0, State) ->
+  Schema = canonical(Schema0),
   DefaultAssumption = {false, State},
   Result = lists:foldl(fun (Value, Acc) ->
                          case Acc of
@@ -682,11 +672,12 @@ check_dependencies(Value, Dependencies, State) ->
   lists:foldl( fun({DependencyName, DependencyValue}, CurrentState) ->
                    case get_value(DependencyName, Value) of
                      ?not_found -> CurrentState;
-                     _          -> check_dependency_value( Value
-                                                         , DependencyName
-                                                         , DependencyValue
-                                                         , CurrentState
-                                                         )
+                     _          -> check_dependency_value(
+                                     Value
+                                    , DependencyName
+                                    , canonical(DependencyValue)
+                                    , CurrentState
+                                    )
                    end
                end
              , State
@@ -843,29 +834,45 @@ check_unique_items(_, false, State) ->
   State;
 check_unique_items([], true, State) ->
   State;
+check_unique_items([_], true, State) ->
+  State;
 check_unique_items(Value, true, State) ->
   try
-    lists:foldl( fun(_Item, []) ->
-                     ok;
-                    (Item, RestItems) ->
-                     lists:foreach( fun(ItemFromRest) ->
-                                        case is_equal(Item, ItemFromRest) of
-                                          true  ->
-                                            throw({?not_unique, Item});
-                                          false -> ok
-                                        end
-                                    end
-                                  , RestItems
-                                  ),
-                     tl(RestItems)
-                 end
-               , tl(Value)
-               , Value
-               ),
-    State
+%% First we do an efficient check for duplicates: convert the list to a set
+%% and if there are no duplicates, the set and the list have the same length
+%% In order to avoid differences for lists in which order is not relevant
+%% (e.g. JSON properties of an object maybe represented as a proplist), these
+%% lists for which order is not relevant are sorted (objects are normalized).
+%% If the first efficient check fails, then we search for the items that are
+%% duplicated with a less efficient check (that will very seldom be executed).
+    NormalizedValue = jesse_lib:normalize_and_sort(Value),
+    NoDuplicates = ?SET_FROM_LIST(NormalizedValue),
+    case sets:size(NoDuplicates) == length(Value) of
+      true -> State;
+      false ->
+        lists:foldl( fun compare_rest_items/2
+                   , tl(Value)
+                   , Value
+                   ),
+        State
+    end
   catch
     throw:ErrorInfo -> handle_data_invalid(ErrorInfo, Value, State)
   end.
+
+%% @private
+compare_rest_items(_Item, []) ->
+  ok;
+compare_rest_items(Item, RestItems) ->
+  lists:foreach( fun(ItemFromRest) ->
+                     case jesse_lib:is_equal(Item, ItemFromRest) of
+                       true  -> throw({?not_unique, Item});
+                       false -> ok
+                     end
+                 end
+               , RestItems
+               ),
+  tl(RestItems).
 
 %% @doc 6.8. pattern
 %%
@@ -879,7 +886,7 @@ check_unique_items(Value, true, State) ->
 %%
 %% @private
 check_pattern(Value, Pattern, State) ->
-  case re:run(Value, Pattern, [{capture, none}, unicode]) of
+  case jesse_lib:re_run(Value, Pattern) of
     match   -> State;
     nomatch ->
       handle_data_invalid(?no_match, Value, State)
@@ -936,7 +943,7 @@ check_max_length(Value, MaxLength, State) ->
 %% @private
 check_enum(Value, Enum, State) ->
   IsValid = lists:any( fun(ExpectedValue) ->
-                           is_equal(Value, ExpectedValue)
+                           jesse_lib:is_equal(Value, ExpectedValue)
                        end
                      , Enum
                      ),
@@ -955,7 +962,7 @@ check_format(Value, _Format = <<"date-time">>, State) when is_binary(Value) ->
     false -> handle_data_invalid(?wrong_format, Value, State)
   end;
 check_format(Value, _Format = <<"email">>, State) when is_binary(Value) ->
-  case re:run(Value, <<"^[^@]+@[^@]+$">>, [{capture, none}, unicode]) of
+  case jesse_lib:re_run(Value, <<"^[^@]+@[^@]+$">>) of
     match   -> State;
     nomatch -> handle_data_invalid(?wrong_format, Value, State)
   end;
@@ -1005,12 +1012,14 @@ uri_reference(_Value, State) ->
 %% @private
 check_multiple_of(Value, MultipleOf, State)
   when is_number(MultipleOf), MultipleOf > 0 ->
-  Result = (Value / MultipleOf - trunc(Value / MultipleOf)) * MultipleOf,
-  case Result of
+  try (Value / MultipleOf - trunc(Value / MultipleOf)) * MultipleOf of
     0.0 ->
       State;
     _   ->
       handle_data_invalid(?not_multiple_of, Value, State)
+  catch error:badarith ->
+      %% eg, division by zero or overflow
+      handle_schema_invalid(?wrong_multiple_of, State)
   end;
 check_multiple_of(_Value, _MultipleOf, State) ->
   handle_schema_invalid(?wrong_multiple_of, State).
@@ -1195,7 +1204,8 @@ check_not(Value, Schema, State) ->
 %% @doc Validate a value against a schema in a given state.
 %% Used by all combinators to run validation on a schema.
 %% @private
-validate_schema(Value, Schema, State0) ->
+validate_schema(Value, Schema0, State0) ->
+  Schema = canonical(Schema0),
   try
     case jesse_lib:is_json_object(Schema) of
       true ->
@@ -1204,7 +1214,7 @@ validate_schema(Value, Schema, State0) ->
                                                            , Value
                                                            , State1
                                                            ),
-        {true, State2};
+        {true, set_current_schema(State2, get_current_schema(State0))};
       false ->
         handle_schema_invalid(?schema_invalid, State0)
     end
@@ -1212,12 +1222,20 @@ validate_schema(Value, Schema, State0) ->
     throw:Errors -> {false, Errors}
   end.
 
+canonical(true) ->
+  #{};
+canonical(false) ->
+  #{?NOT => #{}};
+canonical(MaybeObject) ->
+  MaybeObject.
+
 %% @private
 validate_ref(Value, Reference, State) ->
   case resolve_ref(Reference, State) of
     {error, NewState} ->
       undo_resolve_ref(NewState, State);
-    {ok, NewState, Schema} ->
+    {ok, NewState, Schema0} ->
+      Schema = canonical(Schema0),
       ResultState =
         jesse_schema_validator:validate_with_state(Schema, Value, NewState),
       undo_resolve_ref(ResultState, State)
@@ -1239,69 +1257,6 @@ resolve_ref(Reference, State) ->
 
 undo_resolve_ref(State, OriginalState) ->
   jesse_state:undo_resolve_ref(State, OriginalState).
-
-%%=============================================================================
-%% @doc Returns `true' if given values (instance) are equal, otherwise `false'
-%% is returned.
-%%
-%% Two instance are consider equal if they are both of the same type
-%% and:
-%% <ul>
-%%   <li>are null; or</li>
-%%
-%%   <li>are booleans/numbers/strings and have the same value; or</li>
-%%
-%%   <li>are arrays, contains the same number of items, and each item in
-%%       the array is equal to the corresponding item in the other array;
-%%       or</li>
-%%
-%%   <li>are objects, contains the same property names, and each property
-%%       in the object is equal to the corresponding property in the other
-%%       object.</li>
-%% </ul>
-%% @private
-is_equal(Value1, Value2) ->
-  case jesse_lib:is_json_object(Value1)
-    andalso jesse_lib:is_json_object(Value2) of
-    true  -> compare_objects(Value1, Value2);
-    false -> case is_list(Value1) andalso is_list(Value2) of
-               true  -> compare_lists(Value1, Value2);
-               false -> Value1 =:= Value2
-             end
-  end.
-
-%% @private
-compare_lists(Value1, Value2) ->
-  case length(Value1) =:= length(Value2) of
-    true  -> compare_elements(Value1, Value2);
-    false -> false
-  end.
-
-%% @private
-compare_elements(Value1, Value2) ->
-  lists:all( fun({Element1, Element2}) ->
-                 is_equal(Element1, Element2)
-             end
-           , lists:zip(Value1, Value2)
-           ).
-
-%% @private
-compare_objects(Value1, Value2) ->
-  case length(unwrap(Value1)) =:= length(unwrap(Value2)) of
-    true  -> compare_properties(Value1, Value2);
-    false -> false
-  end.
-
-%% @private
-compare_properties(Value1, Value2) ->
-  lists:all( fun({PropertyName1, PropertyValue1}) ->
-                 case get_value(PropertyName1, Value2) of
-                   ?not_found     -> false;
-                   PropertyValue2 -> is_equal(PropertyValue1, PropertyValue2)
-                 end
-             end
-           , unwrap(Value1)
-           ).
 
 %%=============================================================================
 %% Wrappers
