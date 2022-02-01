@@ -71,8 +71,8 @@
 -define(DIVISIBLEBY,          <<"divisibleBy">>).
 -define(DISALLOW,             <<"disallow">>).
 -define(EXTENDS,              <<"extends">>).
--define(ID,                   <<"id">>).
--define(IDv6,                 <<"$id">>).
+-define(ID_OLD,               <<"id">>).
+-define(ID,                   <<"$id">>).
 -define(REF,                  <<"$ref">>).
 -define(ALLOF,                <<"allOf">>).
 -define(ANYOF,                <<"anyOf">>).

@@ -100,8 +100,16 @@ get_current_schema(#state{current_schema = CurrentSchema}) ->
 get_current_schema_id(#state{ current_schema = CurrentSchema
                             , root_schema = RootSchema
                             }) ->
-  Default = jesse_json_path:value(?ID, RootSchema, ?not_found),
-  jesse_json_path:value(?ID, CurrentSchema, Default).
+  Default = get_id(RootSchema, ?not_found),
+  get_id(CurrentSchema, Default).
+
+get_id(Schema, Default) ->
+  case jesse_json_path:value(?ID, Schema, undefined) of
+    undefined ->
+      jesse_json_path:value(?ID_OLD, Schema, Default);
+    ID ->
+      ID
+  end.
 
 %% @doc Getter for `default_schema_ver'.
 -spec get_default_schema_ver(State :: state()) -> jesse:schema_ver().
@@ -189,8 +197,8 @@ set_current_schema(#state{id = Id} = State, NewSchema0) ->
         [{?REF, Ref} | lists:keydelete(?REF, 1, ListSchema)]
     end,
   IdTag = case schema_from_json(NewSchema) of
-          ?json_schema_draft6 -> ?IDv6;
-                            _ -> ?ID
+          ?json_schema_draft6 -> ?ID;
+                            _ -> ?ID_OLD
           end,
   NewSchemaId = jesse_json_path:value(IdTag, NewSchema, undefined),
   NewId = combine_id(Id, NewSchemaId),

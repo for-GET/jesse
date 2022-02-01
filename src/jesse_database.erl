@@ -306,8 +306,8 @@ get_schema_info(File, {Acc, ParseFun}) ->
 -spec get_schema_id(Schema :: jesse:json_term()) -> string() | undefined.
 get_schema_id(Schema) ->
   case jesse_json_path:value(?SCHEMA, Schema, undefined) of
-    ?json_schema_draft6 -> get_schema_id_by_version(?IDv6, Schema);
-                      _ -> get_schema_id_by_version(?ID, Schema)
+    ?json_schema_draft6 -> get_schema_id_by_version(?ID, Schema);
+                      _ -> get_schema_id_by_version(?ID_OLD, Schema)
   end.
 
 get_schema_id_by_version(Version, Schema) ->

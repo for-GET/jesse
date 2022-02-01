@@ -83,7 +83,7 @@
                  , JsonSchema :: jesse:schema()
                  , State :: jesse_state:state()
                  ) -> jesse_state:state() | no_return().
-check_value(_, [{?ID, _} | _], State) ->
+check_value(_, [{?ID_OLD, _} | _], State) ->
   handle_schema_invalid(?wrong_draft6_id_tag, State);
 check_value(Value, [{?REF, RefSchemaURI} | _], State) ->
   validate_ref(Value, RefSchemaURI, State);
