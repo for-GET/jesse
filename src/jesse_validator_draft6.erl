@@ -112,31 +112,12 @@ check_value( Value
              end,
   check_value(Value, Attrs, NewState);
 check_value( Value
-           , [{?PROPERTYNAMES, true} | Attrs]
+           , [{?PROPERTYNAMES, PropertiesSchema} | Attrs]
            , State
            ) ->
-  case jesse_lib:is_json_object(Value) of
-    true -> check_value( Value, Attrs, State);
-    false -> State
-  end;
-check_value( Value
-           , [{?PROPERTYNAMES, false} | _Attrs]
-           , State
-           ) ->
-  case jesse_lib:is_json_object(Value) of
-    true -> handle_data_invalid(?validation_always_fails, Value, State);
-    false -> State
-  end;
-check_value( Value
-           , [{?PROPERTYNAMES, PatternProperties} | Attrs]
-           , State
-           ) ->
-  %% The description of PropertyNames seems to do the same as PatternProperties.
-  %% I am not sure whether the PatternProperties follows the standard draft 4,
-  %% since it needs to consider that additionalProperties must be false.
   NewState = case jesse_lib:is_json_object(Value) of
                true  -> check_property_names( Value
-                                            , PatternProperties
+                                            , canonical(PropertiesSchema)
                                             , State
                                             );
                false -> State
@@ -301,6 +282,13 @@ check_value(Value, [{?ONEOF, Schemas} | Attrs], State) ->
 check_value(Value, [{?NOT, Schema} | Attrs], State) ->
   NewState = check_not(Value, canonical(Schema), State),
   check_value(Value, Attrs, NewState);
+check_value(Value, Bool, State) when is_boolean(Bool) ->
+  %% 4.4.  JSON Schema documents
+  %% <..>
+  %% Boolean values are equivalent to the following behaviors:
+  %% true  Always passes validation, as if the empty schema {}
+  %% false  Always fails validation, as if the schema { "not":{} }
+  check_value(Value, unwrap(canonical(Bool)), State);
 check_value(Value, [], State) ->
   maybe_external_check_value(Value, State);
 check_value(Value, [_Attr | Attrs], State) ->
@@ -433,14 +421,17 @@ check_pattern_properties(Value, PatternProperties, State) ->
                         ),
   set_current_schema(TmpState, get_current_schema(State)).
 
-check_property_names(Value, PatternProperties, State) ->
-  P1P2 = [{P1, P2} || P1 <- unwrap(Value), P2  <- unwrap(PatternProperties)],
+check_property_names(Value, PropertiesSchema, State) ->
+  SubState = set_current_schema(State , PropertiesSchema),
   TmpState = lists:foldl(
-               fun({Property, Pattern}, CurrentState) ->
-                   check_match_property(Property, Pattern, CurrentState)
+               fun({PropertyName, _Value}, CurrentState) ->
+                   check_value( PropertyName
+                              , PropertyName
+                              , PropertiesSchema
+                              , CurrentState)
                end
-              , State
-              , P1P2
+              , SubState
+              , unwrap(Value)
               ),
   set_current_schema(TmpState, get_current_schema(State)).
 
@@ -457,16 +448,6 @@ check_match({PropertyName, PropertyValue}, {Pattern, Schema0}, State) ->
     nomatch ->
       State
   end.
-
-%% @private
-check_match_property({PropertyName, _}, {_, Regex}, State) ->
-  case jesse_lib:re_run(PropertyName, Regex) of
-    match   ->
-      State;
-    nomatch ->
-      handle_data_invalid(?no_match, PropertyName, State)
-  end.
-
 
 %% @doc additionalProperties
 %% See check_properties/3.

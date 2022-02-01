@@ -54,6 +54,9 @@ init_per_suite(Config) ->
     , {<<"refRemote">>, <<"base URI change - change folder">>}
     , {<<"refRemote">>, <<"base URI change - change folder in subschema">>}
     , {<<"refRemote">>, <<"root ref in remote ref">>} %todo
+    , {<<"id">>, <<"id inside an enum is not a real identifier">>}
+    , {<<"unknownKeyword">>, <<"$id inside an unknown keyword is not a"
+                               " real identifier">>}
     ],
   get_tests( "standard"
            , <<"http://json-schema.org/draft-06/schema#">>
@@ -81,8 +84,8 @@ allOf(Config) ->
 anyOf(Config) ->
   do_test("anyOf", Config).
 
-%% boolean_schema(Config) ->
-%%   do_test("boolean_schema", Config).
+boolean_schema(Config) ->
+  do_test("boolean_schema", Config).
 
 const(Config) ->
   do_test("const", Config).
@@ -108,11 +111,11 @@ exclusiveMaximum(Config) ->
 exclusiveMinimum(Config) ->
   do_test("exclusiveMinimum", Config).
 
-%% format(Config) ->
-%%   do_test("format", Config).
+format(Config) ->
+  do_test("format", Config).
 
-%% id(Config) ->
-%%   do_test("id", Config).
+id(Config) ->
+  do_test("id", Config).
 
 items(Config) ->
   do_test("items", Config).
@@ -159,8 +162,8 @@ patternProperties(Config) ->
 properties(Config) ->
   do_test("properties", Config).
 
-%% propertyNames(Config) ->
-%%   do_test("propertyNames", Config).
+propertyNames(Config) ->
+  do_test("propertyNames", Config).
 
 ref(Config) ->
   do_test("ref", Config).
@@ -185,7 +188,7 @@ type(Config) ->
 uniqueItems(Config) ->
   do_test("uniqueItems", Config).
 
-%% uknownKeyword(Config) ->
-%%   do_test("unknownKeyword", Config).
+uknownKeyword(Config) ->
+  do_test("unknownKeyword", Config).
 
 %% Extra

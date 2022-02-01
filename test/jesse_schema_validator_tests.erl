@@ -493,35 +493,6 @@ data_exclusive_maximum_minimum_test() ->
               ).
 
 
-data_propertyNames_test() ->
-  Schema = {[ {<<"$schema">>, ?json_schema_draft6}
-            , {<<"type">>, <<"object">>}
-            , {<<"propertyNames">>, {[
-                {<<"pattern">>, <<"^[A-Z]*$">>}
-              ]}}
-            ]},
-  Object = {[{ <<"FOO">>, <<"value">> }]},
-  IllformedObject = {[{ <<"foo">>, <<"value">> }]},
-  %% A case without errors
-  ?assertEqual(
-    {ok, Object},
-    jesse_schema_validator:validate(Schema, Object, [])
-    ),
-  ?assertThrow(
-     [{ data_invalid
-      , {[{ <<"$schema">>
-          , <<"http://json-schema.org/draft-06/schema#">>}
-         , { <<"type">>, <<"object">> }
-         , { <<"propertyNames">>
-           , {[{ <<"pattern">> , <<"^[A-Z]*$">>}]}
-           }
-         ]}
-      , no_match
-      , <<"foo">>
-      , []}]
-    , jesse_schema_validator:validate(Schema, IllformedObject, [])
-    ).
-
 data_dollarid_test() ->
   SchemaWithId = fun (Draft, Id) ->
                      {[ {<<"$schema">>, Draft}
@@ -629,33 +600,6 @@ data_empty_dependencies_test() ->
      {ok, {[ ]}},
      jesse_schema_validator:validate(Schema, {[ ]}, [])
     ).
-
-pattern_property_with_boolean_value_test() ->
-  Schema = {[ {<<"$schema">>, ?json_schema_draft6}
-            , {<<"type">>, <<"object">>}
-            , {<<"propertyNames">>, true}
-            ]},
-
-  ?assertEqual(
-     {ok, {[ ]}},
-     jesse_schema_validator:validate(Schema, {[ ]}, [])
-    ),
-
-  InvalidSchema = {[ {<<"$schema">>, ?json_schema_draft6}
-                   , {<<"type">>, <<"object">>}
-                   , {<<"propertyNames">>, false}
-                   ]},
-
-  ?assertThrow([{data_invalid,
-                  {[{<<"$schema">>, ?json_schema_draft6},
-                    {<<"type">>, <<"object">>},
-                    {<<"propertyNames">>, false}]},
-                  ?validation_always_fails,
-                  {[]},
-                  []
-                }]
-              , jesse_schema_validator:validate(InvalidSchema, {[ ]}, [])
-              ).
 
 array_items_with_boolean_value_test() ->
   Schema = {[ {<<"$schema">>, ?json_schema_draft6}
