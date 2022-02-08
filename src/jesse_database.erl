@@ -305,11 +305,17 @@ get_schema_info(File, {Acc, ParseFun}) ->
 %% @private
 -spec get_schema_id(Schema :: jesse:json_term()) -> string() | undefined.
 get_schema_id(Schema) ->
-  case jesse_json_path:value(?ID, Schema, undefined) of
+  case jesse_json_path:value(?SCHEMA, Schema, undefined) of
+    ?json_schema_draft6 -> get_schema_id_by_version(?ID, Schema);
+                      _ -> get_schema_id_by_version(?ID_OLD, Schema)
+  end.
+
+get_schema_id_by_version(Version, Schema) ->
+  case jesse_json_path:value(Version, Schema, undefined) of
     undefined ->
       undefined;
-    Id ->
-      erlang:binary_to_list(Id)
+    Version ->
+      erlang:binary_to_list(Version)
   end.
 
 %% @private

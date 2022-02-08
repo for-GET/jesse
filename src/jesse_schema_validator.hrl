@@ -47,9 +47,12 @@
 -define(TYPE,                 <<"type">>).
 -define(PROPERTIES,           <<"properties">>).
 -define(PATTERNPROPERTIES,    <<"patternProperties">>).
+-define(PROPERTYNAMES,        <<"propertyNames">>).
 -define(ADDITIONALPROPERTIES, <<"additionalProperties">>).
 -define(ITEMS,                <<"items">>).
 -define(ADDITIONALITEMS,      <<"additionalItems">>).
+-define(CONTAINS,             <<"contains">>).
+-define(EXAMPLES,             <<"examples">>).
 -define(REQUIRED,             <<"required">>).
 -define(DEPENDENCIES,         <<"dependencies">>).
 -define(MINIMUM,              <<"minimum">>).
@@ -63,11 +66,13 @@
 -define(MINLENGTH,            <<"minLength">>).
 -define(MAXLENGTH,            <<"maxLength">>).
 -define(ENUM,                 <<"enum">>).
+-define(CONST,                 <<"const">>).
 -define(FORMAT,               <<"format">>).               % NOT IMPLEMENTED YET
 -define(DIVISIBLEBY,          <<"divisibleBy">>).
 -define(DISALLOW,             <<"disallow">>).
 -define(EXTENDS,              <<"extends">>).
--define(ID,                   <<"id">>).
+-define(ID_OLD,               <<"id">>).
+-define(ID,                   <<"$id">>).
 -define(REF,                  <<"$ref">>).
 -define(ALLOF,                <<"allOf">>).
 -define(ANYOF,                <<"anyOf">>).
@@ -90,6 +95,7 @@
 %% Supported $schema attributes
 -define(json_schema_draft3, <<"http://json-schema.org/draft-03/schema#">>).
 -define(json_schema_draft4, <<"http://json-schema.org/draft-04/schema#">>).
+-define(json_schema_draft6, <<"http://json-schema.org/draft-06/schema#">>).
 -define(default_schema_ver, ?json_schema_draft3).
 -define(default_schema_loader_fun, fun jesse_database:load_uri/1).
 -define(default_error_handler_fun, fun jesse_error:default_error_handler/3).
@@ -111,11 +117,12 @@
 -define(wrong_type_dependency,       'wrong_type_dependency').
 -define(wrong_type_items,            'wrong_type_items').
 -define(wrong_type_specification,    'wrong_type_specification').
+-define(wrong_draft6_id_tag,         'wrong_draft6_id_tag').
+-define(wrong_draft4_id_tag,         'wrong_draft4_id_tag').
 
 %% Constant definitions for data errors
 -define(data_error,                  'data_error').
 -define(data_invalid,                'data_invalid').
--define(missing_id_field,            'missing_id_field').
 -define(missing_required_property,   'missing_required_property').
 -define(missing_dependency,          'missing_dependency').
 -define(no_match,                    'no_match').
@@ -126,6 +133,7 @@
 -define(not_in_enum,                 'not_in_enum').
 -define(not_in_range,                'not_in_range').
 -define(not_divisible,               'not_divisible').
+-define(not_array,                   'not_array').
 -define(wrong_type,                  'wrong_type').
 -define(wrong_size,                  'wrong_size').
 -define(wrong_length,                'wrong_length').
@@ -138,7 +146,7 @@
 -define(not_one_schema_valid,        'not_one_schema_valid').
 -define(more_than_one_schema_valid,  'more_than_one_schema_valid').
 -define(not_schema_valid,            'not_schema_valid').
--define(wrong_not_schema,            'wrong_not_schema').
+-define(validation_always_fails,     'validation_always_fails').
 -define(external,                    'external').
 
 %%

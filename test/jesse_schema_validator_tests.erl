@@ -20,9 +20,22 @@
 
 -module(jesse_schema_validator_tests).
 -include_lib("eunit/include/eunit.hrl").
+-include_lib("jesse_schema_validator.hrl").
+
+test_all_drafts(Fn) ->
+  [ Fn(URI)
+    || URI <- [ <<"http://json-schema.org/draft-03/schema#">>
+              , <<"http://json-schema.org/draft-04/schema#">>
+              , <<"http://json-schema.org/draft-06/schema#">>
+              ]].
 
 data_invalid_test() ->
-  IntegerSchema = {[{<<"type">>, <<"integer">>}]},
+  test_all_drafts(fun data_invalid_test_draft/1).
+
+data_invalid_test_draft(URI) ->
+  IntegerSchema = {[ { <<"$schema">>, URI}
+                   , {<<"type">>, <<"integer">>}
+                   ]},
 
   %% A case without errors
   ?assertEqual(
@@ -32,6 +45,7 @@ data_invalid_test() ->
 
   %% A schema for testing properties and patternProperties
   Schema = {[
+    {<<"$schema">>, URI},
     {<<"type">>, <<"object">>},
     {<<"properties">>, {[
       {<<"foo">>, {[
@@ -76,6 +90,7 @@ data_invalid_test() ->
 
   %% Object, additionalProperties, level 1
   Schema2 = {[
+    {<<"$schema">>, URI},
     {<<"type">>, <<"object">>},
     {<<"properties">>, {[
       {<<"foo">>, IntegerSchema}
@@ -92,6 +107,7 @@ data_invalid_test() ->
 
   %% Object, additionalProperties, level 2
   Schema3 = {[
+    {<<"$schema">>, URI},
     {<<"type">>, <<"object">>},
     {<<"properties">>, {[
       {<<"foo">>, {[
@@ -117,6 +133,7 @@ data_invalid_test() ->
 
   %% Items: A zero-based index is used in the property path
   ItemsSchema = {[
+    {<<"$schema">>, URI},
     {<<"type">>, <<"array">>},
     {<<"items">>, IntegerSchema},
     {<<"maxItems">>, 3}
@@ -132,6 +149,7 @@ data_invalid_test() ->
 
   %% Items, a schema per item
   ItemsSchema2 = {[
+    {<<"$schema">>, URI},
     {<<"type">>, <<"array">>},
     {<<"items">>, [IntegerSchema, IntegerSchema, IntegerSchema]},
     {<<"additionalItems">>, false}
@@ -147,6 +165,7 @@ data_invalid_test() ->
 
   %% Dependencies
   DependenciesSchema = {[
+    {<<"$schema">>, URI},
     {<<"type">>, <<"object">>},
     {<<"dependencies">>, {[
       {<<"bar">>, [<<"foo">>]} %% if there is bar, there must also be foo
@@ -168,7 +187,11 @@ data_invalid_test() ->
   ok.
 
 dots_used_in_keys_test() ->
-  Schema      = {[ {<<"type">>, <<"object">>}
+  test_all_drafts(fun dots_used_in_keys_test_draft/1).
+
+dots_used_in_keys_test_draft(URI) ->
+  Schema      = {[ {<<"$schema">>, URI}
+                 , {<<"type">>, <<"object">>}
                  , {<<"properties">>
                    , {[ {<<"3.4.5.6.7">>, {[{<<"type">>, <<"string">>}]}}
                       , {<<"additionalProperties">>, false}
@@ -190,9 +213,13 @@ dots_used_in_keys_test() ->
               ).
 
 empty_list_as_valid_value_for_string_test() ->
+  test_all_drafts(fun empty_list_as_valid_value_for_string_test_draft/1).
+
+empty_list_as_valid_value_for_string_test_draft(URI) ->
   StringSchema = {[{<<"type">>, <<"string">>}]},
 
-  EmptyListSchema = {[ {<<"type">>, <<"object">>}
+  EmptyListSchema = {[ {<<"$schema">>, URI}
+                     , {<<"type">>, <<"object">>}
                      , {<<"properties">>
                        , {[{<<"foo">>, StringSchema}]}}
                      ]},
@@ -202,8 +229,11 @@ empty_list_as_valid_value_for_string_test() ->
     ).
 
 schema_unsupported_test() ->
+  test_all_drafts(fun schema_unsupported_test_draft/1).
+
+schema_unsupported_test_draft(URI) ->
   SupportedSchema = {[{ <<"$schema">>
-                      , <<"http://json-schema.org/draft-03/schema#">>
+                      , URI
                       }]},
   UnsupportedSchema = {[{ <<"$schema">>
                         , <<"http://json-schema.org/draft-05/schema#">>
@@ -222,6 +252,12 @@ schema_unsupported_test() ->
               ).
 
 data_invalid_one_of_test() ->
+  [ data_invalid_one_of_test_draft(URI)
+    || URI <- [ <<"http://json-schema.org/draft-04/schema#">>
+              , <<"http://json-schema.org/draft-06/schema#">>
+              ]].
+
+data_invalid_one_of_test_draft(URI) ->
   IntegerSchema = {[{<<"type">>, <<"integer">>}]},
   StringSchema  = {[{<<"type">>, <<"string">>}]},
   ObjectSchema  = {[ {<<"type">>, <<"object">>}
@@ -233,7 +269,7 @@ data_invalid_one_of_test() ->
                    , {<<"additionalProperties">>, false}
                    ]},
 
-  Schema = {[ {<<"$schema">>, <<"http://json-schema.org/draft-04/schema#">>}
+  Schema = {[ {<<"$schema">>, URI}
             , {<<"oneOf">>, [IntegerSchema, StringSchema, ObjectSchema]}
             ]},
 
@@ -256,7 +292,14 @@ data_invalid_one_of_test() ->
      jesse_schema_validator:validate(Schema, Json, [])
     ).
 
+
 data_invalid_any_of_test() ->
+  [ data_invalid_any_of_test_draft(URI)
+    || URI <- [ <<"http://json-schema.org/draft-04/schema#">>
+              , <<"http://json-schema.org/draft-06/schema#">>
+              ]].
+
+data_invalid_any_of_test_draft(URI) ->
   IntegerSchema = {[{<<"type">>, <<"integer">>}]},
   StringSchema  = {[{<<"type">>, <<"string">>}]},
   ObjectSchema  = {[ {<<"type">>, <<"object">>}
@@ -268,7 +311,7 @@ data_invalid_any_of_test() ->
                    , {<<"additionalProperties">>, false}
                    ]},
 
-  Schema = {[ {<<"$schema">>, <<"http://json-schema.org/draft-04/schema#">>}
+  Schema = {[ {<<"$schema">>, URI}
             , {<<"anyOf">>, [IntegerSchema, StringSchema, ObjectSchema]}
             ]},
 
@@ -291,10 +334,7 @@ data_invalid_any_of_test() ->
 -ifndef(erlang_deprecated_types).
 -ifndef(COMMON_TEST).  % see Emakefile
 map_schema_test() ->
-  [ map_schema_test_draft(URI)
-    || URI <- [ <<"http://json-schema.org/draft-03/schema#">>
-              , <<"http://json-schema.org/draft-04/schema#">>
-              ]].
+  test_all_drafts(fun map_schema_test_draft/1).
 
 map_schema_test_draft(URI) ->
   Schema = #{ <<"$schema">> => URI
@@ -331,12 +371,7 @@ map_schema_test_draft(URI) ->
 
 
 map_data_test() ->
-  [ map_data_test_draft(URI)
-    || URI <- [ <<"http://json-schema.org/draft-03/schema#">>
-              , <<"http://json-schema.org/draft-04/schema#">>
-              ]
-  ].
-
+  test_all_drafts(fun map_data_test_draft/1).
 
 map_data_test_draft(URI) ->
   Schema = {[ {<<"$schema">>, URI}
@@ -405,6 +440,216 @@ map_schema_references_test() ->
      jesse_schema_validator:validate(
        Schema, Json,
        [{default_schema_ver, <<"http://json-schema.org/draft-04/schema#">>}])).
+
+data_exclusive_maximum_minimum_test() ->
+  Schema = fun (Property, V) ->
+               {[ {<<"$schema">>, V}
+                , {<<"type">>, <<"number">>}
+                , {Property, 43}
+                ]}
+           end,
+  ValidNumber = 42,
+  %% A case without errors
+  ?assertEqual(
+    {ok, ValidNumber},
+    jesse_schema_validator:validate(
+      Schema(<<"exclusiveMaximum">>, ?json_schema_draft6), ValidNumber, [])
+    ),
+
+  ?assertEqual(
+    {ok, ValidNumber+2},
+    jesse_schema_validator:validate(
+      Schema(<<"exclusiveMinimum">>, ?json_schema_draft6), ValidNumber+2, [])
+    ),
+
+  ?assertThrow( [ { data_invalid,
+                    { [ { <<"$schema">> , ?json_schema_draft6 }
+                      , { <<"type">> , <<"number">> }
+                      , { <<"exclusiveMinimum">> , 43 }
+                      ]
+                    }
+                  , not_in_range, 42 , []
+                  }
+                ],
+                jesse_schema_validator:validate(
+                  Schema(<<"exclusiveMinimum">>, ?json_schema_draft6),
+                  ValidNumber, []
+                 )
+              ),
+
+  ?assertThrow( [ { data_invalid,
+                    { [ { <<"$schema">> , ?json_schema_draft6 }
+                      , { <<"type">> , <<"number">> }
+                      , { <<"exclusiveMaximum">> , 43 }
+                      ]
+                    }
+                  , not_in_range, 44 , []
+                  }
+                ],
+                jesse_schema_validator:validate(
+                  Schema(<<"exclusiveMaximum">>, ?json_schema_draft6),
+                  ValidNumber+2, []
+                 )
+              ).
+
+
+data_dollarid_test() ->
+  SchemaWithId = fun (Draft, Id) ->
+                     {[ {<<"$schema">>, Draft}
+                      , {<<"type">>, <<"object">>}
+                      , {Id, <<"foo">>}
+                      ]}
+                 end,
+  Object = {[{ <<"foo">>, <<"bar">> }]},
+  ?assertEqual(
+     {ok, Object},
+     jesse_schema_validator:validate(
+       SchemaWithId(?json_schema_draft4, <<"id">>),
+       Object, []
+      )
+    ),
+
+  ?assertThrow([{schema_invalid,
+                {[{<<"$schema">>,
+                   <<"http://json-schema.org/draft-04/schema#">>},
+                  {<<"type">>, <<"object">>},
+                  {<<"$id">>, <<"foo">>}]},
+                wrong_draft4_id_tag}],
+               jesse_schema_validator:validate(
+                 SchemaWithId(?json_schema_draft4, <<"$id">>), Object, [])),
+
+  ?assertThrow([{ schema_invalid,
+                  {[{<<"$schema">>,
+                     <<"http://json-schema.org/draft-06/schema#">>},
+                    {<<"type">>, <<"object">>},
+                    {<<"id">>, <<"foo">>}]},
+                  wrong_draft6_id_tag}],
+               jesse_schema_validator:validate(
+                 SchemaWithId(?json_schema_draft6, <<"id">>), Object, [])),
+
+  ?assertEqual(
+     {ok, Object},
+     jesse_schema_validator:validate(
+       SchemaWithId(?json_schema_draft6, <<"$id">>), Object, [])
+    ).
+
+data_contains_test() ->
+  Schema = {[ {<<"$schema">>, ?json_schema_draft6}
+            , {<<"type">>, <<"array">>}
+            , {<<"contains">>, {[
+                {<<"type">>, <<"number">>}
+              ]}}
+            ]},
+  Array = [<<"foo">>, 42],
+  ArrayOfString = [<<"foo">>, <<"bar">>],
+  ?assertEqual(
+     {ok, Array},
+     jesse_schema_validator:validate(Schema, Array, [])
+    ),
+
+  ?assertThrow([{data_invalid
+                , {[{ <<"$schema">>, ?json_schema_draft6}
+                   , { <<"type">> , <<"array">> }
+                   , { <<"contains">>
+                     , {[{ <<"type">> , <<"number">> }]}
+                     }
+                   ]}
+                , data_invalid
+                , [<<"foo">>, <<"bar">>]
+                , []}],
+               jesse_schema_validator:validate(Schema, ArrayOfString, [])
+              ).
+
+data_const_test() ->
+  Schema = {[ {<<"$schema">>, ?json_schema_draft6}
+            , {<<"type">>, <<"string">>}
+            , {<<"const">>, <<"foo">>}
+            ]},
+
+  ?assertEqual(
+     {ok, <<"foo">>},
+     jesse_schema_validator:validate(Schema, <<"foo">>, [])
+    ),
+    ?assertThrow([{ data_invalid
+                  , {[{<<"$schema">> , ?json_schema_draft6 }
+                     , {<<"type">>, <<"string">>}
+                     , {<<"const">>, <<"foo">>}
+                     ]}
+                  , not_in_enum, <<"bar">>, []}],
+     jesse_schema_validator:validate(Schema, <<"bar">>, [])
+    ).
+
+data_empty_required_test() ->
+  Schema = {[ {<<"$schema">>, ?json_schema_draft6}
+            , {<<"type">>, <<"object">>}
+            , {<<"required">>, []}
+            ]},
+
+  ?assertEqual(
+     {ok, {[ ]}},
+     jesse_schema_validator:validate(Schema, {[ ]}, [])
+    ).
+
+data_empty_dependencies_test() ->
+  Schema = {[ {<<"$schema">>, ?json_schema_draft6}
+            , {<<"type">>, <<"object">>}
+            , {<<"dependencies">>, []}
+            ]},
+
+  ?assertEqual(
+     {ok, {[ ]}},
+     jesse_schema_validator:validate(Schema, {[ ]}, [])
+    ).
+
+array_items_with_boolean_value_test() ->
+  Schema = {[ {<<"$schema">>, ?json_schema_draft6}
+            , {<<"type">>, <<"array">>}
+            , {<<"items">>, true}
+            ]},
+
+  ?assertEqual(
+     {ok, []},
+     jesse_schema_validator:validate(Schema, [], [])
+    ),
+
+  InvalidSchema = {[ {<<"$schema">>, ?json_schema_draft6}
+                   , {<<"type">>, <<"array">>}
+                   , {<<"items">>, false}
+                   ]},
+
+  ?assertEqual({ok, []}
+              , jesse_schema_validator:validate(InvalidSchema, [], [])
+    ),
+
+  ?assertThrow([{data_invalid, _, not_schema_valid, 1, [0]}]
+              , jesse_schema_validator:validate(InvalidSchema, [1], [])
+    ).
+
+contains_with_boolean_value_test() ->
+  Schema = {[ {<<"$schema">>, ?json_schema_draft6}
+            , {<<"type">>, <<"array">>}
+            , {<<"contains">>, true}
+            ]},
+  Array = [<<"foo">>, 42],
+  ?assertEqual(
+     {ok, Array},
+     jesse_schema_validator:validate(Schema, Array, [])
+    ),
+
+  InvalidSchema = {[ {<<"$schema">>, ?json_schema_draft6}
+                   , {<<"type">>, <<"array">>}
+                   , {<<"contains">>, false}
+                   ]},
+  ?assertThrow([{data_invalid,
+                 {[{<<"$schema">>,
+                    <<"http://json-schema.org/draft-06/schema#">>},
+                   {<<"type">>, <<"array">>},
+                   {<<"contains">>, false}]},
+                 data_invalid, [], []}]
+              , jesse_schema_validator:validate(InvalidSchema, [], [])
+              ).
+
+
 
 -endif.
 -endif.

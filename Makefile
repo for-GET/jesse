@@ -108,6 +108,21 @@ proper:
 publish: docs
 	REBAR_CONFIG=$(REBAR_CONFIG) $(REBAR3) hex publish -r hexpm --yes
 
+# TODO: there must be a better way
+.PHONY: symlinks
+symlinks: test/JSON-Schema-Test-Suite/tests
+	cd test/jesse_tests_draft3_SUITE_data && \
+	ln -sf ../../test/JSON-Schema-Test-Suite/tests/draft3 standard && \
+	ln -sf ../../test/JSON-Schema-Test-Suite/remotes remotes
+
+	cd test/jesse_tests_draft4_SUITE_data && \
+	ln -sf ../../test/JSON-Schema-Test-Suite/tests/draft4 standard && \
+	ln -sf ../../test/JSON-Schema-Test-Suite/remotes remotes
+
+	cd test/jesse_tests_draft6_SUITE_data && \
+	ln -sf ../../test/JSON-Schema-Test-Suite/tests/draft6 standard && \
+	ln -sf ../../test/JSON-Schema-Test-Suite/remotes remotes
+
 .PHONY: rebar3.OTP18
 rebar3.OTP18:
 	$(CURL) -fqsS -L -o $@ https://github.com/erlang/rebar3/releases/download/3.13.3/rebar3

@@ -20,13 +20,13 @@ j_object(0) ->
   #{};
 j_object(Size) ->
   ?LET(KV,
-       proper_types:list({j_string(), json(Size div 2)}),
+       proper_types:list({j_string(), json(Size div 4)}),
        maps:from_list(KV)).
 
 j_array(0) ->
   [];
 j_array(Size) ->
-  proper_types:list(json(Size div 2)).
+  proper_types:list(json(Size div 4)).
 
 j_string() ->
   %% proper_unicode:utf8().
