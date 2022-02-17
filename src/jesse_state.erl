@@ -190,10 +190,7 @@ set_current_schema(#state{id = Id} = State, NewSchema0) ->
         %% Instead of just removing all the other fields, we put schema as
         %% 1st element, so, only `ref' will be validated, while other fields
         %% (say, `definitions') may still be referenced.
-        ListSchema = case is_map(NewSchema0) of
-                       true -> maps:to_list(NewSchema0);
-                       false -> NewSchema0
-                     end,
+        ListSchema = jesse_json_path:unwrap_value(NewSchema0),
         [{?REF, Ref} | lists:keydelete(?REF, 1, ListSchema)]
     end,
   IdTag = case schema_from_json(NewSchema) of
