@@ -408,7 +408,7 @@ map_data_test_draft(URI) ->
                  },
   %% XXX: order of errors isn't guaranteed
   %% In case of future fails it can be replaced with manual catching and sorting
-  %% of throwed error list, then checked using ?assertMatch
+  %% of thrown error list, then checked using ?assertMatch
   ?assertThrow([ { data_invalid
                  , {[{<<"type">>, <<"object">>} | _ ]}
                  , wrong_type

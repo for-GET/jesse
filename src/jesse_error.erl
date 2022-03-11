@@ -64,7 +64,7 @@
 
 %% @doc Implements the default error handler.
 %% If the length of `ErrorList' exceeds `AllowedErrors' then the function
-%% throws an exeption, otherwise adds a new element to the list and returs it.
+%% throws an exception, otherwise adds a new element to the list and returns it.
 -spec default_error_handler( Error         :: error_reason()
                            , ErrorList     :: [error_reason()]
                            , AllowedErrors :: jesse:allowed_errors()

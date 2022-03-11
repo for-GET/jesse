@@ -115,7 +115,7 @@ re_options() ->
 %% will be no differences between objects that contain one of those
 %% lists with the same elements but in different order.  Lists for
 %% which order is relevant, e.g. JSON arrays, keep their original
-%% order and will be considered diffferent if the order is different.
+%% order and will be considered different if the order is different.
 -spec normalize_and_sort(Value :: any()) -> any().
 normalize_and_sort(Value) ->
   normalize_and_sort_check_object(Value).

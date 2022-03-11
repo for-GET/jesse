@@ -122,7 +122,7 @@ add_schema(Key, Schema) ->
   jesse_database:add(Key, Schema, ValidationFun).
 
 %% @doc Equivalent to `add_schema/2', but `Schema' is a binary string, and
-%% the third agument is a parse function to convert the binary string to
+%% the third argument is a parse function to convert the binary string to
 %% a supported internal representation of json.
 -spec add_schema( Key :: string()
                 , Schema :: binary()
@@ -224,7 +224,7 @@ validate(Schema, Data, Options) ->
 validate_with_schema(Schema, Data) ->
   validate_with_schema(Schema, Data, []).
 
-%% @doc Validates json `Data' agains the given schema `Schema', using `Options'.
+%% @doc Validates json `Data' against the given schema `Schema', using `Options'.
 %% If the given json is valid, then it is returned to the caller, otherwise
 %% an error with an appropriate error reason is returned. If the `parser_fun'
 %% option is provided, then both `Schema' and `Data' are considered to be a

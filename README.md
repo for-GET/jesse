@@ -197,7 +197,7 @@ Let's now change the value of the field "a" to a boolean
                       [<<"a">>]}]}
 ```
 
-we stil got only two errors.
+we still got only two errors.
 
 Let's try using 'infinity' as the argument for the `allowed_errors` option
 
@@ -258,7 +258,7 @@ Value, Path}` where
 * Schema is the part of the schema where validation failed
 * ErrorType is the type of error, usually an atom such as `wrong_type`,
   `not_in_range` or `no_match`
-* Value is The part of the value where failed validation agains Schema
+* Value is The part of the value where failed validation against Schema
 * Path is a path to where validation failed within the original value. The path
   is a list of property names and zero-based array indices referencing the
   properties and array items within a JSON document; e.g. in the JSON document

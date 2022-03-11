@@ -1,5 +1,5 @@
 %% This Emakefile is called by common test during `rebar ct`
-%% and it defines 'COMMON_TEST' macro to conditionaly compile
+%% and it defines 'COMMON_TEST' macro to conditionally compile
 %% module, which uses maps syntax.
 %% This one required because common test doesn't respect rebar's
 %% `platform_define` option.
