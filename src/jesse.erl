@@ -224,7 +224,7 @@ validate(Schema, Data, Options) ->
 validate_with_schema(Schema, Data) ->
   validate_with_schema(Schema, Data, []).
 
-%% @doc Validates json `Data' against the given schema `Schema', using `Options'.
+%% @doc Validates json `Data' against the given `Schema', using `Options'.
 %% If the given json is valid, then it is returned to the caller, otherwise
 %% an error with an appropriate error reason is returned. If the `parser_fun'
 %% option is provided, then both `Schema' and `Data' are considered to be a
