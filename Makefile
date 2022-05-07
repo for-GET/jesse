@@ -163,7 +163,7 @@ docker:
 	else \
 		echo "Current version $(GIT_DESCRIBE) isn't in 'git tag'."; \
 		echo "Run 'make docker-force' if you really want to build and push a $(GIT_DESCRIBE) version."; \
-		exit 1
+		exit 1; \
 	fi
 
 .PHONY: docker-force
