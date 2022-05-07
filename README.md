@@ -3,7 +3,14 @@
 # jesse [![Build Status][2]][1]
 
 jesse (JSON Schema Erlang) is an implementation of a JSON Schema validator
-for Erlang.
+for Erlang, though it can work just as well as a CLI tool.
+[Available as a Docker image too for convenience.
+![Docker Image Version (latest semver)](https://img.shields.io/docker/v/ysoftwareab/jesse?sort=semver)
+![Docker Image Size (latest semver)](https://img.shields.io/docker/image-size/ysoftwareab/jesse?sort=semver)
+![Docker Pulls](https://img.shields.io/docker/pulls/ysoftwareab/kesse)
+](https://hub.docker.com/r/ysoftwareab/jesse)
+
+
 
 jesse implements the following specifications:
 
@@ -17,7 +24,10 @@ Automatically generated docs are available https://dev.erldocs.com/github.com/fo
 
 Please keep in mind that the public API is the `jesse.erl` module alone.
 
-## Quick start - CLI
+## Command-Line Interface
+
+You can either build the `bin/jesse` executable yourself (just type `make`),
+or you can use a Docker image a call it with `docker run ysoftwareab/jesse`.
 
 You can fire up `jesse` from the CLI, with
 ```bash
@@ -31,7 +41,7 @@ bin/jesse [path_to_json_schema] path_to_json_schema --json -- path_to_json_insta
 
 You can pass multiple JSON schemas which should be loaded into jesse in-memory storage, but JSON instances will be validated against the last JSON schema passed.
 
-## Quick start - Erlang
+## Erlang Interface
 
 There are two ways of using jesse:
 
