@@ -177,6 +177,7 @@ docker-force:
 		--push \
     --platform linux/amd64,linux/arm64 \
 		--tag ysoftwareab/jesse:$(GIT_DESCRIBE) \
+		--tag ysoftwareab/jesse:latest \
 		--build-arg FROM=erlang:latest \
 		--build-arg LABEL_VCS_REF=$$(git rev-parse HEAD) \
 		--build-arg LABEL_BUILD_DATE=$$(date -u +"%Y-%m-%dT%H:%M:%SZ")
