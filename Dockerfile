@@ -17,4 +17,4 @@ COPY . /jesse
 RUN cd /jesse && ./Dockerfile.build.sh
 RUN cd /jesse && make
 
-CMD /bin/jesse
+CMD /jesse/bin/jesse
