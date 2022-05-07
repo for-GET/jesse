@@ -5,13 +5,12 @@
 jesse (JSON Schema Erlang) is an implementation of a JSON Schema validator
 for Erlang, though it can work just as well as a CLI tool.
 
-[Available as a Docker image too for convenience: `docker run ysoftwareab/jesse`.
+[Available as a Docker image too for convenience.](https://hub.docker.com/r/ysoftwareab/jesse)
+
+`docker run ysoftwareab/jesse`
 ![Docker Image Version (latest semver)](https://img.shields.io/docker/v/ysoftwareab/jesse?sort=semver)
 ![Docker Image Size (latest semver)](https://img.shields.io/docker/image-size/ysoftwareab/jesse?sort=semver)
 ![Docker Pulls](https://img.shields.io/docker/pulls/ysoftwareab/jesse)
-](https://hub.docker.com/r/ysoftwareab/jesse)
-
-
 
 jesse implements the following specifications:
 
