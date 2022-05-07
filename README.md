@@ -7,7 +7,7 @@ for Erlang, though it can work just as well as a CLI tool.
 
 [Available as a Docker image too for convenience.](https://hub.docker.com/r/ysoftwareab/jesse) Or [whalebrew package](https://github.com/whalebrew/whalebrew) if you prefer.
 
-`docker run ysoftwareab/jesse -- ...` or `brew install whalebrew && whalebrew install ysoftwareab/jesse; jesse ...`
+`docker run --rm -it -v $PWD:$PWD -w $PWD ysoftwareab/jesse ...` or `brew install whalebrew && whalebrew install ysoftwareab/jesse; jesse ...`
 
 ![Docker Image Version (latest semver)](https://img.shields.io/docker/v/ysoftwareab/jesse?sort=semver)
 ![Docker Image Size (latest semver)](https://img.shields.io/docker/image-size/ysoftwareab/jesse?sort=semver)
