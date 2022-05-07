@@ -84,7 +84,7 @@
 
 * Big refactoring
 * Start to respect $schema
-* Add posibility of adding validators for different schemas
+* Add possibility of adding validators for different schemas
 
 
 ## 1.0.0
