@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# manually sync with ./.github/workflows/ci.yml
 apt-get update
 apt-get -y install tcl tcl-dev gettext
 cd /usr/src/
