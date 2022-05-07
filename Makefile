@@ -153,3 +153,18 @@ rebar3.OTP23:
 .PHONY: rebar3.OTP24
 rebar3.OTP24:
 	$(LN) -sf rebar3.OTP22 $@
+
+.PHONY: docker
+docker:
+	# docker context create aws-docker-amd64 --docker host=ssh://ec2-13-51-198-153.eu-north-1.compute.amazonaws.com
+	# docker context create aws-docker-arm64 --docker host=ssh://ec2-13-48-46-86.eu-north-1.compute.amazonaws.com
+	# docker buildx create --name aws-multiarch-builder aws-docker-amd64
+	# docker buildx create --name aws-multiarch-builder --append aws-docker-arm64
+	# docker use aws-multiarch-builder
+	docker buildx build . \
+		--push \
+    --platform linux/amd64,linux/arm64 \
+		--tag ysoftwareab/jesse:$$(git describe --tags --first-parent --always) \
+		--build-arg FROM=erlang:latest \
+		--build-arg LABEL_VCS_REF=$$(git rev-parse HEAD) \
+		--build-arg LABEL_BUILD_DATE=$$(date -u +"%Y-%m-%dT%H:%M:%SZ")
