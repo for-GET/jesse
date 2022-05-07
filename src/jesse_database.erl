@@ -310,12 +310,12 @@ get_schema_id(Schema) ->
                       _ -> get_schema_id_by_version(?ID_OLD, Schema)
   end.
 
-get_schema_id_by_version(Version, Schema) ->
-  case jesse_json_path:value(Version, Schema, undefined) of
+get_schema_id_by_version(IdKey, Schema) ->
+  case jesse_json_path:value(IdKey, Schema, undefined) of
     undefined ->
       undefined;
-    Version ->
-      erlang:binary_to_list(Version)
+    Id ->
+      erlang:binary_to_list(Id)
   end.
 
 %% @private
