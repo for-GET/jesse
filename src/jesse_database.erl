@@ -199,13 +199,14 @@ store_schema(SchemaInfo, {Acc, ValidationFun}) ->
   {SourceKey, Mtime, Schema0} = SchemaInfo,
   case ValidationFun(Schema0) of
     true ->
+      IdKey = jesse_lib:get_schema_id_key(Schema0),
       Id = case jesse_lib:get_schema_id(Schema0) of
              undefined ->
                SourceKey;
              Id0 ->
                jesse_state:combine_id(SourceKey, Id0)
            end,
-      Schema = replace_schema_id(Schema0, Id),
+      Schema = replace_schema_id(Schema0, IdKey, Id),
       Object = { SourceKey
                , Id
                , Mtime
@@ -221,26 +222,26 @@ store_schema(SchemaInfo, {Acc, ValidationFun}) ->
 %% @private
 %% Should support whatever jesse_lib:is_json_object/1 does
 ?IF_MAPS(
-replace_schema_id(M0, Id)
+replace_schema_id(M0, IdKey, Id)
   when erlang:is_map(M0) ->
-  maps:put(<<"id">>, unicode:characters_to_binary(Id), M0);
+  maps:put(IdKey, unicode:characters_to_binary(Id), M0);
 )
-replace_schema_id({struct, P0}, Id)
+replace_schema_id({struct, P0}, IdKey, Id)
   when is_list(P0) ->
-  P = [ {<<"id">>, unicode:characters_to_binary(Id)}
-           | lists:keydelete(<<"id">>, 1, P0)
+  P = [ {IdKey, unicode:characters_to_binary(Id)}
+           | lists:keydelete(IdKey, 1, P0)
          ],
   {struct, P};
-replace_schema_id({P0}, Id)
+replace_schema_id({P0}, IdKey, Id)
   when is_list(P0) ->
-  P = [ {<<"id">>, unicode:characters_to_binary(Id)}
-           | lists:keydelete(<<"id">>, 1, P0)
+  P = [ {IdKey, unicode:characters_to_binary(Id)}
+           | lists:keydelete(IdKey, 1, P0)
          ],
   {P};
-replace_schema_id(P0, Id)
+replace_schema_id(P0, IdKey, Id)
   when is_list(P0) ->
-  P = [ {<<"id">>, unicode:characters_to_binary(Id)}
-           | lists:keydelete(<<"id">>, 1, P0)
+  P = [ {IdKey, unicode:characters_to_binary(Id)}
+           | lists:keydelete(IdKey, 1, P0)
          ],
   P.
 
