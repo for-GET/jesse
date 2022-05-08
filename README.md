@@ -5,19 +5,17 @@
 jesse (JSON Schema Erlang) is an implementation of a JSON Schema validator
 for Erlang, though it can work just as well as a CLI tool.
 
-[Available as a Docker image too for convenience.](https://hub.docker.com/r/ysoftwareab/jesse) Or [whalebrew package](https://github.com/whalebrew/whalebrew) if you prefer.
-
-`docker run --rm -it -v $PWD:$PWD -w $PWD ysoftwareab/jesse ...` or `brew install whalebrew && sudo whalebrew install ysoftwareab/jesse; jesse ...`
-
-![Docker Image Version (latest semver)](https://img.shields.io/docker/v/ysoftwareab/jesse?sort=semver)
-![Docker Image Size (latest semver)](https://img.shields.io/docker/image-size/ysoftwareab/jesse?sort=semver)
-![Docker Pulls](https://img.shields.io/docker/pulls/ysoftwareab/jesse)
-
 jesse implements the following specifications:
 
 * [Draft 03](http://tools.ietf.org/html/draft-zyp-json-schema-03)
 * [Draft 04](http://tools.ietf.org/html/draft-zyp-json-schema-04)
 * [Draft 06](https://datatracker.ietf.org/doc/html/draft-wright-json-schema-00)
+
+Install from git or https://hex.pm/packages/jesse .
+
+For convenience, [available as a Docker image too](https://hub.docker.com/r/ysoftwareab/jesse): `docker run --rm -it -v $PWD:$PWD -w $PWD ysoftwareab/jesse ...`.
+
+And [whalebrew package](https://github.com/whalebrew/whalebrew): `brew install whalebrew && sudo whalebrew install ysoftwareab/jesse; jesse ...`
 
 ## Erlang API Docs
 

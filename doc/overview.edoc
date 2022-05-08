@@ -1,2 +1,5 @@
 @copyright 2012- Klarna AB, AUTHORS
 @title A simple JSON schema validator for Erlang
+@doc A simple JSON schema validator for Erlang
+
+@end
