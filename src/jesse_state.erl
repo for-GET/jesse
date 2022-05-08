@@ -100,16 +100,8 @@ get_current_schema(#state{current_schema = CurrentSchema}) ->
 get_current_schema_id(#state{ current_schema = CurrentSchema
                             , root_schema = RootSchema
                             }) ->
-  Default = get_id(RootSchema, ?not_found),
-  get_id(CurrentSchema, Default).
-
-get_id(Schema, Default) ->
-  case jesse_json_path:value(?ID, Schema, undefined) of
-    undefined ->
-      jesse_json_path:value(?ID_OLD, Schema, Default);
-    ID ->
-      ID
-  end.
+  Default = jesse_lib:get_schema_id(RootSchema, ?not_found),
+  jesse_lib:get_schema_id(CurrentSchema, Default).
 
 %% @doc Getter for `default_schema_ver'.
 -spec get_default_schema_ver(State :: state()) -> jesse:schema_ver().

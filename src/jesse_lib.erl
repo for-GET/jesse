@@ -32,6 +32,9 @@
         , re_options/0
         , normalize_and_sort/1
         , is_equal/2
+        , get_schema_id_key/1
+        , get_schema_id/1
+        , get_schema_id/2
         ]).
 
 %% Includes
@@ -231,6 +234,34 @@ compare_properties(Value1, Value2) ->
              end
            , unwrap(Value1)
            ).
+
+%%=============================================================================
+%% @doc Returns "id" or "$id" based on the value of $schema.
+-spec get_schema_id_key(Schema :: jesse:json_term()) -> string().
+get_schema_id_key(Schema) ->
+  case jesse_json_path:value(?SCHEMA, Schema, undefined) of
+    ?json_schema_draft6 -> ?ID;
+                      _ -> ?ID_OLD
+  end.
+
+%%=============================================================================
+%% @doc Returns value of "id" field from json object `Schema', assuming that
+%% the given json object has such a field, otherwise returns undefined.
+-spec get_schema_id(Schema :: jesse:json_term()) -> string() | undefined.
+get_schema_id(Schema) ->
+  get_schema_id(Schema, undefined).
+
+%% @doc Returns value of "id" field from json object `Schema', assuming that
+%% the given json object has such a field, otherwise returns Default.
+-spec get_schema_id(Schema :: jesse:json_term(), Default :: string() | undefined) -> string() | undefined.
+get_schema_id(Schema, Default) ->
+  IdKey = get_schema_id_key(Schema),
+  case jesse_json_path:value(IdKey, Schema, undefined) of
+    undefined ->
+      Default;
+    Id ->
+      erlang:binary_to_list(Id)
+  end.
 
 %%=============================================================================
 %% Wrappers
