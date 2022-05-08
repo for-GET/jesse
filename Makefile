@@ -79,6 +79,9 @@ test: eunit ct xref dialyzer proper cover
 elvis:
 	REBAR_CONFIG=$(REBAR_CONFIG) $(REBAR3) lint
 
+.PHONY: check
+check: elvis
+
 .PHONY: eunit
 eunit:
 	@ $(MAKE) clean-tests
