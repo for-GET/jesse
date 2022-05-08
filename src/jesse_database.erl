@@ -300,17 +300,21 @@ get_schema_info(File, {Acc, ParseFun}) ->
   Schema = try_parse(ParseFun, SchemaBin),
   {[{SourceKey, Mtime, Schema} | Acc], ParseFun}.
 
+%% @doc Returns "id" or "$id" based on the value of $schema.
+%% @private
+-spec get_schema_id_key(Schema :: jesse:json_term()) -> string().
+get_schema_id_key(Schema) ->
+  case jesse_json_path:value(?SCHEMA, Schema, undefined) of
+    ?json_schema_draft6 -> ?ID;
+                      _ -> ?ID_OLD
+  end.
+
 %% @doc Returns value of "id" field from json object `Schema', assuming that
 %% the given json object has such a field, otherwise returns undefined.
 %% @private
 -spec get_schema_id(Schema :: jesse:json_term()) -> string() | undefined.
 get_schema_id(Schema) ->
-  case jesse_json_path:value(?SCHEMA, Schema, undefined) of
-    ?json_schema_draft6 -> get_schema_id_by_version(?ID, Schema);
-                      _ -> get_schema_id_by_version(?ID_OLD, Schema)
-  end.
-
-get_schema_id_by_version(IdKey, Schema) ->
+  IdKey = get_schema_id_key(Schema),
   case jesse_json_path:value(IdKey, Schema, undefined) of
     undefined ->
       undefined;
