@@ -31,6 +31,8 @@
 
 %%%_* API ======================================================================
 
+-include("jesse_schema_validator.hrl").
+
 main([]) ->
   main(["--help"]);
 main(["-h"]) ->
@@ -104,9 +106,15 @@ add_schemata([SchemaFile|Rest]) ->
 
 maybe_fill_schema_id(SchemaFile, Schema) ->
   SchemaFqdn = "file://" ++ filename:absname(SchemaFile),
-  case jesse_json_path:value(<<"id">>, Schema, undefined) of
-    undefined ->
-      [ {<<"id">>, unicode:characters_to_binary(SchemaFqdn)}
+  Version = jesse_json_path:value(<<"$schema">>, Schema, undefined),
+  Id = jesse_lib:get_schema_id(Schema),
+  case {Version, Id} of
+    {?json_schema_draft6, undefined} ->
+      [ {?ID, unicode:characters_to_binary(SchemaFqdn)}
+        | Schema
+      ];
+    {_, undefined} ->
+      [ {?ID_OLD, unicode:characters_to_binary(SchemaFqdn)}
         | Schema
       ];
     _ ->
