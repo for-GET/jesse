@@ -237,7 +237,7 @@ compare_properties(Value1, Value2) ->
 
 %%=============================================================================
 %% @doc Returns "id" or "$id" based on the value of $schema.
--spec get_schema_id_key(Schema :: jesse:json_term()) -> string().
+-spec get_schema_id_key(Schema :: jesse:json_term()) -> binary().
 get_schema_id_key(Schema) ->
   case jesse_json_path:value(?SCHEMA, Schema, undefined) of
     ?json_schema_draft6 -> ?ID;
@@ -247,13 +247,15 @@ get_schema_id_key(Schema) ->
 %%=============================================================================
 %% @doc Returns value of "id" field from json object `Schema', assuming that
 %% the given json object has such a field, otherwise returns undefined.
--spec get_schema_id(Schema :: jesse:json_term()) -> string() | undefined.
+-spec get_schema_id(Schema :: jesse:json_term()) -> jesse:schema_id().
 get_schema_id(Schema) ->
   get_schema_id(Schema, undefined).
 
 %% @doc Returns value of "id" field from json object `Schema', assuming that
 %% the given json object has such a field, otherwise returns Default.
--spec get_schema_id(Schema :: jesse:json_term(), Default :: string() | undefined) -> string() | undefined.
+-spec get_schema_id( Schema :: jesse:json_term()
+                   , Default :: jesse:schema_id()
+                   ) -> jesse:schema_id().
 get_schema_id(Schema, Default) ->
   IdKey = get_schema_id_key(Schema),
   case jesse_json_path:value(IdKey, Schema, undefined) of

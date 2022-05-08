@@ -100,7 +100,7 @@ get_current_schema(#state{current_schema = CurrentSchema}) ->
 get_current_schema_id(#state{ current_schema = CurrentSchema
                             , root_schema = RootSchema
                             }) ->
-  Default = jesse_lib:get_schema_id(RootSchema, ?not_found),
+  Default = jesse_lib:get_schema_id(RootSchema),
   jesse_lib:get_schema_id(CurrentSchema, Default).
 
 %% @doc Getter for `default_schema_ver'.
