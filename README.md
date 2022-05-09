@@ -1,5 +1,3 @@
-**This repository is the actively-maintained follow-up of https://github.com/klarna/jesse. Please update your references.**
-
 # jesse [![Build Status][2]][1]
 
 jesse (JSON Schema Erlang) is an implementation of a JSON Schema validator
