@@ -480,8 +480,8 @@ check_additional_properties(Value, AdditionalProperties, State) ->
 %% or PatternProperties.
 %% @private
 get_additional_properties(Value, Properties, PatternProperties) ->
-  ValuePropertiesNames  = [Name || {Name, _} <- unwrap(Value)],
-  SchemaPropertiesNames = [Name || {Name, _} <- unwrap(Properties)],
+  ValuePropertiesNames  = [jesse_json_path:normalize(Name, binary) || {Name, _} <- unwrap(Value)],
+  SchemaPropertiesNames = [jesse_json_path:normalize(Name, binary) || {Name, _} <- unwrap(Properties)],
   Patterns    = [Pattern || {Pattern, _} <- unwrap(PatternProperties)],
   ExtraNames0 = lists:subtract(ValuePropertiesNames, SchemaPropertiesNames),
   ExtraNames  = lists:foldl( fun(Pattern, ExtraAcc) ->
