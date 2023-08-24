@@ -38,7 +38,7 @@
 %% Includes
 -include("jesse_schema_validator.hrl").
 
--ifdef WORKAROUND_FOR_EFMT.
+-ifdef(WORKAROUND_FOR_EFMT).
 -define(IF_MAPS(A), A).
 -endif.
 
