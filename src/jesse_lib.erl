@@ -24,38 +24,43 @@
 -module(jesse_lib).
 
 %% API
--export([ empty_if_not_found/1
-        , is_array/1
-        , is_json_object/1
-        , is_null/1
-        , re_run/2
-        , re_options/0
-        , normalize_and_sort/1
-        , is_equal/2
-        , get_schema_id_key/1
-        , get_schema_id/1
-        , get_schema_id/2
-        ]).
+-export([empty_if_not_found/1,
+         is_array/1,
+         is_json_object/1,
+         is_null/1,
+         re_run/2,
+         re_options/0,
+         normalize_and_sort/1,
+         is_equal/2,
+         get_schema_id_key/1,
+         get_schema_id/1, get_schema_id/2]).
 
 %% Includes
 -include("jesse_schema_validator.hrl").
+
+-ifdef WORKAROUND_FOR_EFMT.
+-define(IF_MAPS(A), A).
+-endif.
+
 
 %%% API
 %% @doc Returns an empty list if the given value is ?not_found.
 -spec empty_if_not_found(Value :: any()) -> any().
 empty_if_not_found(?not_found) ->
-  [];
+    [];
 empty_if_not_found(Value) ->
-  Value.
+    Value.
+
 
 %% @doc Checks if the given value is json `array'.
 %% This check is needed since objects in `jsx' are lists (proplists).
 -spec is_array(Value :: any()) -> boolean().
 is_array(Value)
   when is_list(Value) ->
-  not is_json_object(Value);
+    not is_json_object(Value);
 is_array(_) ->
-  false.
+    false.
+
 
 %% @doc A naive check if the given data is a json object.
 %% Supports two main formats of json representation:
@@ -65,42 +70,43 @@ is_array(_) ->
 %% Returns `true' if the given data is an object, otherwise `false' is returned.
 -spec is_json_object(Value :: any()) -> boolean().
 ?IF_MAPS(
-is_json_object(Map)
+  is_json_object(Map)
   when erlang:is_map(Map) ->
-  true;
-)
+  true;)
 is_json_object({struct, Value})
   when is_list(Value) ->
-  true;
+    true;
 is_json_object({Value})
   when is_list(Value) ->
-  true;
+    true;
 %% handle `jsx' empty objects
 is_json_object([{}]) ->
-  true;
+    true;
 %% very naive check. checks only the first element.
 is_json_object([{Key, _Value} | _])
-  when is_binary(Key) orelse is_atom(Key)
-       andalso Key =/= struct ->
-  true;
+  when is_binary(Key) orelse is_atom(Key) andalso
+       Key =/= struct ->
+    true;
 is_json_object(_) ->
-  false.
+    false.
+
 
 %% @doc Checks if the given value is json `null'.
 -spec is_null(Value :: any()) -> boolean().
 is_null(null) ->
-  true;
+    true;
 is_null(_Value) ->
-  false.
+    false.
+
 
 %% @doc Run the RE against the subject using the `re_options' from the jesse
 %% application environment. `{capture, none}' is always used.
--spec re_run( Subject :: iodata() | unicode:charlist()
-            , RE :: iodata() | unicode:charlist()
-            ) -> match
-               | nomatch.
+-spec re_run(Subject :: iodata() | unicode:charlist(),
+             RE :: iodata() | unicode:charlist()) -> match |
+                                                     nomatch.
 re_run(Subject, RE) ->
-  re:run(Subject, RE, [{capture, none} | re_options()]).
+    re:run(Subject, RE, [{capture, none} | re_options()]).
+
 
 %% @doc Returns the base re options from jesse environment which will be used
 %% when running client-provided patterns. By default, that is `[unicode, ucp]'
@@ -111,7 +117,8 @@ re_run(Subject, RE) ->
 %% [https://www.erlang.org/doc/man/re.html#compile-2 re:compile/2].
 -spec re_options() -> list().
 re_options() ->
-  application:get_env(jesse, re_options, [unicode, ucp]).
+    application:get_env(jesse, re_options, [unicode, ucp]).
+
 
 %% @doc Returns a JSON object in which all lists for
 %% which order is not relevant will be sorted.  In this way, there
@@ -121,7 +128,8 @@ re_options() ->
 %% order and will be considered different if the order is different.
 -spec normalize_and_sort(Value :: any()) -> any().
 normalize_and_sort(Value) ->
-  normalize_and_sort_check_object(Value).
+    normalize_and_sort_check_object(Value).
+
 
 %% This code would look much better if we could use
 %% normalize_and_sort_check_object as a guard expression, but that is not
@@ -131,10 +139,11 @@ normalize_and_sort(Value) ->
 %% @private
 -spec normalize_and_sort_check_object(Value :: any()) -> any().
 normalize_and_sort_check_object(Value) ->
-  case jesse_lib:is_json_object(Value) of
-    true -> normalize_and_sort_object(Value);
-    false -> normalize_and_sort_non_object(Value)
-  end.
+    case jesse_lib:is_json_object(Value) of
+        true -> normalize_and_sort_object(Value);
+        false -> normalize_and_sort_non_object(Value)
+    end.
+
 
 %% This function covers the recursion over:
 %% - properties within an object, seen as tuples. In that case, we run
@@ -146,16 +155,17 @@ normalize_and_sort_check_object(Value) ->
 %% @private
 -spec normalize_and_sort_non_object(Value :: any()) -> any().
 normalize_and_sort_non_object({Key, Val}) ->
-  {Key, normalize_and_sort_check_object(Val)};
+    {Key, normalize_and_sort_check_object(Val)};
 normalize_and_sort_non_object(Value) when is_list(Value) ->
-  [normalize_and_sort_check_object(X) || X <- Value];
+    [ normalize_and_sort_check_object(X) || X <- Value ];
 normalize_and_sort_non_object(Value) when is_number(Value) ->
-  case Value == float(Value) of
-    true -> float(Value);
-    false -> Value
-  end;
+    case Value == float(Value) of
+        true -> float(Value);
+        false -> Value
+    end;
 normalize_and_sort_non_object(Value) ->
-  Value.
+    Value.
+
 
 %% This function runs the normalization/ordering over the properties
 %% of a JSON object. If the object is not formatted as a list (e.g. a
@@ -164,12 +174,13 @@ normalize_and_sort_non_object(Value) ->
 %% the normalization/ordering through each of the properties.
 %% @private
 -spec normalize_and_sort_object(Value :: any()) -> any().
-normalize_and_sort_object(Value) when is_map(Value)->
-  maps:map(fun (_K, V) -> normalize_and_sort_check_object(V) end, Value);
+normalize_and_sort_object(Value) when is_map(Value) ->
+    maps:map(fun(_K, V) -> normalize_and_sort_check_object(V) end, Value);
 normalize_and_sort_object(Value) ->
-  normalize_and_sort_object(
-    maps:from_list(
-      jesse_json_path:unwrap_value(Value))).
+    normalize_and_sort_object(
+      maps:from_list(
+        jesse_json_path:unwrap_value(Value))).
+
 
 %%=============================================================================
 %% @doc Returns `true' if given values (instance) are equal, otherwise `false'
@@ -192,85 +203,93 @@ normalize_and_sort_object(Value) ->
 %% </ul>
 -spec is_equal(Value1 :: any(), Value2 :: any()) -> boolean().
 is_equal(Value1, Value2) ->
-  case jesse_lib:is_json_object(Value1)
-    andalso jesse_lib:is_json_object(Value2) of
-    true  -> compare_objects(Value1, Value2);
-    false -> case is_list(Value1) andalso is_list(Value2) of
-               true  -> compare_lists(Value1, Value2);
-               false -> Value1 == Value2
-             end
-  end.
+    case jesse_lib:is_json_object(Value1) andalso
+         jesse_lib:is_json_object(Value2) of
+        true -> compare_objects(Value1, Value2);
+        false ->
+            case is_list(Value1) andalso is_list(Value2) of
+                true -> compare_lists(Value1, Value2);
+                false -> Value1 == Value2
+            end
+    end.
+
 
 %% @private
 compare_lists(Value1, Value2) ->
-  case length(Value1) =:= length(Value2) of
-    true  -> compare_elements(Value1, Value2);
-    false -> false
-  end.
+    case length(Value1) =:= length(Value2) of
+        true -> compare_elements(Value1, Value2);
+        false -> false
+    end.
+
 
 %% @private
 compare_elements(Value1, Value2) ->
-  lists:all( fun({Element1, Element2}) ->
-                 is_equal(Element1, Element2)
-             end
-           , lists:zip(Value1, Value2)
-           ).
+    lists:all(fun({Element1, Element2}) ->
+                      is_equal(Element1, Element2)
+              end,
+              lists:zip(Value1, Value2)).
+
 
 %% @private
 compare_objects(Value1, Value2) ->
-  case length(unwrap(Value1)) =:= length(unwrap(Value2)) of
-    true  -> compare_properties(Value1, Value2);
-    false -> false
-  end.
+    case length(unwrap(Value1)) =:= length(unwrap(Value2)) of
+        true -> compare_properties(Value1, Value2);
+        false -> false
+    end.
+
 
 %% @private
 compare_properties(Value1, Value2) ->
-  lists:all( fun({PropertyName1, PropertyValue1}) ->
-                 case get_value(PropertyName1, Value2) of
-                   ?not_found     -> false;
-                   PropertyValue2 -> is_equal(PropertyValue1,
-                                              PropertyValue2)
-                 end
-             end
-           , unwrap(Value1)
-           ).
+    lists:all(fun({PropertyName1, PropertyValue1}) ->
+                      case get_value(PropertyName1, Value2) of
+                          ?not_found -> false;
+                          PropertyValue2 ->
+                              is_equal(PropertyValue1,
+                                       PropertyValue2)
+                      end
+              end,
+              unwrap(Value1)).
+
 
 %%=============================================================================
 %% @doc Returns "id" or "$id" based on the value of $schema.
 -spec get_schema_id_key(Schema :: jesse:json_term()) -> binary().
 get_schema_id_key(Schema) ->
-  case jesse_json_path:value(?SCHEMA, Schema, undefined) of
-    ?json_schema_draft6 -> ?ID;
-                      _ -> ?ID_OLD
-  end.
+    case jesse_json_path:value(?SCHEMA, Schema, undefined) of
+        ?json_schema_draft6 -> ?ID;
+        _ -> ?ID_OLD
+    end.
+
 
 %%=============================================================================
 %% @doc Returns value of "id" field from json object `Schema', assuming that
 %% the given json object has such a field, otherwise returns undefined.
 -spec get_schema_id(Schema :: jesse:json_term()) -> jesse:schema_id().
 get_schema_id(Schema) ->
-  get_schema_id(Schema, undefined).
+    get_schema_id(Schema, undefined).
+
 
 %% @doc Returns value of "id" field from json object `Schema', assuming that
 %% the given json object has such a field, otherwise returns Default.
--spec get_schema_id( Schema :: jesse:json_term()
-                   , Default :: jesse:schema_id()
-                   ) -> jesse:schema_id().
+-spec get_schema_id(Schema :: jesse:json_term(),
+                    Default :: jesse:schema_id()) -> jesse:schema_id().
 get_schema_id(Schema, Default) ->
-  IdKey = get_schema_id_key(Schema),
-  case jesse_json_path:value(IdKey, Schema, undefined) of
-    undefined ->
-      Default;
-    Id ->
-      erlang:binary_to_list(Id)
-  end.
+    IdKey = get_schema_id_key(Schema),
+    case jesse_json_path:value(IdKey, Schema, undefined) of
+        undefined ->
+            Default;
+        Id ->
+            erlang:binary_to_list(Id)
+    end.
+
 
 %%=============================================================================
 %% Wrappers
 %% @private
 get_value(Key, Schema) ->
-  jesse_json_path:value(Key, Schema, ?not_found).
+    jesse_json_path:value(Key, Schema, ?not_found).
+
 
 %% @private
 unwrap(Value) ->
-  jesse_json_path:unwrap_value(Value).
+    jesse_json_path:unwrap_value(Value).

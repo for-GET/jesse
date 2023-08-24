@@ -24,46 +24,43 @@
 -module(jesse_state).
 
 %% API
--export([ add_to_path/2
-        , get_allowed_errors/1
-        , get_external_validator/1
-        , get_current_path/1
-        , get_current_schema/1
-        , get_current_schema_id/1
-        , get_default_schema_ver/1
-        , get_error_handler/1
-        , get_error_list/1
-        , new/2
-        , remove_last_from_path/1
-        , set_allowed_errors/2
-        , set_current_schema/2
-        , set_error_list/2
-        , resolve_ref/2
-        , undo_resolve_ref/2
-        , canonical_path/2
-        , combine_id/2
-        ]).
+-export([add_to_path/2,
+         get_allowed_errors/1,
+         get_external_validator/1,
+         get_current_path/1,
+         get_current_schema/1,
+         get_current_schema_id/1,
+         get_default_schema_ver/1,
+         get_error_handler/1,
+         get_error_list/1,
+         new/2,
+         remove_last_from_path/1,
+         set_allowed_errors/2,
+         set_current_schema/2,
+         set_error_list/2,
+         resolve_ref/2,
+         undo_resolve_ref/2,
+         canonical_path/2,
+         combine_id/2]).
 
--export_type([ state/0
-             ]).
+-export_type([state/0]).
 
 %% Includes
 -include("jesse_schema_validator.hrl").
 
 %% Internal datastructures
--record( state
-       , { allowed_errors :: jesse:allowed_errors()
-         , current_path :: current_path()
-         , current_schema :: jesse:schema()
-         , default_schema_ver :: jesse:schema_ver()
-         , error_handler :: jesse:error_handler()
-         , error_list :: jesse:error_list()
-         , external_validator :: jesse:external_validator()
-         , id :: jesse:schema_id()
-         , root_schema :: jesse:schema()
-         , schema_loader_fun :: jesse:schema_loader_fun()
-         }
-       ).
+-record(state, {
+          allowed_errors :: jesse:allowed_errors(),
+          current_path :: current_path(),
+          current_schema :: jesse:schema(),
+          default_schema_ver :: jesse:schema_ver(),
+          error_handler :: jesse:error_handler(),
+          error_list :: jesse:error_list(),
+          external_validator :: jesse:external_validator(),
+          id :: jesse:schema_id(),
+          root_schema :: jesse:schema(),
+          schema_loader_fun :: jesse:schema_loader_fun()
+         }).
 
 %% current path in reversed order
 -type current_path() :: [current_path_item()].
@@ -71,376 +68,402 @@
 
 -opaque state() :: #state{}.
 
+
 %%% API
 %% @doc Adds `Property' to the `current_path' in `State'.
--spec add_to_path( State :: state()
-                 , Item :: current_path_item()
-                 ) -> state().
+-spec add_to_path(State :: state(),
+                  Item :: current_path_item()) -> state().
 add_to_path(State, Item) ->
-  CurrentPath = State#state.current_path,
-  State#state{current_path = [Item | CurrentPath]}.
+    CurrentPath = State#state.current_path,
+    State#state{current_path = [Item | CurrentPath]}.
+
 
 %% @doc Getter for `allowed_errors'.
 -spec get_allowed_errors(State :: state()) -> jesse:allowed_errors().
 get_allowed_errors(#state{allowed_errors = AllowedErrors}) ->
-  AllowedErrors.
+    AllowedErrors.
+
 
 %% @doc Getter for `current_path'.
 -spec get_current_path(State :: state()) -> current_path().
 get_current_path(#state{current_path = CurrentPath}) ->
-  CurrentPath.
+    CurrentPath.
+
 
 %% @doc Getter for `current_schema'.
 -spec get_current_schema(State :: state()) -> jesse:schema().
 get_current_schema(#state{current_schema = CurrentSchema}) ->
-  CurrentSchema.
+    CurrentSchema.
+
 
 %% @doc Getter for `current_schema_id'.
 -spec get_current_schema_id(State :: state()) -> jesse:schema_id().
-get_current_schema_id(#state{ current_schema = CurrentSchema
-                            , root_schema = RootSchema
-                            }) ->
-  Default = jesse_lib:get_schema_id(RootSchema),
-  jesse_lib:get_schema_id(CurrentSchema, Default).
+get_current_schema_id(#state{
+                        current_schema = CurrentSchema,
+                        root_schema = RootSchema
+                       }) ->
+    Default = jesse_lib:get_schema_id(RootSchema),
+    jesse_lib:get_schema_id(CurrentSchema, Default).
+
 
 %% @doc Getter for `default_schema_ver'.
 -spec get_default_schema_ver(State :: state()) -> jesse:schema_ver().
 get_default_schema_ver(#state{default_schema_ver = SchemaVer}) ->
-  SchemaVer.
+    SchemaVer.
+
 
 %% @doc Getter for `error_handler'.
 -spec get_error_handler(State :: state()) -> jesse:error_handler().
 get_error_handler(#state{error_handler = ErrorHandler}) ->
-  ErrorHandler.
+    ErrorHandler.
+
 
 %% @doc Getter for `error_list'.
 -spec get_error_list(State :: state()) -> jesse:error_list().
 get_error_list(#state{error_list = ErrorList}) ->
-  ErrorList.
+    ErrorList.
+
 
 %% @doc Returns newly created state.
--spec new( JsonSchema :: jesse:schema()
-         , Options :: jesse:options()
-         ) -> state().
+-spec new(JsonSchema :: jesse:schema(),
+          Options :: jesse:options()) -> state().
 new(JsonSchema, Options) ->
-  AllowedErrors = proplists:get_value( allowed_errors
-                                     , Options
-                                     , 0
-                                     ),
-  MetaSchemaVer = jesse_json_path:value( ?SCHEMA
-                                       , JsonSchema
-                                       , ?default_schema_ver
-                                       ),
-  DefaultSchemaVer = proplists:get_value( default_schema_ver
-                                        , Options
-                                        , MetaSchemaVer
-                                        ),
-  ErrorHandler = proplists:get_value( error_handler
-                                    , Options
-                                    , ?default_error_handler_fun
-                                    ),
-  ExternalValidator = proplists:get_value( external_validator
-                                         , Options
-                                         ),
-  LoaderFun = proplists:get_value( schema_loader_fun
-                                 , Options
-                                 , ?default_schema_loader_fun
-                                 ),
-  NewState = #state{ root_schema        = JsonSchema
-                   , current_path       = []
-                   , allowed_errors     = AllowedErrors
-                   , error_list         = []
-                   , error_handler      = ErrorHandler
-                   , default_schema_ver = DefaultSchemaVer
-                   , schema_loader_fun  = LoaderFun
-                   , external_validator = ExternalValidator
-                   },
-  set_current_schema(NewState, JsonSchema).
+    AllowedErrors = proplists:get_value(allowed_errors,
+                                        Options,
+                                        0),
+    MetaSchemaVer = jesse_json_path:value(?SCHEMA,
+                                          JsonSchema,
+                                          ?default_schema_ver),
+    DefaultSchemaVer = proplists:get_value(default_schema_ver,
+                                           Options,
+                                           MetaSchemaVer),
+    ErrorHandler = proplists:get_value(error_handler,
+                                       Options,
+                                       ?default_error_handler_fun),
+    ExternalValidator = proplists:get_value(external_validator,
+                                            Options),
+    LoaderFun = proplists:get_value(schema_loader_fun,
+                                    Options,
+                                    ?default_schema_loader_fun),
+    NewState = #state{
+                 root_schema = JsonSchema,
+                 current_path = [],
+                 allowed_errors = AllowedErrors,
+                 error_list = [],
+                 error_handler = ErrorHandler,
+                 default_schema_ver = DefaultSchemaVer,
+                 schema_loader_fun = LoaderFun,
+                 external_validator = ExternalValidator
+                },
+    set_current_schema(NewState, JsonSchema).
+
 
 %% @doc Removes the last element from `current_path' in `State'.
 -spec remove_last_from_path(State :: state()) -> state().
 remove_last_from_path(State = #state{current_path = [_Property | Path]}) ->
-  State#state{current_path = Path}.
+    State#state{current_path = Path}.
+
 
 %% @doc Setter for `allowed_errors'.
--spec set_allowed_errors( State :: state()
-                        , AllowedErrors :: jesse:allowed_errors()
-                        ) -> state().
+-spec set_allowed_errors(State :: state(),
+                         AllowedErrors :: jesse:allowed_errors()) -> state().
 set_allowed_errors(#state{} = State, AllowedErrors) ->
-  State#state{allowed_errors = AllowedErrors}.
+    State#state{allowed_errors = AllowedErrors}.
+
 
 %% @doc Setter for `current_schema'.
--spec set_current_schema( State :: state()
-                        , NewSchema :: jesse:schema()
-                        ) -> state().
+-spec set_current_schema(State :: state(),
+                         NewSchema :: jesse:schema()) -> state().
 set_current_schema(#state{id = Id} = State, NewSchema0) ->
-  NewSchema =
-    case jesse_json_path:value(?REF, NewSchema0, undefined) of
-      undefined ->
-        NewSchema0;
-      Ref ->
-        %% Instead of just removing all the other fields, we put schema as
-        %% 1st element, so, only `ref' will be validated, while other fields
-        %% (say, `definitions') may still be referenced.
-        ListSchema = jesse_json_path:unwrap_value(NewSchema0),
-        [{?REF, Ref} | lists:keydelete(?REF, 1, ListSchema)]
-    end,
-  IdTag = case schema_from_json(NewSchema) of
-          ?json_schema_draft6 -> ?ID;
-                            _ -> ?ID_OLD
-          end,
-  NewSchemaId = jesse_json_path:value(IdTag, NewSchema, undefined),
-  NewId = combine_id(Id, NewSchemaId),
-  State#state{current_schema = NewSchema, id = NewId}.
+    NewSchema =
+        case jesse_json_path:value(?REF, NewSchema0, undefined) of
+            undefined ->
+                NewSchema0;
+            Ref ->
+                %% Instead of just removing all the other fields, we put schema as
+                %% 1st element, so, only `ref' will be validated, while other fields
+                %% (say, `definitions') may still be referenced.
+                ListSchema = jesse_json_path:unwrap_value(NewSchema0),
+                [{?REF, Ref} | lists:keydelete(?REF, 1, ListSchema)]
+        end,
+    IdTag = case schema_from_json(NewSchema) of
+                ?json_schema_draft6 -> ?ID;
+                _ -> ?ID_OLD
+            end,
+    NewSchemaId = jesse_json_path:value(IdTag, NewSchema, undefined),
+    NewId = combine_id(Id, NewSchemaId),
+    State#state{current_schema = NewSchema, id = NewId}.
+
 
 schema_from_json(JsonSchema) ->
-  case jesse_json_path:value(?SCHEMA, JsonSchema, ?not_found) of
-    ?not_found -> ?default_schema_ver;
-    SchemaVer  -> SchemaVer
-  end.
+    case jesse_json_path:value(?SCHEMA, JsonSchema, ?not_found) of
+        ?not_found -> ?default_schema_ver;
+        SchemaVer -> SchemaVer
+    end.
+
 
 %% @doc Setter for `error_list'.
--spec set_error_list( State :: state()
-                    , ErrorList :: jesse:error_list()
-                    ) -> state().
+-spec set_error_list(State :: state(),
+                     ErrorList :: jesse:error_list()) -> state().
 set_error_list(State, ErrorList) ->
-  State#state{error_list = ErrorList}.
+    State#state{error_list = ErrorList}.
+
 
 %% @doc Resolve a reference.
 -spec resolve_ref(State :: state(), Reference :: jesse:schema_ref()) -> state().
 resolve_ref(State, Reference) ->
-  Id = State#state.id,
-  CanonicalReference = combine_id(Id, Reference),
-  [BaseURI | Pointer] = re:split( CanonicalReference
-                                , <<$#>>
-                                , [{return, binary}, unicode]
-                                ),
-  IsLocalReference =
-    case Id of
-      undefined ->
-        BaseURI =:= <<"">>;
-      _ ->
-        binary_to_list(BaseURI) =:= Id
-    end,
-  {State1, BaseSchema} =
-    case IsLocalReference of
-      true ->
-        {State, State#state.root_schema};
-      false ->
-        case load_schema(State, BaseURI) of
-          ?not_found ->
-            jesse_error:handle_schema_invalid( { ?schema_not_found
-                                               , CanonicalReference}
-                                             , State
-                                             );
-          RemoteSchema ->
-            SchemaVer =
-              jesse_json_path:value(
-                ?SCHEMA, RemoteSchema, State#state.default_schema_ver),
-            RemoteState = State#state{ root_schema = RemoteSchema
-                                  , id = BaseURI
-                                  , default_schema_ver = SchemaVer
-                                  },
-            {RemoteState, RemoteSchema}
-        end
-    end,
-  Path = jesse_json_path:parse(Pointer),
-  try load_local_schema(set_current_schema(State1, BaseSchema), Path)
-  catch throw:?not_found ->
-      jesse_error:handle_schema_invalid( { ?schema_not_found
-                                         , CanonicalReference}
-                                       , State1
-                                       )
-  end.
+    Id = State#state.id,
+    CanonicalReference = combine_id(Id, Reference),
+    [BaseURI | Pointer] = re:split(CanonicalReference,
+                                   <<$#>>,
+                                   [{return, binary}, unicode]),
+    IsLocalReference =
+        case Id of
+            undefined ->
+                BaseURI =:= <<"">>;
+            _ ->
+                binary_to_list(BaseURI) =:= Id
+        end,
+    {State1, BaseSchema} =
+        case IsLocalReference of
+            true ->
+                {State, State#state.root_schema};
+            false ->
+                case load_schema(State, BaseURI) of
+                    ?not_found ->
+                        jesse_error:handle_schema_invalid({?schema_not_found,
+                                                           CanonicalReference},
+                                                          State);
+                    RemoteSchema ->
+                        SchemaVer =
+                            jesse_json_path:value(
+                              ?SCHEMA, RemoteSchema, State#state.default_schema_ver),
+                        RemoteState = State#state{
+                                        root_schema = RemoteSchema,
+                                        id = BaseURI,
+                                        default_schema_ver = SchemaVer
+                                       },
+                        {RemoteState, RemoteSchema}
+                end
+        end,
+    Path = jesse_json_path:parse(Pointer),
+    try
+        load_local_schema(set_current_schema(State1, BaseSchema), Path)
+    catch
+        throw:?not_found ->
+            jesse_error:handle_schema_invalid({?schema_not_found,
+                                               CanonicalReference},
+                                              State1)
+    end.
+
 
 %% @doc Revert changes made by resolve_reference.
 -spec undo_resolve_ref(state(), state()) -> state().
 undo_resolve_ref(RefState, OriginalState) ->
-  RefState#state{ root_schema = OriginalState#state.root_schema
-                , current_schema = OriginalState#state.current_schema
-                , default_schema_ver = OriginalState#state.default_schema_ver
-                , id = OriginalState#state.id
-                }.
+    RefState#state{
+      root_schema = OriginalState#state.root_schema,
+      current_schema = OriginalState#state.current_schema,
+      default_schema_ver = OriginalState#state.default_schema_ver,
+      id = OriginalState#state.id
+     }.
+
 
 %% @doc Retrieve a specific part of a schema
 %% @private
--spec load_local_schema( Schema :: state() | ?not_found
-                       , Path :: [binary()]
-                       ) -> not_found | jesse:json_term().
+-spec load_local_schema(Schema :: state() | ?not_found,
+                        Path :: [binary()]) -> not_found | jesse:json_term().
 load_local_schema(St, []) ->
-  St;
+    St;
 load_local_schema(St, [<<>> | Keys]) ->
-  load_local_schema(St, Keys);
+    load_local_schema(St, Keys);
 load_local_schema(St, [Key | Keys]) ->
-  Schema = get_current_schema(St),
-  SubSchema = jesse_json_path:value(Key, Schema, ?not_found),
-  (SubSchema =/= ?not_found) orelse throw(?not_found),
-  {ObjectSubSchema, Keys1} =
-    case jesse_lib:is_json_object(SubSchema) of
-      true  ->
-        {SubSchema, Keys};
-      false ->
-        choose_array(SubSchema, Keys)
-    end,
-  load_local_schema(
-    set_current_schema(St, ObjectSubSchema),
-    Keys1).
+    Schema = get_current_schema(St),
+    SubSchema = jesse_json_path:value(Key, Schema, ?not_found),
+    (SubSchema =/= ?not_found) orelse throw(?not_found),
+    {ObjectSubSchema, Keys1} =
+        case jesse_lib:is_json_object(SubSchema) of
+            true ->
+                {SubSchema, Keys};
+            false ->
+                choose_array(SubSchema, Keys)
+        end,
+    load_local_schema(
+      set_current_schema(St, ObjectSubSchema),
+      Keys1).
+
 
 choose_array(SubSchema, [Key | Keys] = AllKeys) ->
-  case jesse_lib:is_array(SubSchema) of
-    true ->
-      try binary_to_integer(Key) of
-        Index ->
-          choose_array(lists:nth(Index + 1, SubSchema), Keys)
-      catch
-        _:_ -> throw(?not_found)
-      end;
-    false ->
-      case jesse_lib:is_json_object(SubSchema) of
+    case jesse_lib:is_array(SubSchema) of
         true ->
-          {SubSchema, AllKeys};
+            try binary_to_integer(Key) of
+                Index ->
+                    choose_array(lists:nth(Index + 1, SubSchema), Keys)
+            catch
+                _:_ -> throw(?not_found)
+            end;
         false ->
-          throw(?not_found)
-      end
-  end;
+            case jesse_lib:is_json_object(SubSchema) of
+                true ->
+                    {SubSchema, AllKeys};
+                false ->
+                    throw(?not_found)
+            end
+    end;
 choose_array(Schema, []) ->
-  {Schema, []}.
+    {Schema, []}.
+
 
 %% github.com/erlang/otp/blob/OTP-20.2.3/lib/inets/doc/src/http_uri.xml#L57
 -type http_uri_uri() :: string() | unicode:unicode_binary().
+
 
 %% @doc Resolve a new id
 %% @private
 -spec combine_id(undefined | http_uri_uri(),
                  undefined | string() | binary()) -> http_uri_uri().
 combine_id(Id, undefined) ->
-  Id;
+    Id;
 combine_id(Id, RefBin) ->
-  case parse_ref(RefBin) of
-    {absolute, Ref} ->
-      Ref;
-    %% Relative
-    {relative, Ref} ->
-      combine_relative_id(Id, Ref)
-  end.
+    case parse_ref(RefBin) of
+        {absolute, Ref} ->
+            Ref;
+        %% Relative
+        {relative, Ref} ->
+            combine_relative_id(Id, Ref)
+    end.
+
 
 %% @doc Combine a relative id
 %% @private
 combine_relative_id(IdBin, RelId) when is_binary(IdBin) ->
-  combine_relative_id(unicode:characters_to_list(IdBin), RelId);
+    combine_relative_id(unicode:characters_to_list(IdBin), RelId);
 combine_relative_id(undefined, RelId) ->
-  RelId;
+    RelId;
 combine_relative_id(Id, "#" ++ Fragment) ->
-  [WithoutFragment | _] = re:split(Id, "#", [{return, list}]),
-  WithoutFragment ++ "#" ++ Fragment;
+    [WithoutFragment | _] = re:split(Id, "#", [{return, list}]),
+    WithoutFragment ++ "#" ++ Fragment;
 combine_relative_id(Id, RelId) ->
-  Base = filename:dirname(Id),
-  combine_relative_id2(Base, RelId).
+    Base = filename:dirname(Id),
+    combine_relative_id2(Base, RelId).
+
 
 %% @doc Combine a relative id
 %% @private
 combine_relative_id2("file:", RelId) ->
-  canonical_path(RelId, "file:");
+    canonical_path(RelId, "file:");
 combine_relative_id2("file://" ++ Path, RelId) ->
-  canonical_path(filename:join([Path, RelId]), "file:");
+    canonical_path(filename:join([Path, RelId]), "file:");
 combine_relative_id2("http:", RelId) ->
-  canonical_path(RelId, "http:");
+    canonical_path(RelId, "http:");
 combine_relative_id2("http://" ++ Path, RelId) ->
-  canonical_path(Path ++ [$/, RelId], "http:");
+    canonical_path(Path ++ [$/, RelId], "http:");
 combine_relative_id2("https:", RelId) ->
-  canonical_path(RelId, "https:");
+    canonical_path(RelId, "https:");
 combine_relative_id2("https://" ++ Path, RelId) ->
-  canonical_path(Path ++ [$/, RelId], "https:");
+    canonical_path(Path ++ [$/, RelId], "https:");
 combine_relative_id2(".", RelId) ->
-  canonical_path(RelId, "file:");
+    canonical_path(RelId, "file:");
 combine_relative_id2(Path, RelId) ->
-  canonical_path(filename:join([Path, RelId]), "file:").
+    canonical_path(filename:join([Path, RelId]), "file:").
+
 
 %% @doc Return a canonical URI path.
 %% @private
 canonical_path("file://" ++ Path, _) ->
-  "file://" ++ filename:join(raw_canonical_path(Path));
+    "file://" ++ filename:join(raw_canonical_path(Path));
 canonical_path(Path, "file:" ++ _) ->
-  "file://" ++ filename:join(raw_canonical_path(Path));
+    "file://" ++ filename:join(raw_canonical_path(Path));
 canonical_path("http://" ++ Path, _) ->
-  "http://" ++ string:join(raw_canonical_path(Path), "/");
+    "http://" ++ string:join(raw_canonical_path(Path), "/");
 canonical_path(Path, "http:" ++ _) ->
-  "http://" ++ string:join(raw_canonical_path(Path), "/");
+    "http://" ++ string:join(raw_canonical_path(Path), "/");
 canonical_path("https://" ++ Path, _) ->
-  "https://" ++ string:join(raw_canonical_path(Path), "/");
+    "https://" ++ string:join(raw_canonical_path(Path), "/");
 canonical_path(Path, "https:" ++ _) ->
-  "https://" ++ string:join(raw_canonical_path(Path), "/");
+    "https://" ++ string:join(raw_canonical_path(Path), "/");
 canonical_path(Path, _) ->
-  "file://" ++ filename:join(raw_canonical_path(filename:absname(Path))).
+    "file://" ++ filename:join(raw_canonical_path(filename:absname(Path))).
+
 
 %% @doc Return a raw canonical path.
 %% @private
 raw_canonical_path(Path) ->
-  PathItems = re:split(Path, "\\\\|/", [{return, list}]),
-  raw_canonical_path2(PathItems, []).
+    PathItems = re:split(Path, "\\\\|/", [{return, list}]),
+    raw_canonical_path2(PathItems, []).
+
 
 %% @doc Return a raw canonical path.
 %% @private
 raw_canonical_path2([], Acc) ->
     lists:reverse(Acc);
-raw_canonical_path2([H|T], Acc) ->
-  case H of
-    "." ->
-      raw_canonical_path2(T, Acc);
-    ".." ->
-      raw_canonical_path2(T, tl(Acc));
-    _ ->
-      raw_canonical_path2(T, [H|Acc])
-  end.
+raw_canonical_path2([H | T], Acc) ->
+    case H of
+        "." ->
+            raw_canonical_path2(T, Acc);
+        ".." ->
+            raw_canonical_path2(T, tl(Acc));
+        _ ->
+            raw_canonical_path2(T, [H | Acc])
+    end.
+
 
 %% @doc Load a schema based on URI
--spec load_schema( State :: state()
-                 , SchemaURI :: string() | binary()
-                 ) -> jesse:schema()
-                    | ?not_found.
+-spec load_schema(State :: state(),
+                  SchemaURI :: string() | binary()) -> jesse:schema() |
+                                                       ?not_found.
 load_schema(State, SchemaURI) when is_binary(SchemaURI) ->
-  load_schema(State, unicode:characters_to_list(SchemaURI));
+    load_schema(State, unicode:characters_to_list(SchemaURI));
 load_schema(#state{schema_loader_fun = LoaderFun}, SchemaURI) ->
-  try LoaderFun(SchemaURI) of
-      {ok, Schema} ->
-        Schema;
-      Schema ->
-        case jesse_lib:is_json_object(Schema) of
-          true ->
+    try LoaderFun(SchemaURI) of
+        {ok, Schema} ->
             Schema;
-          false ->
+        Schema ->
+            case jesse_lib:is_json_object(Schema) of
+                true ->
+                    Schema;
+                false ->
+                    ?not_found
+            end
+    catch
+        _C:_E ->
             ?not_found
-        end
-  catch
-    _C:_E ->
-      ?not_found
-  end.
+    end.
+
 
 %% @private
 get_external_validator(#state{external_validator = Fun}) ->
-  Fun.
+    Fun.
+
 
 %% @private
--ifdef(OTP_RELEASE). %% OTP 21+
+-ifdef(OTP_RELEASE).  %% OTP 21+
+
+
 parse_ref(RefBin) ->
-  Ref = unicode:characters_to_list(RefBin),
-  case uri_string:parse(Ref) of
-    #{scheme := _} ->
-      {absolute, Ref};
-    _ ->
-      {relative, Ref}
-  end.
+    Ref = unicode:characters_to_list(RefBin),
+    case uri_string:parse(Ref) of
+        #{scheme := _} ->
+            {absolute, Ref};
+        _ ->
+            {relative, Ref}
+    end.
+
+
 -else.
+
+
 parse_ref(RefBin) ->
-  Ref = unicode:characters_to_list(RefBin),
-  case http_uri:parse(Ref) of
-    %% Absolute http/s:
-    {ok, _} ->
-      {absolute, Ref};
-    %% Absolute file:
-    {error, {no_default_port, file, Ref}} ->
-      {absolute, Ref};
-    _ ->
-      {relative, Ref}
-  end.
+    Ref = unicode:characters_to_list(RefBin),
+    case http_uri:parse(Ref) of
+        %% Absolute http/s:
+        {ok, _} ->
+            {absolute, Ref};
+        %% Absolute file:
+        {error, {no_default_port, file, Ref}} ->
+            {absolute, Ref};
+        _ ->
+            {relative, Ref}
+    end.
+
+
 -endif.

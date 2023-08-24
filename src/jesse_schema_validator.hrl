@@ -30,16 +30,16 @@
 
 %% Use optimization for sets if available
 -ifdef(OTP_RELEASE).
-  -if(?OTP_RELEASE >= 24).
-  %% OTP 24 or higher
-    -define(SET_FROM_LIST(List), sets:from_list(List, [{version, 2}])).
-  -else.
-  %% OTP 23, 22 or 21.
-    -define(SET_FROM_LIST(List), sets:from_list(List)).
-  -endif.
+-if(?OTP_RELEASE >= 24).
+%% OTP 24 or higher
+-define(SET_FROM_LIST(List), sets:from_list(List, [{version, 2}])).
 -else.
-  %% OTP 20 or lower.
-  -define(SET_FROM_LIST(List), sets:from_list(List)).
+%% OTP 23, 22 or 21.
+-define(SET_FROM_LIST(List), sets:from_list(List)).
+-endif.
+-else.
+%% OTP 20 or lower.
+-define(SET_FROM_LIST(List), sets:from_list(List)).
 -endif.
 
 %% Constant definitions for Json schema keywords
@@ -66,8 +66,8 @@
 -define(MINLENGTH,            <<"minLength">>).
 -define(MAXLENGTH,            <<"maxLength">>).
 -define(ENUM,                 <<"enum">>).
--define(CONST,                 <<"const">>).
--define(FORMAT,               <<"format">>).               % NOT IMPLEMENTED YET
+-define(CONST,                <<"const">>).
+-define(FORMAT,               <<"format">>).  % NOT IMPLEMENTED YET
 -define(DIVISIBLEBY,          <<"divisibleBy">>).
 -define(DISALLOW,             <<"disallow">>).
 -define(EXTENDS,              <<"extends">>).
@@ -83,42 +83,42 @@
 -define(MINPROPERTIES,        <<"minProperties">>).
 
 %% Constant definitions for Json types
--define(ANY,                  <<"any">>).
--define(ARRAY,                <<"array">>).
--define(BOOLEAN,              <<"boolean">>).
--define(INTEGER,              <<"integer">>).
--define(NULL,                 <<"null">>).
--define(NUMBER,               <<"number">>).
--define(OBJECT,               <<"object">>).
--define(STRING,               <<"string">>).
+-define(ANY,     <<"any">>).
+-define(ARRAY,   <<"array">>).
+-define(BOOLEAN, <<"boolean">>).
+-define(INTEGER, <<"integer">>).
+-define(NULL,    <<"null">>).
+-define(NUMBER,  <<"number">>).
+-define(OBJECT,  <<"object">>).
+-define(STRING,  <<"string">>).
 
 %% Supported $schema attributes
--define(json_schema_draft3, <<"http://json-schema.org/draft-03/schema#">>).
--define(json_schema_draft4, <<"http://json-schema.org/draft-04/schema#">>).
--define(json_schema_draft6, <<"http://json-schema.org/draft-06/schema#">>).
--define(default_schema_ver, ?json_schema_draft3).
+-define(json_schema_draft3,        <<"http://json-schema.org/draft-03/schema#">>).
+-define(json_schema_draft4,        <<"http://json-schema.org/draft-04/schema#">>).
+-define(json_schema_draft6,        <<"http://json-schema.org/draft-06/schema#">>).
+-define(default_schema_ver,        ?json_schema_draft3).
 -define(default_schema_loader_fun, fun jesse_database:load_uri/1).
 -define(default_error_handler_fun, fun jesse_error:default_error_handler/3).
 
 %% Constant definitions for schema errors
--define(invalid_dependency,          'invalid_dependency').
--define(only_ref_allowed,            'only_ref_allowed').
--define(schema_error,                'schema_error').
--define(schema_invalid,              'schema_invalid').
--define(schema_not_found,            'schema_not_found').
--define(schema_unsupported,          'schema_unsupported').
--define(wrong_all_of_schema_array,   'wrong_all_of_schema_array').
--define(wrong_any_of_schema_array,   'wrong_any_of_schema_array').
--define(wrong_max_properties,        'wrong_max_properties').
--define(wrong_min_properties,        'wrong_min_properties').
--define(wrong_multiple_of,           'wrong_multiple_of').
--define(wrong_one_of_schema_array,   'wrong_one_of_schema_array').
--define(wrong_required_array,        'wrong_required_array').
--define(wrong_type_dependency,       'wrong_type_dependency').
--define(wrong_type_items,            'wrong_type_items').
--define(wrong_type_specification,    'wrong_type_specification').
--define(wrong_draft6_id_tag,         'wrong_draft6_id_tag').
--define(wrong_draft4_id_tag,         'wrong_draft4_id_tag').
+-define(invalid_dependency,        'invalid_dependency').
+-define(only_ref_allowed,          'only_ref_allowed').
+-define(schema_error,              'schema_error').
+-define(schema_invalid,            'schema_invalid').
+-define(schema_not_found,          'schema_not_found').
+-define(schema_unsupported,        'schema_unsupported').
+-define(wrong_all_of_schema_array, 'wrong_all_of_schema_array').
+-define(wrong_any_of_schema_array, 'wrong_any_of_schema_array').
+-define(wrong_max_properties,      'wrong_max_properties').
+-define(wrong_min_properties,      'wrong_min_properties').
+-define(wrong_multiple_of,         'wrong_multiple_of').
+-define(wrong_one_of_schema_array, 'wrong_one_of_schema_array').
+-define(wrong_required_array,      'wrong_required_array').
+-define(wrong_type_dependency,     'wrong_type_dependency').
+-define(wrong_type_items,          'wrong_type_items').
+-define(wrong_type_specification,  'wrong_type_specification').
+-define(wrong_draft6_id_tag,       'wrong_draft6_id_tag').
+-define(wrong_draft4_id_tag,       'wrong_draft4_id_tag').
 
 %% Constant definitions for data errors
 -define(data_error,                  'data_error').
@@ -150,5 +150,5 @@
 -define(external,                    'external').
 
 %%
--define(not_found,                   'not_found').
--define(infinity,                    'infinity').
+-define(not_found, 'not_found').
+-define(infinity,  'infinity').

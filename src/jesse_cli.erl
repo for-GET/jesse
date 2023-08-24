@@ -33,90 +33,89 @@
 
 -include("jesse_schema_validator.hrl").
 
+
 main([]) ->
-  main(["--help"]);
+    main(["--help"]);
 main(["-h"]) ->
-  main(["--help"]);
+    main(["--help"]);
 main(["--help"]) ->
-  io:fwrite( "Usage: ~s [--json] [path_to_json_schema] path_to_json_schema -- "
-             "path_to_json_instance [path_to_json_instance] ~n"
-           , [escript:script_name()]
-           );
+    io:fwrite("Usage: ~s [--json] [path_to_json_schema] path_to_json_schema -- "
+              "path_to_json_instance [path_to_json_instance] ~n",
+              [escript:script_name()]);
 main(Options) ->
-  main(Options, [], [], []).
+    main(Options, [], [], []).
 
-main(["--json"|Rest], Options, [], []) ->
-  main(Rest, Options ++ [{json, true}], [], []);
 
-main(["--"|JsonInstances], Options, Schemata, []) ->
-  run(Options, Schemata, JsonInstances);
-main([Schema|Rest], Options, Schemata, []) ->
-  main(Rest, Options, [Schema|Schemata], []).
+main(["--json" | Rest], Options, [], []) ->
+    main(Rest, Options ++ [{json, true}], [], []);
+
+main(["--" | JsonInstances], Options, Schemata, []) ->
+    run(Options, Schemata, JsonInstances);
+main([Schema | Rest], Options, Schemata, []) ->
+    main(Rest, Options, [Schema | Schemata], []).
+
 
 %%%_* Internal =================================================================
 
+
 run(_Options, _Schemata, []) ->
-  ok;
-run(Options, [Schema|_] = Schemata, [JsonInstance|JsonInstances]) ->
-  JesseResult = jesse_run(JsonInstance, Schema, Schemata),
-  Result = case JesseResult of
-             {ok, _} ->
-               [ {filename, list_to_binary(JsonInstance)}
-               , {result, ok}
-               ];
-             {error, Reasons} ->
-               JsxReasons = lists:map(fun jesse_error:reason_to_jsx/1, Reasons),
-               [ {filename, list_to_binary(JsonInstance)}
-               , {result, error}
-               , {errors, JsxReasons}
-               ]
-           end,
-  case proplists:get_value(json, Options) of
-    undefined ->
-      io:fwrite("~p\n\n", [Result]);
-    true ->
-      io:fwrite("~s\n\n", [jsx:encode(Result)])
-  end,
-  case JesseResult of
-    {ok, _} ->
-      run(Options, Schemata, JsonInstances);
-    _ ->
-      %% init:stop not setting status code correctly
-      %% init:stop(1)
-      halt(1)
-  end.
+    ok;
+run(Options, [Schema | _] = Schemata, [JsonInstance | JsonInstances]) ->
+    JesseResult = jesse_run(JsonInstance, Schema, Schemata),
+    Result = case JesseResult of
+                 {ok, _} ->
+                     [{filename, list_to_binary(JsonInstance)},
+                      {result, ok}];
+                 {error, Reasons} ->
+                     JsxReasons = lists:map(fun jesse_error:reason_to_jsx/1, Reasons),
+                     [{filename, list_to_binary(JsonInstance)},
+                      {result, error},
+                      {errors, JsxReasons}]
+             end,
+    case proplists:get_value(json, Options) of
+        undefined ->
+            io:fwrite("~p\n\n", [Result]);
+        true ->
+            io:fwrite("~s\n\n", [jsx:encode(Result)])
+    end,
+    case JesseResult of
+        {ok, _} ->
+            run(Options, Schemata, JsonInstances);
+        _ ->
+            %% init:stop not setting status code correctly
+            %% init:stop(1)
+            halt(1)
+    end.
+
 
 jesse_run(JsonInstance, Schema, Schemata) ->
-  {ok, _} = application:ensure_all_started(jesse),
-  ok = add_schemata(Schemata),
-  {ok, JsonInstanceBinary} = file:read_file(JsonInstance),
-  JsonInstanceJsx = jsx:decode(JsonInstanceBinary, [{return_maps, false}]),
-  jesse:validate( Schema
-                , JsonInstanceJsx
-                ).
+    {ok, _} = application:ensure_all_started(jesse),
+    ok = add_schemata(Schemata),
+    {ok, JsonInstanceBinary} = file:read_file(JsonInstance),
+    JsonInstanceJsx = jsx:decode(JsonInstanceBinary, [{return_maps, false}]),
+    jesse:validate(Schema,
+                   JsonInstanceJsx).
+
 
 add_schemata([]) ->
-  ok;
-add_schemata([SchemaFile|Rest]) ->
-  {ok, SchemaBin} = file:read_file(SchemaFile),
-  Schema0 = jsx:decode(SchemaBin, [{return_maps, false}]),
-  Schema = maybe_fill_schema_id(SchemaFile, Schema0),
-  ok = jesse:add_schema(SchemaFile, Schema),
-  add_schemata(Rest).
+    ok;
+add_schemata([SchemaFile | Rest]) ->
+    {ok, SchemaBin} = file:read_file(SchemaFile),
+    Schema0 = jsx:decode(SchemaBin, [{return_maps, false}]),
+    Schema = maybe_fill_schema_id(SchemaFile, Schema0),
+    ok = jesse:add_schema(SchemaFile, Schema),
+    add_schemata(Rest).
+
 
 maybe_fill_schema_id(SchemaFile, Schema) ->
-  SchemaFqdn = "file://" ++ filename:absname(SchemaFile),
-  Version = jesse_json_path:value(<<"$schema">>, Schema, undefined),
-  Id = jesse_lib:get_schema_id(Schema),
-  case {Version, Id} of
-    {?json_schema_draft6, undefined} ->
-      [ {?ID, unicode:characters_to_binary(SchemaFqdn)}
-        | Schema
-      ];
-    {_, undefined} ->
-      [ {?ID_OLD, unicode:characters_to_binary(SchemaFqdn)}
-        | Schema
-      ];
-    _ ->
-      Schema
-  end.
+    SchemaFqdn = "file://" ++ filename:absname(SchemaFile),
+    Version = jesse_json_path:value(<<"$schema">>, Schema, undefined),
+    Id = jesse_lib:get_schema_id(Schema),
+    case {Version, Id} of
+        {?json_schema_draft6, undefined} ->
+            [{?ID, unicode:characters_to_binary(SchemaFqdn)} | Schema];
+        {_, undefined} ->
+            [{?ID_OLD, unicode:characters_to_binary(SchemaFqdn)} | Schema];
+        _ ->
+            Schema
+    end.
