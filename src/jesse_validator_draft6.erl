@@ -993,8 +993,8 @@ uri_reference(_Value, State) ->
 %% @private
 check_multiple_of(Value, MultipleOf, State)
   when is_number(MultipleOf), MultipleOf > 0 ->
-  try (Value / MultipleOf - trunc(Value / MultipleOf)) * MultipleOf of
-    0.0 ->
+  try (Value / MultipleOf - trunc(Value / MultipleOf)) * MultipleOf == 0.0 of
+    true ->
       State;
     _   ->
       handle_data_invalid(?not_multiple_of, Value, State)
