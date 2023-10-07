@@ -7,7 +7,8 @@ SRCS := $(wildcard src/* include/* rebar.config)
 .PHONY: all
 all: ebin/jesse.app bin/jesse
 
-# Clean
+.PHONY: ci
+ci: test
 
 .PHONY: clean
 clean:

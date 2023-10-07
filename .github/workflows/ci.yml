@@ -1,87 +1,19 @@
----
-name: CI
+name: ci
+
 on:
   push:
-    branches:
-      - github*
-      - master
-    tags:
-      - '*'
-  pull_request:
-    branches:
-      - '**'
-  schedule:
-    - cron: 0 0 * * *
+    paths-ignore:
+      - "doc/**"
+      - "**.md"
+
 jobs:
   ci:
-    timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      matrix:
-        otp_vsn:
-          - 'slim'
-          - '24.2-slim'
-          - '24.1-slim'
-          - '24.0-slim'
-          - '23.3-slim'
-          - '23.2-slim'
-          - '23.1-slim'
-          - '23-slim'
-          - '22.3-slim'
-          - '22.2-slim'
-          - '22.1-slim'
-          - '22-slim'
-          - '21.3-slim'
-          - '20.3-slim'
-          - '19.3-slim'
-    name: 'ci-erl:${{ matrix.otp_vsn }}'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     container:
-      image: 'erlang:${{ matrix.otp_vsn }}'
+      image: shiguredo/shiguredo-erlang:otp-26.1.3-openssl-3.1.3-ubuntu-22.04-x86_64
     steps:
-      - shell: bash
-        run: |
-          # manually sync with ./Dockerfile.build.sh
-          apt-get update
-          apt-get -y install wget
-          apt-get -y install libz-dev libssl-dev libcurl4-gnutls-dev libexpat1-dev gettext cmake gcc
-          cd /usr/src/
-          wget https://github.com/git/git/archive/v2.18.0.tar.gz -O git.tar.gz
-          tar -xf git.tar.gz
-          (
-            cd git-*
-            make prefix=/usr/local all
-            make prefix=/usr/local install
-          )
-          rm git.tar.gz
-          rm -r git-*
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-      - shell: bash
-        run: make
-      - shell: bash
-        run: make test
-      - if: ${{ matrix.otp_vsn == 'slim' }}
-        shell: bash
-        run: make check docs
-
-      # PUBLISH TAGS
-
-      - if: ${{ startsWith(github.ref, 'refs/tags/') }}
-        name: Check is-semver-tag
-        id: is-semver-tag
-        shell: bash
-        run: |
-          if [[ ${{ github.event.ref }} =~ ^refs/tags/[0-9]+\.[0-9]+\.[0-9]+ ]]; then
-              echo ::set-output name=check::true
-          fi
-      - if: ${{ matrix.otp_vsn == 'slim' && steps.is-semver-tag.outputs.check == 'true'}}
-        name: Run make publish
-        shell: bash
-        env:
-          HEX_API_KEY: ${{secrets.HEX_API_KEY}}
-        run: |
-          mkdir -p ~/.config/rebar3
-          echo "{plugins, [rebar3_hex]}." > ~/.config/rebar3/rebar.config
-          make publish
+          submodules: recursive
+      - run: make ci
