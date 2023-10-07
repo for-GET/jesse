@@ -12,8 +12,7 @@
                   public_key,
                   ssl,
                   inets,
-                  jsx,
-                  rfc3339]},
+                  jsx]},
   {env, [{re_options, [unicode, ucp]}]},
   {licenses, ["Apache-2.0"]},
   {links, [{"Github", "https://github.com/for-GET/jesse"}]}]}.
