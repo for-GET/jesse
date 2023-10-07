@@ -128,37 +128,6 @@ symlinks: test/JSON-Schema-Test-Suite/tests
 	ln -sf ../../test/JSON-Schema-Test-Suite/tests/draft6 standard && \
 	ln -sf ../../test/JSON-Schema-Test-Suite/remotes remotes
 
-.PHONY: rebar3.OTP18
-rebar3.OTP18:
-	$(CURL) -fqsS -L -o $@ https://github.com/erlang/rebar3/releases/download/3.13.3/rebar3
-	$(CHMOD) +x $@
-
-.PHONY: rebar3.OTP19
-rebar3.OTP19:
-	$(CURL) -fqsS -L -o $@ https://github.com/erlang/rebar3/releases/download/3.15.2/rebar3
-	$(CHMOD) +x $@
-
-.PHONY: rebar3.OTP20
-rebar3.OTP20:
-	$(LN) -sf rebar3.OTP19 $@
-
-.PHONY: rebar3.OTP21
-rebar3.OTP21:
-	$(LN) -sf rebar3.OTP19 $@
-
-.PHONY: rebar3.OTP22
-rebar3.OTP22:
-	$(CURL) -fqsS -L -o $@ https://github.com/erlang/rebar3/releases/download/3.16.1/rebar3
-	$(CHMOD) +x $@
-
-.PHONY: rebar3.OTP23
-rebar3.OTP23:
-	$(LN) -sf rebar3.OTP22 $@
-
-.PHONY: rebar3.OTP24
-rebar3.OTP24:
-	$(LN) -sf rebar3.OTP22 $@
-
 .PHONY: docker
 docker:
 	if git tag | grep -q -Fx "$(GIT_DESCRIBE)"; then \
