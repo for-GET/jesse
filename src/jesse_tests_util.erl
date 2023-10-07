@@ -35,11 +35,7 @@
 -define(TESTS,       <<"tests">>).
 -define(VALID,       <<"valid">>).
 
--ifdef(OTP_RELEASE).  %% OTP 21+
 -define(EXCEPTION(C, R, Stacktrace), C:R:Stacktrace ->).
--else.
--define(EXCEPTION(C, R, Stacktrace), C:R -> Stacktrace = erlang:get_stacktrace(),).
--endif.
 
 %%% API
 

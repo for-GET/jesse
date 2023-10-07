@@ -973,25 +973,12 @@ check_format(_Value, _Format, State) ->
     State.
 
 
--ifdef(OTP_RELEASE).
-
-
 uri_reference(Value, State) when is_binary(Value) ->
     case uri_string:parse(Value) of
         {error, _ErrorType, _Term} ->
             handle_data_invalid(?wrong_format, Value, State);
         _ -> State
     end.
-
-
--else.
-
-
-uri_reference(_Value, State) ->
-    State.
-
-
--endif.
 
 
 %% @doc 6.1. multipleOf

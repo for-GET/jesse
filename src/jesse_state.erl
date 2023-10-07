@@ -436,9 +436,6 @@ get_external_validator(#state{external_validator = Fun}) ->
 
 
 %% @private
--ifdef(OTP_RELEASE).  %% OTP 21+
-
-
 parse_ref(RefBin) ->
     Ref = unicode:characters_to_list(RefBin),
     case uri_string:parse(Ref) of
@@ -447,23 +444,3 @@ parse_ref(RefBin) ->
         _ ->
             {relative, Ref}
     end.
-
-
--else.
-
-
-parse_ref(RefBin) ->
-    Ref = unicode:characters_to_list(RefBin),
-    case http_uri:parse(Ref) of
-        %% Absolute http/s:
-        {ok, _} ->
-            {absolute, Ref};
-        %% Absolute file:
-        {error, {no_default_port, file, Ref}} ->
-            {absolute, Ref};
-        _ ->
-            {relative, Ref}
-    end.
-
-
--endif.
