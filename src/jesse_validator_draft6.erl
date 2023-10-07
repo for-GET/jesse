@@ -1307,8 +1307,8 @@ remove_last_from_path(State) ->
 
 
 %% @private
-valid_datetime(DateTimeBin) when is_binary(DataTimeBin) ->
-    valida_datetime(binary_to_list(DateTimeBin));
+valid_datetime(DateTimeBin) when is_binary(DateTimeBin) ->
+    valid_datetime(binary_to_list(DateTimeBin));
 valid_datetime(DateTimeBin) ->
     try
         calendar:rfc3339_to_system_time(DateTimeBin),

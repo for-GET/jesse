@@ -25,9 +25,7 @@
 
 test_all_drafts(Fn) ->
     [ Fn(URI)
-      || URI <- [<<"http://json-schema.org/draft-03/schema#">>,
-                 <<"http://json-schema.org/draft-04/schema#">>,
-                 <<"http://json-schema.org/draft-06/schema#">>] ].
+      || URI <- [<<"http://json-schema.org/draft-06/schema#">>] ].
 
 
 data_invalid_test() ->
@@ -215,8 +213,7 @@ schema_unsupported_test_draft(URI) ->
 
 data_invalid_one_of_test() ->
     [ data_invalid_one_of_test_draft(URI)
-      || URI <- [<<"http://json-schema.org/draft-04/schema#">>,
-                 <<"http://json-schema.org/draft-06/schema#">>] ].
+      || URI <- [<<"http://json-schema.org/draft-06/schema#">>] ].
 
 
 data_invalid_one_of_test_draft(URI) ->
@@ -248,8 +245,7 @@ data_invalid_one_of_test_draft(URI) ->
 
 data_invalid_any_of_test() ->
     [ data_invalid_any_of_test_draft(URI)
-      || URI <- [<<"http://json-schema.org/draft-04/schema#">>,
-                 <<"http://json-schema.org/draft-06/schema#">>] ].
+      || URI <- [<<"http://json-schema.org/draft-06/schema#">>] ].
 
 
 data_invalid_any_of_test_draft(URI) ->
@@ -386,7 +382,7 @@ map_schema_references_test() ->
       jesse_schema_validator:validate(
         Schema,
         Json,
-        [{default_schema_ver, <<"http://json-schema.org/draft-04/schema#">>}])).
+        [{default_schema_ver, <<"http://json-schema.org/draft-06/schema#">>}])).
 
 
 data_exclusive_maximum_minimum_test() ->
@@ -439,21 +435,6 @@ data_dollarid_test() ->
                              {Id, <<"foo">>}]}
                    end,
     Object = {[{<<"foo">>, <<"bar">>}]},
-    ?assertEqual(
-      {ok, Object},
-      jesse_schema_validator:validate(
-        SchemaWithId(?json_schema_draft4, <<"id">>),
-        Object,
-        [])),
-
-    ?assertThrow([{schema_invalid,
-                   {[{<<"$schema">>,
-                      <<"http://json-schema.org/draft-04/schema#">>},
-                     {<<"type">>, <<"object">>},
-                     {<<"$id">>, <<"foo">>}]},
-                   wrong_draft4_id_tag}],
-                 jesse_schema_validator:validate(
-                   SchemaWithId(?json_schema_draft4, <<"$id">>), Object, [])),
 
     ?assertThrow([{schema_invalid,
                    {[{<<"$schema">>,
