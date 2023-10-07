@@ -5,9 +5,9 @@ for Erlang, though it can work just as well as a CLI tool.
 
 jesse implements the following specifications:
 
-- [Draft 03](http://tools.ietf.org/html/draft-zyp-json-schema-03)
-- [Draft 04](http://tools.ietf.org/html/draft-zyp-json-schema-04)
-- [Draft 06](https://datatracker.ietf.org/doc/html/draft-wright-json-schema-00)
+* [Draft 03](http://tools.ietf.org/html/draft-zyp-json-schema-03)
+* [Draft 04](http://tools.ietf.org/html/draft-zyp-json-schema-04)
+* [Draft 06](https://datatracker.ietf.org/doc/html/draft-wright-json-schema-00)
 
 Install from git or https://hex.pm/packages/jesse .
 
@@ -27,13 +27,11 @@ You can either build the `bin/jesse` executable yourself (just type `make`),
 or you can use a Docker image a call it with `docker run ysoftwareab/jesse`.
 
 You can fire up `jesse` from the CLI, with
-
 ```bash
 bin/jesse [path_to_json_schema] path_to_json_schema -- path_to_json_instance [path_to_json_instance]
 ```
 
 You can also output the result in JSON format, with `--json`, and beautify it e.g. with python
-
 ```bash
 bin/jesse [path_to_json_schema] path_to_json_schema --json -- path_to_json_instance [path_to_json_instance] | python -m json.tool
 ```
@@ -44,10 +42,10 @@ You can pass multiple JSON schemas which should be loaded into jesse in-memory s
 
 There are two ways of using jesse:
 
-- to use jesse internal in-memory storage to keep all your schema definitions
+* to use jesse internal in-memory storage to keep all your schema definitions
   In this case jesse will look up a schema definition in its own storage,
   and then validate given a JSON instance.
-- it is also possible to provide jesse with schema definitions when jesse is called.
+* it is also possible to provide jesse with schema definitions when jesse is called.
 
 ## Examples
 
@@ -58,7 +56,7 @@ There are two ways of using jesse:
 
           In examples below and in jesse test suite jiffy parser is used.
 
-- Use jesse's internal in-memory storage:
+* Use jesse's internal in-memory storage:
 
 (parse JSON in advance)
 
@@ -80,7 +78,7 @@ ok
 ```
 
 The `[1]` in the error is the path in the original value to `<<"x">>` where the
-validation failed. See _Validation errors_ below for the full error format.
+validation failed. See *Validation errors* below for the full error format.
 
 (using a callback)
 
@@ -102,7 +100,7 @@ ok
                       []}]}
 ```
 
-- Call jesse with schema definition in place (do not use internal storage)
+* Call jesse with schema definition in place (do not use internal storage)
 
 (parse JSON in advance)
 
@@ -138,7 +136,7 @@ ok
                       [<<"foo">>]}]}
 ```
 
-- Since 0.4.0 it's possible to instruct jesse to collect errors, and not stop
+* Since 0.4.0 it's possible to instruct jesse to collect errors, and not stop
   immediately when it finds an error in the given JSON instance:
 
 ```erlang
@@ -253,7 +251,7 @@ To specify which validator to use by default (if there's no `schema` property in
 the given schema), one should use 'default_schema_ver' option when call
 `jesse:validate/3` or `jesse:validate_with_schema/3`, the value should be
 a binary consisting a schema path,
-i.e. <<"http://json-schema.org/draft-03/schema#">>.
+ i.e. <<"http://json-schema.org/draft-03/schema#">>.
 
 ## Validation errors
 
@@ -264,11 +262,11 @@ is either `data_invalid` or `schema_invalid`.
 A `data_invalid` error is a tuple on the form `{data_invalid, Schema, ErrorType,
 Value, Path}` where
 
-- Schema is the part of the schema where validation failed
-- ErrorType is the type of error, usually an atom such as `wrong_type`,
+* Schema is the part of the schema where validation failed
+* ErrorType is the type of error, usually an atom such as `wrong_type`,
   `not_in_range` or `no_match`
-- Value is The part of the value where failed validation against Schema
-- Path is a path to where validation failed within the original value. The path
+* Value is The part of the value where failed validation against Schema
+* Path is a path to where validation failed within the original value. The path
   is a list of property names and zero-based array indices referencing the
   properties and array items within a JSON document; e.g. in the JSON document
   `{"foo": [42, 43, 44]}`, the path `[<<"foo">>, 0]` refers to the value 42. An
@@ -276,14 +274,13 @@ Value, Path}` where
 
 A `schema_invalid` error is a tuple on the form `{schema_invalid, Schema,
 ErrorType}` where
-
-- Schema is the part of the schema which is invalid
-- ErrorType is an atom such as `missing_id_field` or a tuple such as
+* Schema is the part of the schema which is invalid
+* ErrorType is an atom such as `missing_id_field` or a tuple such as
   `{wrong_type_dependency, Dependency}`.
 
 ## Caveats
 
-- pattern and patternProperty attributes:
+* pattern and patternProperty attributes:
 
   jesse uses standard erlang module `re` for regexp matching, therefore there
   could be some incompatible regular expressions in schemas you define.
@@ -304,7 +301,7 @@ ErrorType}` where
   [`re:compile/2`](https://www.erlang.org/doc/man/re.html#compile-2) for more
   details.
 
-- internal references (id attribute) are NOT supported
+* internal references (id attribute) are NOT supported
 
   http://json-schema.org/latest/json-schema-core.html#rfc.section.8.2.1
 
@@ -320,5 +317,5 @@ If you see something missing or incorrect, a pull request is most welcome!
 
 [![Stargazers over time](https://starchart.cc/for-GET/jesse.svg)](https://starchart.cc/for-GET/jesse)
 
-[1]: https://github.com/shiguredo/jesse/actions?query=workflow%3ACI+branch%3shiguredo
-[2]: https://github.com/shiguredo/jesse/workflows/CI/badge.svg?branch=shiguredo
+  [1]: https://github.com/for-GET/jesse/actions?query=workflow%3ACI+branch%3Amaster
+  [2]: https://github.com/for-GET/jesse/workflows/CI/badge.svg?branch=master
