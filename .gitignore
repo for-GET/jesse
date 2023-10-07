@@ -1,4 +1,4 @@
-.#*
+.                   #*
 /*.coverdata
 /*.plt
 /_build/
@@ -10,5 +10,4 @@
 /ebin
 /erl_crash.dump
 /rebar3.crashdump
-/rebar.lock
 /test/*.beam
