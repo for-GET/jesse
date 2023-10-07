@@ -1307,11 +1307,14 @@ remove_last_from_path(State) ->
 
 
 %% @private
+valid_datetime(DateTimeBin) when is_binary(DataTimeBin) ->
+    valida_datetime(binary_to_list(DateTimeBin));
 valid_datetime(DateTimeBin) ->
-    case rfc3339:parse(DateTimeBin) of
-        {ok, _} ->
-            true;
-        _ ->
+    try
+        calendar:rfc3339_to_system_time(DateTimeBin),
+        true
+    catch
+        _:_ ->
             false
     end.
 
