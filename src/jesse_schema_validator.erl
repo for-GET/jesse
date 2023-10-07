@@ -81,14 +81,6 @@ result(State) ->
 %% @doc Runs appropriate validator depending on schema version
 %% it is called with.
 %% @private
-select_and_run_validator(?json_schema_draft3, JsonSchema, Value, State) ->
-    jesse_validator_draft3:check_value(Value,
-                                       jesse_json_path:unwrap_value(JsonSchema),
-                                       State);
-select_and_run_validator(?json_schema_draft4, JsonSchema, Value, State) ->
-    jesse_validator_draft4:check_value(Value,
-                                       jesse_json_path:unwrap_value(JsonSchema),
-                                       State);
 select_and_run_validator(?json_schema_draft6, JsonSchema, Value, State) ->
     jesse_validator_draft6:check_value(Value,
                                        jesse_json_path:unwrap_value(JsonSchema),
