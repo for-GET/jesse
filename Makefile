@@ -4,15 +4,8 @@ CHMOD := $(shell command -v chmod 2>/dev/null)
 CURL := $(shell command -v curl 2>/dev/null)
 LN := $(shell command -v ln 2>/dev/null)
 
-OTP_RELEASE = $(shell erl -eval 'io:format("~s", [erlang:system_info(otp_release)]), halt().'  -noshell)
-
-ifdef CI
-REBAR3 = ./rebar3.OTP$(OTP_RELEASE)
-else
-REBAR3 ?= $(shell command -v rebar3 2>/dev/null || echo "./rebar3.OTP$(OTP_RELEASE)")
-endif
-
-REBAR_CONFIG = rebar.OTP$(OTP_RELEASE).config
+REBAR3 = ./rebar3
+REBAR_CONFIG = rebar.config
 
 SRCS := $(wildcard src/* include/* rebar.config)
 
