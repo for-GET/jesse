@@ -351,7 +351,7 @@ is_type_valid(Value, ?NUMBER)  -> is_number(Value);
 %% in draft-06 and later; note that both drafts say that integers SHOULD be
 %% encoded in JSON without fractional parts
 is_type_valid(Value, ?INTEGER) when is_float(Value) ->
-  (Value - trunc(Value)) == 0.0;
+  abs(Value - trunc(Value)) == +0.0;
 is_type_valid(Value, ?INTEGER) -> is_integer(Value);
 is_type_valid(Value, ?BOOLEAN) -> is_boolean(Value);
 is_type_valid(Value, ?OBJECT)  -> jesse_lib:is_json_object(Value);
@@ -993,7 +993,7 @@ uri_reference(_Value, State) ->
 %% @private
 check_multiple_of(Value, MultipleOf, State)
   when is_number(MultipleOf), MultipleOf > 0 ->
-  try (Value / MultipleOf - trunc(Value / MultipleOf)) * MultipleOf == 0.0 of
+  try abs(Value / MultipleOf - trunc(Value / MultipleOf)) * MultipleOf == +0.0 of
     true ->
       State;
     _   ->
