@@ -861,7 +861,7 @@ check_divisible_by(Value, 0, State) ->
   handle_data_invalid(?not_divisible, Value, State);
 check_divisible_by(Value, DivisibleBy, State) ->
   Result = (Value / DivisibleBy - trunc(Value / DivisibleBy)) * DivisibleBy,
-  case Result == 0.0 of
+  case abs(Result) == +0.0 of
     true ->
       State;
     _   ->

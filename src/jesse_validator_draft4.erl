@@ -1015,7 +1015,7 @@ check_format(_Value, _Format, State) ->
 check_multiple_of(Value, MultipleOf, State)
   when is_number(MultipleOf), MultipleOf > 0 ->
   Result = (Value / MultipleOf - trunc(Value / MultipleOf)) * MultipleOf,
-  case Result == 0.0 of
+  case abs(Result) == +0.0 of
     true ->
       State;
     _   ->
