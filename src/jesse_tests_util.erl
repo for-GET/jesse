@@ -147,6 +147,7 @@ get_path(Key, Schema) ->
   jesse_json_path:path(Key, Schema).
 
 load_schema(URI) ->
-  {ok, Response} = httpc:request(get, {URI, []}, [], [{body_format, binary}]),
+  HttpOptions = [{ssl, [{verify, verify_none}]}],
+  {ok, Response} = httpc:request(get, {URI, []}, HttpOptions, [{body_format, binary}]),
   {{_Line, 200, _}, _Headers, Body} = Response,
   jsx:decode(Body, [{return_maps, false}]).
