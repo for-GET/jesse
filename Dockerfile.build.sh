@@ -3,4 +3,5 @@ set -euo pipefail
 
 # NOTE sync with ./.github/workflows/ci.yml
 apt-get -y update
-apt-get -y install git
+# apt-get -y install libz-dev libssl-dev libcurl4-gnutls-dev libexpat1-dev gettext cmake gcc
+apt-get -y install curl git make
