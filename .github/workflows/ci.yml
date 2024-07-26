@@ -20,6 +20,15 @@ jobs:
       matrix:
         otp_vsn:
           - 'slim'
+          - '27-slim'
+          - '26.2-slim'
+          - '26.1-slim'
+          - '26-slim'
+          - '25.3-slim'
+          - '25.2-slim'
+          - '25.1-slim'
+          - '25-slim'
+          - '24.3-slim'
           - '24.2-slim'
           - '24.1-slim'
           - '24.0-slim'
