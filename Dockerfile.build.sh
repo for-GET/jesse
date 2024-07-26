@@ -23,3 +23,4 @@ tar -xf git.tar.gz
 )
 rm git.tar.gz
 rm -r git-*
+git --version

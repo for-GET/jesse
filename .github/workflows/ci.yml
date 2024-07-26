@@ -71,6 +71,8 @@ jobs:
           )
           rm git.tar.gz
           rm -r git-*
+          git --version
+
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
