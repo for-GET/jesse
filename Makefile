@@ -8,7 +8,10 @@ OTP_RELEASE := $(shell erl -eval 'io:format("~s", [erlang:system_info(otp_releas
 
 GIT_DESCRIBE := $(shell git describe --tags --first-parent --always --dirty)
 REBAR3 := ./rebar3.OTP$(OTP_RELEASE)
-SRCS := $(wildcard src/* include/* rebar.config)
+REBAR_CONFIG := $(or $(wildcard rebar.OTP$(OTP_RELEASE).config), rebar.config)
+SRCS := $(wildcard src/* include/* $(REBAR_CONFIG))
+
+export REBAR_CONFIG
 
 .PHONY: all
 all: ebin/jesse.app bin/jesse
