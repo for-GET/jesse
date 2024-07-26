@@ -90,7 +90,7 @@ jobs:
         shell: bash
         run: |
           if [[ ${{ github.event.ref }} =~ ^refs/tags/[0-9]+\.[0-9]+\.[0-9]+ ]]; then
-              echo ::set-output name=check::true
+              echo "check=true" >> $GITHUB_OUTPUT
           fi
       - if: ${{ matrix.otp_vsn == 'slim' && steps.is-semver-tag.outputs.check == 'true'}}
         name: Run make publish
