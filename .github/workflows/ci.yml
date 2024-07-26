@@ -72,6 +72,7 @@ jobs:
           rm git.tar.gz
           rm -r git-*
           git --version
+          ldd --version
 
       - uses: actions/checkout@v4
         with:
