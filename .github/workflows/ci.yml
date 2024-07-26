@@ -59,6 +59,8 @@ jobs:
         with:
           fetch-depth: 0
       - shell: bash
+        run: chown -R "$(id -u):$(id -g)" .
+      - shell: bash
         run: make
       - shell: bash
         run: make test
