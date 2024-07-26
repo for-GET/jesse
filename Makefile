@@ -22,8 +22,7 @@ clean: $(REBAR3)
 	rm $(REBAR3)
 
 .PHONY: distclean
-distclean:
-	$(MAKE) clean
+distclean: clean
 	$(RM) -r _build
 	$(RM) doc/*.html
 	$(RM) doc/edoc-info
@@ -77,13 +76,11 @@ elvis: $(REBAR3)
 check: elvis
 
 .PHONY: eunit
-eunit: $(REBAR3)
-	@ $(MAKE) clean-tests
+eunit: $(REBAR3) clean-tests
 	REBAR_CONFIG=$(REBAR_CONFIG) $(REBAR3) eunit
 
 .PHONY: ct
-ct: $(REBAR3) test/JSON-Schema-Test-Suite/tests
-	@ $(MAKE) clean-tests
+ct: $(REBAR3) test/JSON-Schema-Test-Suite/tests clean-tests
 	TEST_DIR=_build/default/test/lib/jesse/test REBAR_CONFIG=$(REBAR_CONFIG) $(REBAR3) ct
 
 .PHONY: xref
@@ -95,8 +92,7 @@ dialyzer: $(REBAR3)
 	REBAR_CONFIG=$(REBAR_CONFIG) $(REBAR3) dialyzer
 
 .PHONY: cover
-cover: $(REBAR3)
-	@ $(MAKE) clean-tests
+cover: $(REBAR3) clean-tests
 	REBAR_CONFIG=$(REBAR_CONFIG) $(REBAR3) cover -v
 
 .PHONY: proper
