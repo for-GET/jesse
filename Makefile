@@ -6,7 +6,7 @@ LN := $(shell command -v ln 2>/dev/null)
 
 OTP_RELEASE := $(shell erl -eval 'io:format("~s", [erlang:system_info(otp_release)]), halt().'  -noshell)
 REBAR3 := ./rebar3.OTP$(OTP_RELEASE)
-REBAR_CONFIG := rebar.OTP$(OTP_RELEASE).config
+REBAR_CONFIG := $(or $(wildcard rebar.OTP$(OTP_RELEASE).config), rebar.config)
 SRCS := $(wildcard src/* include/* rebar.config)
 
 GIT_DESCRIBE := $(shell git describe --tags --first-parent --always --dirty)
