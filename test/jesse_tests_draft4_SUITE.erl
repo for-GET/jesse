@@ -38,6 +38,7 @@
 -import(jesse_tests_util, [ get_tests/3
                           , do_test/2
                           ]).
+-define(json_schema_draft4, <<"http://json-schema.org/draft-04/schema#">>).
 
 all() ->
   Exports = ?MODULE:module_info(exports),
@@ -52,12 +53,8 @@ init_per_suite(Config) ->
     , {<<"ref">>, <<"Location-independent identifier with base URI"
                     " change in subschema">>}
     ],
-  get_tests( "standard"
-           , <<"http://json-schema.org/draft-04/schema#">>
-           , Config)
-    ++ get_tests( "extra"
-                , <<"http://json-schema.org/draft-04/schema#">>
-                , Config)
+  get_tests("standard", ?json_schema_draft4, Config)
+    ++ get_tests("extra", ?json_schema_draft4, Config)
     ++ [{skip_list, SkipList}]
     ++ Config.
 

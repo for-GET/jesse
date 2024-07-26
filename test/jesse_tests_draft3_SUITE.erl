@@ -38,6 +38,7 @@
 -import(jesse_tests_util, [ get_tests/3
                           , do_test/2
                           ]).
+-define(json_schema_draft3, <<"http://json-schema.org/draft-03/schema#">>).
 
 all() ->
   Exports = ?MODULE:module_info(exports),
@@ -45,12 +46,8 @@ all() ->
 
 init_per_suite(Config) ->
   {ok, _} = application:ensure_all_started(jesse),
-  get_tests( "standard"
-           , <<"http://json-schema.org/draft-03/schema#">>
-           , Config)
-    ++ get_tests( "extra"
-                , <<"http://json-schema.org/draft-03/schema#">>
-                , Config)
+  get_tests("standard", ?json_schema_draft3, Config)
+    ++ get_tests("extra", ?json_schema_draft3, Config)
     ++ [{skip_list, []}]
     ++ Config.
 

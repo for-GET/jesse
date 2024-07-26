@@ -37,6 +37,7 @@
 -import(jesse_tests_util, [ get_tests/3
                           , do_test/2
                           ]).
+-define(json_schema_draft6, <<"http://json-schema.org/draft-06/schema#">>).
 
 all() ->
   Exports = ?MODULE:module_info(exports),
@@ -58,12 +59,8 @@ init_per_suite(Config) ->
     , {<<"unknownKeyword">>, <<"$id inside an unknown keyword is not a"
                                " real identifier">>}
     ],
-  get_tests( "standard"
-           , <<"http://json-schema.org/draft-06/schema#">>
-           , Config)
-    ++ get_tests( "extra"
-                , <<"http://json-schema.org/draft-06/schema#">>
-                , Config)
+  get_tests("standard", ?json_schema_draft6, Config)
+    ++ get_tests("extra", ?json_schema_draft6, Config)
     ++ [{skip_list, SkipList}]
     ++ Config.
 
