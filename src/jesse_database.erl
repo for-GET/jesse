@@ -316,7 +316,10 @@ add_file_uri(Key0) ->
 add_http_uri(Key0) ->
   Key = jesse_state:canonical_path(Key0, Key0),
   HttpOptions = [{ssl, [{verify, verify_none}]}],
-  {ok, Response} = httpc:request(get, {Key, []}, HttpOptions, [{body_format, binary}]),
+  {ok, Response} = httpc:request( get
+                                , {Key, []}
+                                , HttpOptions
+                                , [{body_format, binary}]),
   {{_Line, 200, _}, Headers, SchemaBin} = Response,
   Schema = jsx:decode(SchemaBin, [{return_maps, false}]),
   SchemaInfos = [{Key, get_http_mtime(Headers), Schema}],
