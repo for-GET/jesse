@@ -4,7 +4,14 @@
 %% @doc Implementation of Key Value Coding style "queries" for commonly
 %% used Erlang data structures.
 -module(jesse_json_path).
--export([parse/1, path/2, path/3, value/3, to_proplist/1, unwrap_value/1, normalize/2]).
+-export([ parse/1
+        , path/2
+        , path/3
+        , value/3
+        , to_proplist/1
+        , unwrap_value/1
+        , normalize/2
+        ]).
 
 -ifdef(erlang_deprecated_types).
 -type kvc_obj_node() :: proplist() | {struct, proplist()} | [{}] | dict()
