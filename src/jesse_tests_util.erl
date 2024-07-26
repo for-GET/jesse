@@ -19,6 +19,9 @@
 %%%=============================================================================
 
 -module(jesse_tests_util).
+%% -dialyzer({nowarn_function, ct:pal/1}).
+%% -dialyzer({nowarn_function, ct:pal/2}).
+%% -dialyzer({nowarn_function, test_server:lookup_config/2}).
 
 %% API
 -export([ get_tests/3
