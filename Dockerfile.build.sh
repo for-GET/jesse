@@ -5,10 +5,12 @@ set -euo pipefail
 
 if [ $(awk -F. '{print $1}' /etc/debian_version) -eq 9 ]; then
     printf 'deb http://archive.debian.org/debian/ stretch main contrib non-free deb http://archive.debian.org/debian-security/ stretch/updates main contrib non-free deb http://archive.debian.org/debian/ stretch-backports main contrib non-free' > /etc/apt/sources.list;
+    apt-get -y update
+    apt-get -y upgrade
 fi
 
 # manually sync with ./.github/workflows/ci.yml
-apt-get update
+apt-get -y update
 apt-get -y install wget
 apt-get -y install libz-dev libssl-dev libcurl4-gnutls-dev libexpat1-dev gettext cmake gcc
 cd /usr/src/
