@@ -58,8 +58,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      # https://github.com/actions/runner/issues/2033
+      # https://github.com/actions/checkout/issues/766
       - shell: bash
-        run: chown -R "$(id -u):$(id -g)" .
+        run: |
+          chown -R "$(id -u):$(id -g)" "${GITHUB_WORKSPACE}"
+          git config --global --add safe.directory "${GITHUB_WORKSPACE}"
       - shell: bash
         run: make
       - shell: bash
