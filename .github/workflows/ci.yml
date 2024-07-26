@@ -50,7 +50,12 @@ jobs:
     steps:
       - shell: bash
         run: |
-          # manually sync with ./Dockerfile.build.sh
+          # NOTE sync with ./Dockerfile.build.sh
+
+          if [ $(awk -F. '{print $1}' /etc/debian_version) -eq 9 ]; then
+            printf 'deb http://archive.debian.org/debian/ stretch main contrib non-free deb http://archive.debian.org/debian-security/ stretch/updates main contrib non-free deb http://archive.debian.org/debian/ stretch-backports main contrib non-free' > /etc/apt/sources.list;
+          fi
+
           apt-get update
           apt-get -y install wget
           apt-get -y install libz-dev libssl-dev libcurl4-gnutls-dev libexpat1-dev gettext cmake gcc
