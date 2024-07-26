@@ -173,7 +173,9 @@ set_allowed_errors(#state{} = State, AllowedErrors) ->
 -spec set_current_schema( State :: state()
                         , NewSchema :: jesse:schema()
                         ) -> state().
-set_current_schema(#state{id = Id} = State, NewSchema0) ->
+set_current_schema(#state{ id = Id
+                         , default_schema_ver = DefaultSchemaVer
+                         } = State, NewSchema0) ->
   NewSchema =
     case jesse_json_path:value(?REF, NewSchema0, undefined) of
       undefined ->
@@ -185,19 +187,13 @@ set_current_schema(#state{id = Id} = State, NewSchema0) ->
         ListSchema = jesse_json_path:unwrap_value(NewSchema0),
         [{?REF, Ref} | lists:keydelete(?REF, 1, ListSchema)]
     end,
-  IdTag = case schema_from_json(NewSchema) of
+  IdTag = case jesse_json_path:value(?SCHEMA, NewSchema, DefaultSchemaVer) of
           ?json_schema_draft6 -> ?ID;
                             _ -> ?ID_OLD
           end,
   NewSchemaId = jesse_json_path:value(IdTag, NewSchema, undefined),
   NewId = combine_id(Id, NewSchemaId),
   State#state{current_schema = NewSchema, id = NewId}.
-
-schema_from_json(JsonSchema) ->
-  case jesse_json_path:value(?SCHEMA, JsonSchema, ?not_found) of
-    ?not_found -> ?default_schema_ver;
-    SchemaVer  -> SchemaVer
-  end.
 
 %% @doc Setter for `error_list'.
 -spec set_error_list( State :: state()
