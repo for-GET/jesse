@@ -45,6 +45,9 @@ jobs:
           # either actions/checkout's nodejs20 depends on a newer libc
           # NOTE jesse might still be OTP-compatible though
           # - '22.1-slim'
+          # - '21.2-slim'
+          # - '21.1-slim'
+          # - '21-slim'
           # - '20.3-slim'
           # - '19.3-slim'
           # - '19.2-slim'
