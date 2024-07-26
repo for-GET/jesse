@@ -5,8 +5,8 @@ CURL := $(shell command -v curl 2>/dev/null)
 LN := $(shell command -v ln 2>/dev/null)
 
 OTP_RELEASE := $(shell erl -eval 'io:format("~s", [erlang:system_info(otp_release)]), halt().'  -noshell)
-REBAR_CONFIG := $(or $(wildcard rebar.OTP$(OTP_RELEASE).config), rebar.config)
-REBAR3 := REBAR_CONFIG=$(REBAR_CONFIG) ./rebar3.OTP$(OTP_RELEASE)
+export REBAR_CONFIG := $(or $(wildcard rebar.OTP$(OTP_RELEASE).config), rebar.config)
+REBAR3 := ./rebar3.OTP$(OTP_RELEASE)
 SRCS := $(wildcard src/* include/* $(REBAR_CONFIG))
 
 GIT_DESCRIBE := $(shell git describe --tags --first-parent --always --dirty)
