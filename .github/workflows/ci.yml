@@ -38,11 +38,21 @@ jobs:
           - '23-slim'
           - '22.3-slim'
           - '22.2-slim'
-          # - '22.1-slim'
           - '22-slim'
           - '21.3-slim'
+          # NOTE testing disabled for the following versions, as the Docker image is based on Debian 9 (EOL) and
+          # either git depends on libpcre2-8-0 but it is not installable
+          # either actions/checkout's nodejs20 depends on a newer libc
+          # NOTE jesse might still be OTP-compatible though
+          # - '22.1-slim'
           # - '20.3-slim'
           # - '19.3-slim'
+          # - '19.2-slim'
+          # - '19.1-slim'
+          # - '19-slim'
+          # - '18.2-slim'
+          # - '18.1-slim'
+          # - '18-slim'
     name: 'ci-erl:${{ matrix.otp_vsn }}'
     runs-on: ubuntu-latest
     container:
