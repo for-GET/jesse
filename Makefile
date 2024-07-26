@@ -2,7 +2,6 @@
 
 CHMOD := $(shell command -v chmod 2>/dev/null)
 CURL := $(shell command -v curl 2>/dev/null)
-LN := $(shell command -v ln 2>/dev/null)
 
 OTP_RELEASE := $(shell erl -eval 'io:format("~s", [erlang:system_info(otp_release)]), halt().'  -noshell)
 
