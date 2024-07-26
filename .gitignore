@@ -9,7 +9,7 @@
 /doc/stylesheet.css
 /ebin
 /erl_crash.dump
+/rebar.lock
 /rebar3.OTP*
 /rebar3.crashdump
-/rebar.lock
 /test/*.beam
