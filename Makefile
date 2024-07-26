@@ -5,9 +5,9 @@ CURL := $(shell command -v curl 2>/dev/null)
 LN := $(shell command -v ln 2>/dev/null)
 
 OTP_RELEASE := $(shell erl -eval 'io:format("~s", [erlang:system_info(otp_release)]), halt().'  -noshell)
-REBAR3 := ./rebar3.OTP$(OTP_RELEASE)
 REBAR_CONFIG := $(or $(wildcard rebar.OTP$(OTP_RELEASE).config), rebar.config)
-SRCS := $(wildcard src/* include/* rebar.config)
+REBAR3 := REBAR_CONFIG=$(REBAR_CONFIG) ./rebar3.OTP$(OTP_RELEASE)
+SRCS := $(wildcard src/* include/* $(REBAR_CONFIG))
 
 GIT_DESCRIBE := $(shell git describe --tags --first-parent --always --dirty)
 
@@ -18,7 +18,7 @@ all: ebin/jesse.app bin/jesse
 
 .PHONY: clean
 clean: $(REBAR3)
-	REBAR_CONFIG=$(REBAR_CONFIG) $(REBAR3) clean
+	$(REBAR3) clean
 	rm $(REBAR3)
 
 .PHONY: distclean
@@ -38,7 +38,7 @@ clean-tests:
 
 .PHONY: docs
 docs: $(REBAR3)
-	REBAR_CONFIG=$(REBAR_CONFIG) $(REBAR3) edoc
+	$(REBAR3) edoc
 
 # Compile
 
@@ -50,12 +50,12 @@ ebin/jesse.app: compile
 
 .PHONY: escript
 escript: $(REBAR3) ebin/jesse.app
-	REBAR_CONFIG=$(REBAR_CONFIG) $(REBAR3) escriptize
+	$(REBAR3) escriptize
 	./_build/default/bin/jesse --help
 
 .PHONY: compile
 compile: $(REBAR3) $(SRCS)
-	REBAR_CONFIG=$(REBAR_CONFIG) $(REBAR3) compile
+	$(REBAR3) compile
 
 # Tests
 
@@ -70,38 +70,38 @@ test: eunit ct xref dialyzer proper cover
 
 .PHONY: elvis
 elvis: $(REBAR3)
-	REBAR_CONFIG=$(REBAR_CONFIG) $(REBAR3) lint
+	$(REBAR3) lint
 
 .PHONY: check
 check: elvis
 
 .PHONY: eunit
 eunit: $(REBAR3) clean-tests
-	REBAR_CONFIG=$(REBAR_CONFIG) $(REBAR3) eunit
+	$(REBAR3) eunit
 
 .PHONY: ct
 ct: $(REBAR3) test/JSON-Schema-Test-Suite/tests clean-tests
-	TEST_DIR=_build/default/test/lib/jesse/test REBAR_CONFIG=$(REBAR_CONFIG) $(REBAR3) ct
+	TEST_DIR=_build/default/test/lib/jesse/test $(REBAR3) ct
 
 .PHONY: xref
 xref: $(REBAR3)
-	REBAR_CONFIG=$(REBAR_CONFIG) $(REBAR3) xref
+	$(REBAR3) xref
 
 .PHONY: dialyzer
 dialyzer: $(REBAR3)
-	REBAR_CONFIG=$(REBAR_CONFIG) $(REBAR3) dialyzer
+	$(REBAR3) dialyzer
 
 .PHONY: cover
 cover: $(REBAR3) clean-tests
-	REBAR_CONFIG=$(REBAR_CONFIG) $(REBAR3) cover -v
+	$(REBAR3) cover -v
 
 .PHONY: proper
 proper: $(REBAR3)
-	REBAR_CONFIG=$(REBAR_CONFIG) $(REBAR3) proper
+	$(REBAR3) proper
 
 .PHONY: publish
 publish: $(REBAR3) docs
-	REBAR_CONFIG=$(REBAR_CONFIG) $(REBAR3) hex publish -r hexpm --yes
+	$(REBAR3) hex publish -r hexpm --yes
 
 # TODO: there must be a better way
 .PHONY: symlinks
