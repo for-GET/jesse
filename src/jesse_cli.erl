@@ -106,7 +106,7 @@ add_schemata([SchemaFile|Rest]) ->
 
 maybe_fill_schema_id(SchemaFile, Schema) ->
   SchemaFqdn = "file://" ++ filename:absname(SchemaFile),
-  Version = jesse_json_path:value(<<"$schema">>, Schema, undefined),
+  Version = jesse_json_path:value(<<"$schema">>, Schema, ?json_schema_draft6),
   Id = jesse_lib:get_schema_id(Schema),
   case {Version, Id} of
     {?json_schema_draft6, undefined} ->

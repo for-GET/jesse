@@ -239,7 +239,7 @@ compare_properties(Value1, Value2) ->
 %% @doc Returns "id" or "$id" based on the value of $schema.
 -spec get_schema_id_key(Schema :: jesse:json_term()) -> binary().
 get_schema_id_key(Schema) ->
-  case jesse_json_path:value(?SCHEMA, Schema, undefined) of
+  case jesse_json_path:value(?SCHEMA, Schema, ?json_schema_draft6) of
     ?json_schema_draft6 -> ?ID;
                       _ -> ?ID_OLD
   end.
