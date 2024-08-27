@@ -1336,11 +1336,9 @@ remove_last_from_path(State) ->
 
 %% @private
 valid_datetime(DateTimeBin) ->
-  case rfc3339:parse(DateTimeBin) of
-    {ok, _} ->
-      true;
-    _ ->
-      false
+  try calendar:rfc3339_to_system_time(binary_to_list(DateTimeBin)) of
+    _ -> true
+  catch error:_Error -> false
   end.
 
 maybe_external_check_value(Value, State) ->
