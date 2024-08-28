@@ -27,7 +27,6 @@
         , handle_data_invalid/3
         , handle_schema_invalid/2
         , to_json/1
-        , to_json/2
         , reason_to_jsx/1
         ]).
 
@@ -105,14 +104,9 @@ handle_schema_invalid(Info, State) ->
 
 %% @doc Convert an error to a JSON string using jsx
 -spec to_json(Error :: error()) -> binary().
-to_json(Error) ->
-  to_json(Error, [indent]).
-
-%% @doc Convert an error to a JSON string using jsx
--spec to_json(Error :: error(), JsxOptions :: [atom()]) -> binary().
-to_json({error, Reasons}, JsxOptions) ->
+to_json({error, Reasons}) ->
   JsxReasons = lists:map(fun reason_to_jsx/1, Reasons),
-  jsx:encode([{reasons, JsxReasons}], JsxOptions).
+  ?JSON:encode([{reasons, JsxReasons}]).
 
 %% @doc Convert an error reason to jsx structs
 -spec reason_to_jsx(Reason :: error_reason()) -> jesse:json_term().

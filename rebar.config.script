@@ -4,9 +4,12 @@
                    end,
 
 Deps = case list_to_integer(erlang:system_info(otp_release)) of
-           N when N >= 21 ->
+           N when N >= 27 ->
                [];
+           N when N >= 21 ->
+               [{jsx, "3.1.0"}];
            _ ->
-               [{rfc3339, "0.9.0"}]
+               [{jsx, "3.1.0"}, {rfc3339, "0.9.0"}]
        end,
+
 [{deps, Deps ++ Deps0} | Config0].

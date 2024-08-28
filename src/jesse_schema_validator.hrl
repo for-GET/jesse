@@ -28,6 +28,20 @@
 -define(IF_MAPS(Exp), Exp).
 -endif.
 
+%% Use new json library if available
+-ifdef(OTP_RELEASE).
+  -if(?OTP_RELEASE >= 27).
+  %% OTP 27 or higher
+    -define(JSON, json).
+  -else.
+  %% OTP 26 to 21.
+    -define(JSON, jsx).
+  -endif.
+-else.
+  %% OTP 20 or lower.
+  -define(JSON, jsx).
+-endif.
+
 %% Use optimization for sets if available
 -ifdef(OTP_RELEASE).
   -if(?OTP_RELEASE >= 24).
