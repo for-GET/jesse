@@ -1335,11 +1335,23 @@ remove_last_from_path(State) ->
   jesse_state:remove_last_from_path(State).
 
 %% @private
+-ifdef(OTP_RELEASE).
+%% OTP 21 or higher
 valid_datetime(DateTimeBin) ->
   try calendar:rfc3339_to_system_time(binary_to_list(DateTimeBin)) of
     _ -> true
   catch error:_Error -> false
   end.
+-else.
+%% OTP 20 or lower.
+valid_datetime(DateTimeBin) ->
+  case rfc3339:parse(DateTimeBin) of
+    {ok, _} ->
+      true;
+    _ ->
+      false
+  end.
+-endif.
 
 maybe_external_check_value(Value, State) ->
   case jesse_state:get_external_validator(State) of
