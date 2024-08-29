@@ -1,6 +1,5 @@
----
 name: CI
-on:
+'on':
   push:
     branches:
       - github*
