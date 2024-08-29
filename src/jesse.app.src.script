@@ -1,0 +1,19 @@
+[{application, jesse, Config}] = CONFIG,
+
+{Apps0, Config0} = case lists:keytake(applications, 1, Config) of
+                       false ->
+                           {[], CONFIG};
+                       {value, {applications, A}, Cfg} ->
+                           {A, Cfg}
+                   end,
+
+Apps = case list_to_integer(erlang:system_info(otp_release)) of
+           N when N >= 27 ->
+               Apps0;
+           N when N >= 21 ->
+               [jsx | Apps0];
+           _ ->
+               [jsx, rfc3339 | Apps0]
+       end,
+
+[{application, jesse, [{applications, Apps} | Config]}].
