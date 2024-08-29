@@ -75,7 +75,7 @@ run(Options, [Schema|_] = Schemata, [JsonInstance|JsonInstances]) ->
     undefined ->
       io:fwrite("~p\n\n", [Result]);
     true ->
-      io:fwrite("~s\n\n", [?JSON:encode(Result)])
+      io:fwrite("~s\n\n", [jesse_lib:json_encode(Result)])
   end,
   case JesseResult of
     {ok, _} ->
@@ -86,11 +86,12 @@ run(Options, [Schema|_] = Schemata, [JsonInstance|JsonInstances]) ->
       halt(1)
   end.
 
+
 jesse_run(JsonInstance, Schema, Schemata) ->
   {ok, _} = application:ensure_all_started(jesse),
   ok = add_schemata(Schemata),
   {ok, JsonInstanceBinary} = file:read_file(JsonInstance),
-  JsonInstanceJsx = ?JSON:decode(JsonInstanceBinary),
+  JsonInstanceJsx = jesse_lib:json_decode(JsonInstanceBinary),
   jesse:validate( Schema
                 , JsonInstanceJsx
                 ).
@@ -99,7 +100,7 @@ add_schemata([]) ->
   ok;
 add_schemata([SchemaFile|Rest]) ->
   {ok, SchemaBin} = file:read_file(SchemaFile),
-  Schema0 = ?JSON:decode(SchemaBin),
+  Schema0 = jesse_lib:json_decode(SchemaBin),
   Schema = maybe_fill_schema_id(SchemaFile, Schema0),
   ok = jesse:add_schema(SchemaFile, Schema),
   add_schemata(Rest).

@@ -35,10 +35,35 @@
         , get_schema_id_key/1
         , get_schema_id/1
         , get_schema_id/2
+        , json_encode/1
+        , json_decode/1
         ]).
 
 %% Includes
 -include("jesse_schema_validator.hrl").
+
+%% Use new json library if available
+-ifdef(OTP_RELEASE).
+  -if(?OTP_RELEASE >= 27).
+  %% OTP 27 or higher
+json_decode(Bin) ->
+    json:decode(Bin).
+json_encode(Bin) ->
+    json:encode(Bin).
+  -else.
+  %% OTP 26 to 21.
+json_decode(Bin) ->
+    jsx:decode(Bin).
+json_encode(Bin) ->
+    jsx:encode(Bin).
+  -endif.
+-else.
+  %% OTP 20 or lower.
+json_decode(Bin) ->
+    jsx:decode(Bin).
+json_encode(Bin) ->
+    jsx:encode(Bin).
+-endif.
 
 %%% API
 %% @doc Returns an empty list if the given value is ?not_found.

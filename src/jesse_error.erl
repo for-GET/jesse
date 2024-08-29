@@ -106,7 +106,7 @@ handle_schema_invalid(Info, State) ->
 -spec to_json(Error :: error()) -> binary().
 to_json({error, Reasons}) ->
   JsxReasons = lists:map(fun reason_to_jsx/1, Reasons),
-  ?JSON:encode([{reasons, JsxReasons}]).
+  jesse_lib:json_encode([{reasons, JsxReasons}]).
 
 %% @doc Convert an error reason to jsx structs
 -spec reason_to_jsx(Reason :: error_reason()) -> jesse:json_term().
