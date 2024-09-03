@@ -11,8 +11,6 @@
                    , public_key
                    , ssl
                    , inets
-                   , jsx
-                   , rfc3339
                    ]}
   , {env, [ {re_options, [unicode, ucp]}
           ]}

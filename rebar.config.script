@@ -1,0 +1,15 @@
+{Deps0, Config0} = case lists:keytake(deps, 1, CONFIG) of
+                       false -> {[], CONFIG};
+                       {value, {deps, D}, Cfg} -> {D, Cfg}
+                   end,
+
+Deps = case list_to_integer(erlang:system_info(otp_release)) of
+           N when N >= 27 ->
+               Deps0;
+           N when N >= 21 ->
+               [{jsx, "3.1.0"} | Deps0];
+           _ ->
+               [{jsx, "3.1.0"}, {rfc3339, "0.9.0"} | Deps0]
+       end,
+
+[{deps, Deps} | Config0].
