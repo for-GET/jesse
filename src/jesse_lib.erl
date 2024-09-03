@@ -53,14 +53,14 @@ json_encode(Bin) ->
   -else.
   %% OTP 26 to 21.
 json_decode(Bin) ->
-    jsx:decode(Bin).
+    jsx:decode(Bin, [{return_maps, false}]).
 json_encode(Bin) ->
     jsx:encode(Bin).
   -endif.
 -else.
   %% OTP 20 or lower.
 json_decode(Bin) ->
-    jsx:decode(Bin).
+    jsx:decode(Bin, [{return_maps, false}]).
 json_encode(Bin) ->
     jsx:encode(Bin).
 -endif.
