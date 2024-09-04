@@ -135,6 +135,26 @@ uniqueItems(Config) ->
 
 %% Extra
 
+%% The original bug originated from starting from a map schema input, so it was
+%% not triggered by `do_test', which loads the schema as proplists rather than
+%% maps.
+extends_smoke_test(_Config) ->
+  Schema = #{
+             <<"$schema">> => <<"http://json-schema.org/draft-03/schema#">>,
+             <<"description">> => <<"a description">>,
+             <<"extends">> =>
+               #{<<"properties">> =>
+                   #{<<"disallow">> =>
+                       #{<<"disallow">> => [<<"number">>],<<"required">> => true}}},
+             <<"id">> => <<"http://json-schema.org/draft-03/schema#">>,
+             <<"title">> => <<"title">>,
+             <<"type">> => <<"object">>},
+  Data = #{<<"disallow">> => <<"a">>},
+  ?assertEqual({ok, Data}, jesse:validate_with_schema(Schema, Data)).
+
+extendsExtra(Config) ->
+  do_test("extendsExtra", Config).
+
 itemsExtra(Config) ->
   do_test("itemsExtra", Config).
 
