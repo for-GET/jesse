@@ -1,0 +1,33 @@
+[
+  {
+    "description": "simple example using `extends` with `disallow` in the base schema",
+    "schema": {
+      "type": "object",
+      "extends": {
+        "properties": {
+          "disallow": {
+            "disallow": ["number"],
+            "required": true
+          }
+        }
+      }
+    },
+    "tests": [
+      {
+        "description": "valid value: string",
+        "data": {"disallow": "a"},
+        "valid": true
+      },
+      {
+        "description": "valid value: array",
+        "data": {"disallow": ["a", 1]},
+        "valid": true
+      },
+      {
+        "description": "invalid value: number",
+        "data": {"disallow": 1},
+        "valid": false
+      }
+    ]
+  }
+]
