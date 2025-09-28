@@ -14,16 +14,16 @@ re_run_default_test_() ->
      application:unload(jesse)
    end,
    [
-    {"Support ISO Latin-1 letters in \w by default",
+    {"Support ISO Latin-1 letters in \\w by default",
      ?_assertEqual(match,
                    jesse_lib:re_run(<<"föø"/utf8>>, "^\\w+$"))},
-    {"Support ISO Latin-1 numbers in \d by default",
+    {"Support ISO Latin-1 numbers in \\d by default",
      ?_assertEqual(match,
                    jesse_lib:re_run(<<"123"/utf8>>, "^\\d+$"))},
-    {"Support beyond ISO Latin-1 letters in \w by default",
+    {"Support beyond ISO Latin-1 letters in \\w by default",
      ?_assertEqual(match,
                    jesse_lib:re_run(<<"fōô"/utf8>>, "^\\w+$"))},
-    {"Support beyond ISO Latin-1 numbers in \d by default",
+    {"Support beyond ISO Latin-1 numbers in \\d by default",
      ?_assertEqual(match,
                    jesse_lib:re_run(<<"3๓३"/utf8>>, "^\\d+$"))}
    ]}.
@@ -36,16 +36,16 @@ re_run_no_ucp_test_() ->
    end,
    fun(_) -> application:unload(jesse) end,
    [
-    {"Support ISO Latin-1 letters in \w without 'ucp'",
+    {"Support ISO Latin-1 letters in \\w without 'ucp'",
      ?_assertEqual(match,
                    jesse_lib:re_run(<<"föø"/utf8>>, "^\\w+$"))},
-    {"Support ISO Latin-1 numbers in \d  without 'ucp'",
+    {"Support ISO Latin-1 numbers in \\d  without 'ucp'",
      ?_assertEqual(match,
                    jesse_lib:re_run(<<"123"/utf8>>, "^\\d+$"))},
-    {"Do not support beyond ISO Latin-1 letters in \w without 'ucp'",
+    {"Do not support beyond ISO Latin-1 letters in \\w without 'ucp'",
      ?_assertEqual(nomatch,
                    jesse_lib:re_run(<<"fōô"/utf8>>, "^\\w+$"))},
-    {"Do not support beyond ISO Latin-1 numbers in \d without 'ucp'",
+    {"Do not support beyond ISO Latin-1 numbers in \\d without 'ucp'",
      ?_assertEqual(nomatch,
                    jesse_lib:re_run(<<"3๓३"/utf8>>, "^\\d+$"))}
    ]}.
