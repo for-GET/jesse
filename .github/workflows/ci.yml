@@ -11,6 +11,9 @@ name: CI
       - '**'
   schedule:
     - cron: 0 0 * * *
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   ci:
     timeout-minutes: 30
