@@ -37,7 +37,7 @@ re_run_no_ucp_test_() ->
    end,
    fun(_) -> application:unload(jesse) end,
    [
-    {"Do not support beyond ISO Latin-1 letters in \\w without 'ucp'",
+    {"Do not support ISO Latin-1 letters in \\w without 'ucp'",
      ?_assertEqual(nomatch,
                    jesse_lib:re_run(<<"föø"/utf8>>, "^\\w+$"))},
     {"Support ISO Latin-1 numbers in \\d  without 'ucp'",
