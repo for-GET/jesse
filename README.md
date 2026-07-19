@@ -11,6 +11,9 @@ jesse implements the following specifications:
 * [Draft 2019-09](https://json-schema.org/draft/2019-09/json-schema-core.html)
   (partial: `$recursiveRef` and remote-schema fetching are not yet supported
   and raise an error rather than being silently ignored)
+* [Draft 2020-12](https://json-schema.org/draft/2020-12/json-schema-core.html)
+  (partial: `$dynamicRef` and remote-schema fetching are not yet supported
+  and raise an error rather than being silently ignored)
 
 Install from git or https://hex.pm/packages/jesse .
 
@@ -245,13 +248,13 @@ Maps example
 ## JSON Schema versions
 
 jesse currently supports JSON Schema draft3, draft4, draft6 and (partially)
-draft 2019-09. To decide which
+draft 2019-09 and draft 2020-12. To decide which
 validator to use jesse tries to read `$schema` property from the given schema,
 and checks if it's a supported one, otherwise it will return an error.
-For draft 2019-09, keywords that the dialect defines but jesse does not yet
-implement (`$recursiveRef`) raise a `keyword_not_supported` schema error
-instead of being silently ignored, so a schema relying on them can never
-quietly accept data those keywords would reject.
+For draft 2019-09/2020-12, keywords that the dialect defines but jesse does not
+yet implement (`$recursiveRef`, `$dynamicRef`) raise a `keyword_not_supported`
+schema error instead of being silently ignored, so a schema relying on them can
+never quietly accept data those keywords would reject.
 If `$schema` property isn't provided in the given schema, jesse will use the
 default validator (currently the validator for draft3).
 

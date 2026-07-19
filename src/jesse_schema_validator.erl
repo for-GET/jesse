@@ -99,6 +99,9 @@ select_and_run_validator(SchemaURI, JsonSchema, Value, State) ->
     ?json_schema_draft2019_09 ->
       jesse_validator_draft2019_09:check_value(
         Value, jesse_json_path:unwrap_value(JsonSchema), State);
+    ?json_schema_draft2020_12 ->
+      jesse_validator_draft2020_12:check_value(
+        Value, jesse_json_path:unwrap_value(JsonSchema), State);
     _ ->
       jesse_error:handle_schema_invalid({?schema_unsupported, SchemaURI}, State)
   end.
