@@ -67,13 +67,9 @@ end_per_suite(_Config) ->
 %% false-accept invalid data, so unsupported keywords hard-error and their
 %% test groups are skip-listed here instead.
 skip_list() ->
-  [ %% "unevaluatedProperties"/"unevaluatedItems": milestone J2. The keywords
-    %% hard-error (keyword_not_supported) so they can never false-accept.
-    {<<"unevaluatedProperties">>, '_'}
-  , {<<"unevaluatedItems">>, '_'}
     %% "$recursiveRef"/"$recursiveAnchor": milestone J3 (dynamic scope stack).
     %% "$recursiveRef" hard-errors so it cannot false-accept.
-  , {<<"recursiveRef">>, '_'}
+  [ {<<"recursiveRef">>, '_'}
     %% Remote-schema fetching harness not wired for this dialect yet.
   , {<<"refRemote">>, '_'}
   , {<<"ref">>, <<"remote ref, containing refs itself">>}

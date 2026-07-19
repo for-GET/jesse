@@ -33,6 +33,8 @@
         , get_default_schema_ver/1
         , get_error_handler/1
         , get_error_list/1
+        , get_evaluated/1
+        , set_evaluated/2
         , new/2
         , remove_last_from_path/1
         , set_allowed_errors/2
@@ -62,6 +64,11 @@
          , id :: jesse:schema_id()
          , root_schema :: jesse:schema()
          , schema_loader_fun :: jesse:schema_loader_fun()
+           %% Draft 2019-09+ annotation accumulator for the current schema
+           %% evaluation: which properties/items have been evaluated so far.
+           %% An opaque term managed by the dialect validator; unused by
+           %% draft 3/4/6.
+         , evaluated :: term()
          }
        ).
 
@@ -118,6 +125,17 @@ get_error_handler(#state{error_handler = ErrorHandler}) ->
 get_error_list(#state{error_list = ErrorList}) ->
   ErrorList.
 
+%% @doc Getter for the draft 2019-09+ `evaluated' annotation accumulator.
+%% The value is opaque here — the dialect validator defines its shape.
+-spec get_evaluated(State :: state()) -> term().
+get_evaluated(#state{evaluated = Evaluated}) ->
+  Evaluated.
+
+%% @doc Setter for the draft 2019-09+ `evaluated' annotation accumulator.
+-spec set_evaluated(State :: state(), Evaluated :: term()) -> state().
+set_evaluated(#state{} = State, Evaluated) ->
+  State#state{evaluated = Evaluated}.
+
 %% @doc Returns newly created state.
 -spec new( JsonSchema :: jesse:schema()
          , Options :: jesse:options()
@@ -154,6 +172,7 @@ new(JsonSchema, Options) ->
                    , default_schema_ver = DefaultSchemaVer
                    , schema_loader_fun  = LoaderFun
                    , external_validator = ExternalValidator
+                   , evaluated          = undefined
                    },
   set_current_schema(NewState, JsonSchema).
 

@@ -7,13 +7,16 @@
   (`https://json-schema.org/draft/2019-09/schema`, with or without a trailing
   `#`). Implemented keywords: `dependentRequired`, `dependentSchemas`,
   `if`/`then`/`else`, `minContains`/`maxContains`, `$defs`, local `$anchor`
-  resolution, and `$ref` evaluated alongside sibling keywords. `format` is
-  annotation-only (non-asserting), per the 2019-09 default.
-  Not yet implemented — `unevaluatedProperties`, `unevaluatedItems` and
-  `$recursiveRef` — raise a `keyword_not_supported` schema error instead of
-  being silently ignored, so they can never false-accept invalid data.
-  Validated against the official JSON-Schema-Test-Suite (833/1003 individual
-  draft 2019-09 tests pass; the remainder are for the unsupported keywords,
+  resolution, `$ref` evaluated alongside sibling keywords, and
+  `unevaluatedProperties`/`unevaluatedItems` (with the full 2019-09 annotation
+  model — adjacent keywords and successful in-place applicators contribute,
+  cousins/uncles do not). `format` is annotation-only (non-asserting), per the
+  2019-09 default.
+  Not yet implemented — `$recursiveRef` — raises a `keyword_not_supported`
+  schema error instead of being silently ignored, so it can never
+  false-accept invalid data.
+  Validated against the official JSON-Schema-Test-Suite (927/1003 individual
+  draft 2019-09 tests pass; the remainder are for `$recursiveRef`,
   remote-schema fetching, and in-document `$id` scoping).
 
 ## 1.5.6
