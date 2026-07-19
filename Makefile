@@ -116,6 +116,10 @@ symlinks: test/JSON-Schema-Test-Suite/tests
 	ln -sf ../../test/JSON-Schema-Test-Suite/tests/draft6 standard && \
 	ln -sf ../../test/JSON-Schema-Test-Suite/remotes remotes
 
+	cd test/jesse_tests_draft2019_09_SUITE_data && \
+	ln -sf ../../test/JSON-Schema-Test-Suite/tests/draft2019-09 standard && \
+	ln -sf ../../test/JSON-Schema-Test-Suite/remotes remotes
+
 # https://github.com/erlang/rebar3/issues/2903
 ./rebar3.OTP18:
 	$(CURL) -qfsSL -o $@ https://github.com/erlang/rebar3/releases/download/3.15.3/rebar3 && $(CHMOD) +x $@

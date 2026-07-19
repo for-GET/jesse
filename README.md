@@ -8,6 +8,10 @@ jesse implements the following specifications:
 * [Draft 03](http://tools.ietf.org/html/draft-zyp-json-schema-03)
 * [Draft 04](http://tools.ietf.org/html/draft-zyp-json-schema-04)
 * [Draft 06](https://datatracker.ietf.org/doc/html/draft-wright-json-schema-00)
+* [Draft 2019-09](https://json-schema.org/draft/2019-09/json-schema-core.html)
+  (partial: `unevaluatedProperties`/`unevaluatedItems`, `$recursiveRef` and
+  remote-schema fetching are not yet supported and raise an error rather than
+  being silently ignored)
 
 Install from git or https://hex.pm/packages/jesse .
 
@@ -241,9 +245,15 @@ Maps example
 
 ## JSON Schema versions
 
-jesse currently supports JSON Schema draft3, draft4 and draft6. To decide which
+jesse currently supports JSON Schema draft3, draft4, draft6 and (partially)
+draft 2019-09. To decide which
 validator to use jesse tries to read `$schema` property from the given schema,
 and checks if it's a supported one, otherwise it will return an error.
+For draft 2019-09, keywords that the dialect defines but jesse does not yet
+implement (`unevaluatedProperties`, `unevaluatedItems`, `$recursiveRef`) raise
+a `keyword_not_supported` schema error instead of being silently ignored, so a
+schema relying on them can never quietly accept data those keywords would
+reject.
 If `$schema` property isn't provided in the given schema, jesse will use the
 default validator (currently the validator for draft3).
 
