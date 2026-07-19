@@ -35,6 +35,7 @@
         , validate/3
         , validate_with_schema/2
         , validate_with_schema/3
+        , supported_dialect/1
         ]).
 
 -export_type([ allowed_errors/0
@@ -246,6 +247,15 @@ validate_with_schema(Schema, Data, Options) ->
   catch
     throw:Error -> {error, Error}
   end.
+
+%% @doc Whether the given `$schema' dialect URI is one jesse can validate
+%% against. Useful for rejecting a schema that declares an unsupported dialect
+%% at registration time, instead of accepting it and failing every validation
+%% at run time. Draft 2019-09/2020-12 URIs are accepted with or without a
+%% trailing `#'.
+-spec supported_dialect(SchemaURI :: binary()) -> boolean().
+supported_dialect(SchemaURI) ->
+  jesse_schema_validator:is_supported_dialect(SchemaURI).
 
 %%% Internal functions
 %% @doc Wraps up calls to a third party json parser.
