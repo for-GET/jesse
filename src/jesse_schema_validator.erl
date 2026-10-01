@@ -26,6 +26,7 @@
 %% API
 -export([ validate/3
         , validate_with_state/3
+        , is_supported_dialect/1
         ]).
 
 %% Includes
@@ -56,6 +57,23 @@ validate(JsonSchema, Value, Options) ->
 validate_with_state(JsonSchema, Value, State) ->
   SchemaVer = get_schema_ver(JsonSchema, State),
   select_and_run_validator(SchemaVer, JsonSchema, Value, State).
+
+%% @doc Whether a schema's `$schema' dialect URI is one jesse can validate
+%% against. Intended for callers that want to reject a schema declaring an
+%% unsupported dialect up-front (e.g. at registration) instead of having every
+%% validation fail at run time. Draft 2019-09/2020-12 URIs are accepted with or
+%% without a trailing `#'.
+-spec is_supported_dialect(SchemaURI :: binary()) -> boolean().
+is_supported_dialect(?json_schema_draft3) -> true;
+is_supported_dialect(?json_schema_draft4) -> true;
+is_supported_dialect(?json_schema_draft6) -> true;
+is_supported_dialect(SchemaURI) when is_binary(SchemaURI) ->
+  case normalize_schema_ver(SchemaURI) of
+    ?json_schema_draft2019_09 -> true;
+    ?json_schema_draft2020_12 -> true;
+    _ -> false
+  end;
+is_supported_dialect(_) -> false.
 
 %%% Internal functions
 %% @doc Returns "$schema" property from `JsonSchema' if it is present,
@@ -94,5 +112,33 @@ select_and_run_validator(?json_schema_draft6, JsonSchema, Value, State) ->
                                       , jesse_json_path:unwrap_value(JsonSchema)
                                       , State
                                       );
-select_and_run_validator(SchemaURI, _JsonSchema, _Value, State) ->
-  jesse_error:handle_schema_invalid({?schema_unsupported, SchemaURI}, State).
+select_and_run_validator(SchemaURI, JsonSchema, Value, State) ->
+  case normalize_schema_ver(SchemaURI) of
+    ?json_schema_draft2019_09 ->
+      jesse_validator_draft2019_09:check_value(
+        Value, jesse_json_path:unwrap_value(JsonSchema), State);
+    ?json_schema_draft2020_12 ->
+      jesse_validator_draft2020_12:check_value(
+        Value, jesse_json_path:unwrap_value(JsonSchema), State);
+    _ ->
+      jesse_error:handle_schema_invalid({?schema_unsupported, SchemaURI}, State)
+  end.
+
+%% @doc Normalize a "$schema" URI so that draft 2019-09/2020-12 schemas dispatch
+%% regardless of a trailing "#" fragment or http/https scheme. Draft 3/4/6 are
+%% matched verbatim by the clauses above and never reach here.
+%% @private
+normalize_schema_ver(SchemaURI) when is_binary(SchemaURI) ->
+  Stripped =
+    case SchemaURI of
+      <<Base:(byte_size(SchemaURI) - 1)/binary, $#>> -> Base;
+      _ -> SchemaURI
+    end,
+  case Stripped of
+    <<"http://json-schema.org/", Rest/binary>> ->
+      <<"https://json-schema.org/", Rest/binary>>;
+    _ ->
+      Stripped
+  end;
+normalize_schema_ver(SchemaURI) ->
+  SchemaURI.

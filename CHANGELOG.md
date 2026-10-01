@@ -1,5 +1,28 @@
 # CHANGELOG
 
+## Unreleased
+
+* Add partial support for JSON Schema draft 2019-09 and draft 2020-12. New
+  dialect modules `jesse_validator_draft2019_09` and
+  `jesse_validator_draft2020_12`, dispatched from the schema's `$schema` URI
+  (`https://json-schema.org/draft/2019-09/schema` and
+  `.../2020-12/schema`, with or without a trailing `#`). Implemented keywords:
+  `dependentRequired`, `dependentSchemas`, `if`/`then`/`else`,
+  `minContains`/`maxContains`, `$defs`, local `$anchor` resolution, `$ref`
+  evaluated alongside sibling keywords, and
+  `unevaluatedProperties`/`unevaluatedItems` (with the full annotation
+  model — adjacent keywords and successful in-place applicators contribute,
+  cousins/uncles do not). Draft 2020-12 additionally handles the `prefixItems`
+  rename (tuple validation) and `items` as the after-`prefixItems` applicator.
+  `format` is annotation-only (non-asserting), per the dialect default.
+  Not yet implemented — `$recursiveRef` (2019-09) and `$dynamicRef` (2020-12) —
+  raise a `keyword_not_supported` schema error instead of being silently
+  ignored, so they can never false-accept invalid data.
+  Validated against the official JSON-Schema-Test-Suite: 927/1003 individual
+  draft 2019-09 tests and 935/997 draft 2020-12 tests pass; the remainder are
+  for `$recursiveRef`/`$dynamicRef`, remote-schema fetching, and in-document
+  `$id` scoping.
+
 ## 1.5.6
 
 * Improving the error messages from jesse when using oneOf/anyOf
