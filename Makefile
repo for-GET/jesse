@@ -139,6 +139,8 @@ symlinks: test/JSON-Schema-Test-Suite/tests
 	$(CURL) -qfsSL -o $@ https://github.com/erlang/rebar3/releases/download/3.23.0/rebar3 && $(CHMOD) +x $@
 ./rebar3.OTP28:
 	$(CURL) -qfsSL -o $@ https://github.com/erlang/rebar3/releases/download/3.25.0/rebar3 && $(CHMOD) +x $@
+./rebar3.OTP29:
+	$(CURL) -qfsSL -o $@ https://github.com/erlang/rebar3/releases/download/3.27.1/rebar3 && $(CHMOD) +x $@
 
 .PHONY: docker
 docker:
