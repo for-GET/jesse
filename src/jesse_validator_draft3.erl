@@ -903,7 +903,10 @@ check_extends(Value, Extends, State) ->
   TmpState =
     case jesse_lib:is_json_object(Extends) of
       true  ->
-        check_value(Value, Extends, set_current_schema(State, Extends));
+        check_value( Value
+                   , jesse_json_path:unwrap_value(Extends)
+                   , set_current_schema(State, Extends)
+                   );
       false ->
         case is_list(Extends) of
           true  -> check_extends_array(Value, Extends, State);
