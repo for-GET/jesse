@@ -33,14 +33,17 @@ jobs:
           - '27.1-slim'
           - '27-slim'
           - '26.2-slim'
-          - '26.1-slim'
           - '26-slim'
           - '25.3-slim'
-          - '25.2-slim'
-          - '25.1-slim'
           - '25-slim'
           - '24.3-slim'
-          - '24.2-slim'
+          # NOTE testing disabled for the following versions, as the Docker image is based on Debian 11 (bullseye, EOL since 2026-08),
+          # and security.debian.org no longer serves bullseye packages (404 on apt-get update)
+          # NOTE jesse might still be OTP-compatible though
+          # - '26.1-slim'
+          # - '25.2-slim'
+          # - '25.1-slim'
+          # - '24.2-slim'
           # NOTE testing disabled for the following versions, as the Docker image is based on Debian 10 (EOL)
           # - '24.1-slim'
           # - '24.0-slim'
