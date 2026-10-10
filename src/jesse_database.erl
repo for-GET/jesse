@@ -36,6 +36,7 @@
         , load_uri/1
         , load_all/0
         , delete/1
+        , get_ssl_opts/0
         ]).
 
 -export_type([ error/0
@@ -51,6 +52,8 @@
 -type store_result() :: ok | [store_fail()].
 -type store_fail()   :: {file:filename(), file:date_time(), reason()}.
 -type reason()       :: term().
+
+-type ssl_opts() :: [ssl:tls_option()].
 
 -define(JESSE_ETS, jesse_ets).
 
@@ -315,7 +318,7 @@ add_file_uri(Key0) ->
 %% @private
 add_http_uri(Key0) ->
   Key = jesse_state:canonical_path(Key0, Key0),
-  HttpOptions = [{ssl, [{verify, verify_none}]}],
+  HttpOptions = [{ssl, get_ssl_opts()}],
   {ok, Response} = httpc:request( get
                                 , {Key, []}
                                 , HttpOptions
@@ -325,6 +328,48 @@ add_http_uri(Key0) ->
   SchemaInfos = [{Key, get_http_mtime(Headers), Schema}],
   ValidationFun = fun jesse_lib:is_json_object/1,
   store_schemas(SchemaInfos, ValidationFun).
+
+%% @doc SSL options used when fetching schemas over https.
+%% Default: TLS server certificate verification is on when it can be backed by
+%% a CA certificate store (effective on OTP 27+, which ships a bundled one;
+%% on OTP 25+ the OS bundle is used if available), and off (the historic
+%% behavior) otherwise.
+%% Override by setting the `ssl_opts' application environment variable of
+%% `jesse', e.g.
+%% `application:set_env(jesse, ssl_opts, [{verify, verify_none}])'.
+%% @private
+-spec get_ssl_opts() -> ssl_opts().
+get_ssl_opts() ->
+  application:get_env(jesse, ssl_opts, default_ssl_opts()).
+
+%% @private
+default_ssl_opts() ->
+  case cacerts() of
+    Cacerts when Cacerts =/= [] ->
+      [ {verify, verify_peer}
+      , {cacerts, Cacerts}
+      ];
+    %% no CA bundle available -> historic (insecure) behavior
+    [] -> [{verify, verify_none}]
+  end.
+
+%% @doc Returns the CA certificates available in the running system.
+%% `public_key:cacerts_get/0' was introduced in OTP 25, and since OTP 27
+%% returns the bundled CA store. On older OTP it returns an empty list, or
+%% the OS bundle (if one happens to be installed) under OTP 25/26.
+%% @private
+-if(?OTP_RELEASE >= 25).
+cacerts() ->
+  try public_key:cacerts_get() of
+    Cacerts -> Cacerts
+  catch
+    _:_ -> []
+  end.
+-else.
+%% OTP < 25: `public_key:cacerts_get/0' does not exist
+cacerts() ->
+  [].
+-endif.
 
 %% @private
 get_http_mtime(Headers) ->

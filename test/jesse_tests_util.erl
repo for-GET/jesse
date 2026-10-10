@@ -150,7 +150,10 @@ get_path(Key, Schema) ->
   jesse_json_path:path(Key, Schema).
 
 load_schema(URI) ->
-  HttpOptions = [{ssl, [{verify, verify_none}]}],
+  %% reuse jesse's policy: verify TLS certs when a CA store is available
+  %% (OTP 27+), configurable via the jesse ssl_opts application env var;
+  %% see jesse_database:get_ssl_opts/0
+  HttpOptions = [{ssl, jesse_database:get_ssl_opts()}],
   {ok, Response} = httpc:request( get
                                 , {URI, []}
                                 , HttpOptions
