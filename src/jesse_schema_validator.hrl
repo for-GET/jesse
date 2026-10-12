@@ -82,6 +82,26 @@
 -define(MAXPROPERTIES,        <<"maxProperties">>).
 -define(MINPROPERTIES,        <<"minProperties">>).
 
+%% Keywords introduced in draft 2019-09 / 2020-12
+-define(DEFS,                 <<"$defs">>).
+-define(ANCHOR,               <<"$anchor">>).
+-define(RECURSIVEANCHOR,      <<"$recursiveAnchor">>).
+-define(RECURSIVEREF,         <<"$recursiveRef">>).
+-define(DYNAMICANCHOR,        <<"$dynamicAnchor">>).
+-define(DYNAMICREF,           <<"$dynamicRef">>).
+-define(VOCABULARY,           <<"$vocabulary">>).
+-define(COMMENT,              <<"$comment">>).
+-define(DEPENDENTREQUIRED,    <<"dependentRequired">>).
+-define(DEPENDENTSCHEMAS,     <<"dependentSchemas">>).
+-define(IF,                   <<"if">>).
+-define(THEN,                 <<"then">>).
+-define(ELSE,                 <<"else">>).
+-define(MINCONTAINS,          <<"minContains">>).
+-define(MAXCONTAINS,          <<"maxContains">>).
+-define(PREFIXITEMS,          <<"prefixItems">>).
+-define(UNEVALUATEDPROPERTIES, <<"unevaluatedProperties">>).
+-define(UNEVALUATEDITEMS,     <<"unevaluatedItems">>).
+
 %% Constant definitions for Json types
 -define(ANY,                  <<"any">>).
 -define(ARRAY,                <<"array">>).
@@ -96,6 +116,14 @@
 -define(json_schema_draft3, <<"http://json-schema.org/draft-03/schema#">>).
 -define(json_schema_draft4, <<"http://json-schema.org/draft-04/schema#">>).
 -define(json_schema_draft6, <<"http://json-schema.org/draft-06/schema#">>).
+%% Draft 2019-09 and 2020-12 canonical metaschema URIs omit the trailing "#".
+%% Incoming "$schema" values are normalized (trailing "#" stripped, scheme
+%% coerced to https) before being matched against these, so both the
+%% fragment and non-fragment forms dispatch to the right dialect.
+-define(json_schema_draft2019_09,
+        <<"https://json-schema.org/draft/2019-09/schema">>).
+-define(json_schema_draft2020_12,
+        <<"https://json-schema.org/draft/2020-12/schema">>).
 -define(default_schema_ver, ?json_schema_draft6).
 -define(default_schema_loader_fun, fun jesse_database:load_uri/1).
 -define(default_error_handler_fun, fun jesse_error:default_error_handler/3).
@@ -107,6 +135,10 @@
 -define(schema_invalid,              'schema_invalid').
 -define(schema_not_found,            'schema_not_found').
 -define(schema_unsupported,          'schema_unsupported').
+%% Raised when a schema uses a keyword that the dialect defines but jesse does
+%% not yet implement. Surfacing it (instead of silently ignoring the keyword)
+%% prevents dangerous false-acceptance of data the keyword would have rejected.
+-define(keyword_not_supported,       'keyword_not_supported').
 -define(wrong_all_of_schema_array,   'wrong_all_of_schema_array').
 -define(wrong_any_of_schema_array,   'wrong_any_of_schema_array').
 -define(wrong_max_properties,        'wrong_max_properties').

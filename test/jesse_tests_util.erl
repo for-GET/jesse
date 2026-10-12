@@ -79,8 +79,12 @@ do_test(Key, Config) ->
                 "** Schema tests: ~p~n"
               , [Description, Options, Schema, SchemaTests]
               ),
-        case lists:member({list_to_binary(Key), Description},
-                          SkipList) of
+        KeyBin = list_to_binary(Key),
+        %% A skip-list entry may target a specific case ({File, Description})
+        %% or, with the '_' wildcard, every case in a file ({File, '_'}).
+        IsSkipped = lists:member({KeyBin, Description}, SkipList)
+                    orelse lists:member({KeyBin, '_'}, SkipList),
+        case IsSkipped of
           true ->
             ct:pal("In skip-list");
           false ->

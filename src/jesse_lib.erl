@@ -266,6 +266,10 @@ compare_properties(Value1, Value2) ->
 get_schema_id_key(Schema) ->
   case jesse_json_path:value(?SCHEMA, Schema, ?json_schema_draft6) of
     ?json_schema_draft6 -> ?ID;
+    ?json_schema_draft2019_09 -> ?ID;
+    <<"https://json-schema.org/draft/2019-09/schema#">> -> ?ID;
+    ?json_schema_draft2020_12 -> ?ID;
+    <<"https://json-schema.org/draft/2020-12/schema#">> -> ?ID;
                       _ -> ?ID_OLD
   end.
 

@@ -33,6 +33,8 @@
         , get_default_schema_ver/1
         , get_error_handler/1
         , get_error_list/1
+        , get_evaluated/1
+        , set_evaluated/2
         , new/2
         , remove_last_from_path/1
         , set_allowed_errors/2
@@ -62,6 +64,11 @@
          , id :: jesse:schema_id()
          , root_schema :: jesse:schema()
          , schema_loader_fun :: jesse:schema_loader_fun()
+           %% Draft 2019-09+ annotation accumulator for the current schema
+           %% evaluation: which properties/items have been evaluated so far.
+           %% An opaque term managed by the dialect validator; unused by
+           %% draft 3/4/6.
+         , evaluated :: term()
          }
        ).
 
@@ -118,6 +125,17 @@ get_error_handler(#state{error_handler = ErrorHandler}) ->
 get_error_list(#state{error_list = ErrorList}) ->
   ErrorList.
 
+%% @doc Getter for the draft 2019-09+ `evaluated' annotation accumulator.
+%% The value is opaque here — the dialect validator defines its shape.
+-spec get_evaluated(State :: state()) -> term().
+get_evaluated(#state{evaluated = Evaluated}) ->
+  Evaluated.
+
+%% @doc Setter for the draft 2019-09+ `evaluated' annotation accumulator.
+-spec set_evaluated(State :: state(), Evaluated :: term()) -> state().
+set_evaluated(#state{} = State, Evaluated) ->
+  State#state{evaluated = Evaluated}.
+
 %% @doc Returns newly created state.
 -spec new( JsonSchema :: jesse:schema()
          , Options :: jesse:options()
@@ -154,6 +172,7 @@ new(JsonSchema, Options) ->
                    , default_schema_ver = DefaultSchemaVer
                    , schema_loader_fun  = LoaderFun
                    , external_validator = ExternalValidator
+                   , evaluated          = undefined
                    },
   set_current_schema(NewState, JsonSchema).
 
@@ -187,9 +206,10 @@ set_current_schema(#state{ id = Id
         ListSchema = jesse_json_path:unwrap_value(NewSchema0),
         [{?REF, Ref} | lists:keydelete(?REF, 1, ListSchema)]
     end,
-  IdTag = case jesse_json_path:value(?SCHEMA, NewSchema, DefaultSchemaVer) of
-          ?json_schema_draft6 -> ?ID;
-                            _ -> ?ID_OLD
+  SchemaVer = jesse_json_path:value(?SCHEMA, NewSchema, DefaultSchemaVer),
+  IdTag = case uses_dollar_id(SchemaVer) of
+            true  -> ?ID;
+            false -> ?ID_OLD
           end,
   NewSchemaId = jesse_json_path:value(IdTag, NewSchema, undefined),
   NewId = combine_id(Id, NewSchemaId),
@@ -240,14 +260,96 @@ resolve_ref(State, Reference) ->
             {RemoteState, RemoteSchema}
         end
     end,
-  Path = jesse_json_path:parse(Pointer),
-  try load_local_schema(set_current_schema(State1, BaseSchema), Path)
-  catch throw:?not_found ->
-      jesse_error:handle_schema_invalid( { ?schema_not_found
-                                         , CanonicalReference}
-                                       , State1
-                                       )
+  case anchor_fragment(Pointer) of
+    {anchor, Anchor} ->
+      %% Plain-name fragment (e.g. "#foo"): a draft 2019-09+ "$anchor"
+      %% (or draft6 "$id" location-independent identifier). Search the base
+      %% document for a subschema declaring that anchor.
+      case find_anchor(BaseSchema, Anchor) of
+        {ok, AnchorSchema} ->
+          set_current_schema(State1, AnchorSchema);
+        not_found ->
+          jesse_error:handle_schema_invalid( { ?schema_not_found
+                                             , CanonicalReference}
+                                           , State1
+                                           )
+      end;
+    pointer ->
+      Path = jesse_json_path:parse(Pointer),
+      try load_local_schema(set_current_schema(State1, BaseSchema), Path)
+      catch throw:?not_found ->
+          jesse_error:handle_schema_invalid( { ?schema_not_found
+                                             , CanonicalReference}
+                                           , State1
+                                           )
+      end
   end.
+
+%% @doc Classify the fragment part of a `$ref'. A JSON Pointer fragment is
+%% either empty or starts with "/"; anything else is a plain-name anchor.
+%% @private
+anchor_fragment(Pointer) ->
+  case iolist_to_binary(Pointer) of
+    <<>>              -> pointer;
+    <<"/", _/binary>> -> pointer;
+    Anchor            -> {anchor, Anchor}
+  end.
+
+%% @doc Recursively search a schema document for a subschema whose "$anchor"
+%% equals `Anchor'. Values held by instance-data keywords (enum/const/default/
+%% examples) are skipped, since a "$anchor" buried there is not a real
+%% identifier.
+%% @private
+find_anchor(Schema, Anchor) ->
+  case jesse_lib:is_json_object(Schema) of
+    true ->
+      case jesse_json_path:value(?ANCHOR, Schema, ?not_found) of
+        Anchor ->
+          {ok, Schema};
+        _ ->
+          find_anchor_children(jesse_json_path:unwrap_value(Schema), Anchor)
+      end;
+    false ->
+      case jesse_lib:is_array(Schema) of
+        true  -> find_anchor_list(Schema, Anchor);
+        false -> not_found
+      end
+  end.
+
+%% @private
+find_anchor_children([], _Anchor) ->
+  not_found;
+find_anchor_children([{Key, _Value} | Rest], Anchor)
+  when Key =:= ?ENUM;
+       Key =:= ?CONST;
+       Key =:= ?EXAMPLES;
+       Key =:= <<"default">> ->
+  find_anchor_children(Rest, Anchor);
+find_anchor_children([{_Key, Value} | Rest], Anchor) ->
+  case find_anchor(Value, Anchor) of
+    {ok, _} = Found -> Found;
+    not_found       -> find_anchor_children(Rest, Anchor)
+  end.
+
+%% @private
+find_anchor_list([], _Anchor) ->
+  not_found;
+find_anchor_list([Item | Rest], Anchor) ->
+  case find_anchor(Item, Anchor) of
+    {ok, _} = Found -> Found;
+    not_found       -> find_anchor_list(Rest, Anchor)
+  end.
+
+%% @doc Whether a metaschema version uses "$id" (draft6, 2019-09, 2020-12) as
+%% opposed to the legacy "id" (draft3/4). Matches both the fragment and
+%% non-fragment forms of the 2019-09/2020-12 URIs.
+%% @private
+uses_dollar_id(?json_schema_draft6) -> true;
+uses_dollar_id(?json_schema_draft2019_09) -> true;
+uses_dollar_id(<<"https://json-schema.org/draft/2019-09/schema#">>) -> true;
+uses_dollar_id(?json_schema_draft2020_12) -> true;
+uses_dollar_id(<<"https://json-schema.org/draft/2020-12/schema#">>) -> true;
+uses_dollar_id(_) -> false.
 
 %% @doc Revert changes made by resolve_reference.
 -spec undo_resolve_ref(state(), state()) -> state().

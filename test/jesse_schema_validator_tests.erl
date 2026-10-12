@@ -251,6 +251,25 @@ schema_unsupported_test_draft(URI) ->
               , jesse_schema_validator:validate(UnsupportedSchema, Json, [])
               ).
 
+supported_dialect_test() ->
+  Supported = [ <<"http://json-schema.org/draft-03/schema#">>
+              , <<"http://json-schema.org/draft-04/schema#">>
+              , <<"http://json-schema.org/draft-06/schema#">>
+              , <<"https://json-schema.org/draft/2019-09/schema">>
+              , <<"https://json-schema.org/draft/2019-09/schema#">>
+              , <<"https://json-schema.org/draft/2020-12/schema">>
+              , <<"https://json-schema.org/draft/2020-12/schema#">>
+                %% http scheme is coerced to https for the 2019+ URIs
+              , <<"http://json-schema.org/draft/2020-12/schema">>
+              ],
+  [ ?assert(jesse:supported_dialect(URI)) || URI <- Supported ],
+  Unsupported = [ <<"http://json-schema.org/draft-05/schema#">>
+                , <<"https://json-schema.org/draft/2021-99/schema">>
+                , <<"not-a-uri">>
+                , not_a_binary
+                ],
+  [ ?assertNot(jesse:supported_dialect(URI)) || URI <- Unsupported ].
+
 data_invalid_one_of_test() ->
   [ data_invalid_one_of_test_draft(URI)
     || URI <- [ <<"http://json-schema.org/draft-04/schema#">>
